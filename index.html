@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Office 3D - מרכז שליטה</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
+:root{
+  --bg:#0a0e1a;--panel:#111827;--card:#1e293b;--accent:#3b82f6;--glow:#60a5fa;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--purple:#a855f7;--orange:#f97316;
+  --cyan:#06b6d4;--pink:#ec4899;--text:#e2e8f0;--dim:#94a3b8;--border:#334155;
+}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
+.app{display:grid;grid-template-columns:320px 1fr 360px;grid-template-rows:56px 1fr 180px;height:100vh;gap:1px;background:var(--border)}
+.topbar{grid-column:1/-1;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100}
+.topbar .logo{display:flex;align-items:center;gap:10px}
+.topbar .logo h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.live-dot{width:8px;height:8px;border-radius:50%;animation:livePulse 2s infinite}
+.live-dot.on{background:var(--green)}
+.live-dot.off{background:var(--red)}
+@keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+.kpis{display:flex;gap:20px}
+.kpi .val{font-size:17px;font-weight:700;color:var(--glow);text-align:center}
+.kpi .lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;text-align:center}
+.topbar .btns{display:flex;gap:8px}
+.btn{padding:7px 14px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;cursor:pointer;font-family:'Heebo',sans-serif;font-size:12px;transition:all .2s;display:flex;align-items:center;gap:5px}
+.btn:hover{background:var(--accent);border-color:var(--accent)}
+.btn.go{background:var(--green);border-color:var(--green);color:#000;font-weight:600}
+.btn.stop{background:var(--red);border-color:var(--red)}
+.btn.hidden{display:none}
+.left{background:var(--panel);overflow-y:auto;padding:14px}
+.left::-webkit-scrollbar{width:5px}
+.left::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.sec-title{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.tcard{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;border-right:4px solid var(--border);cursor:pointer;transition:all .25s}
+.tcard:hover{transform:translateX(-3px)}
+.tcard.active{border-right-color:var(--accent);box-shadow:0 0 16px rgba(59,130,246,.12)}
+.tcard .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tcard .nm{font-size:13px;font-weight:600}
+.tcard .st{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.st.working{background:rgba(34,197,94,.12);color:var(--green)}
+.st.idle{background:rgba(234,179,8,.12);color:var(--yellow)}
+.tcard .desc{font-size:10px;color:var(--dim);margin-bottom:6px}
+.agents-row{display:flex;gap:4px;flex-wrap:wrap}
+.mini-agent{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative;cursor:pointer;transition:transform .15s}
+.mini-agent:hover{transform:scale(1.3);z-index:2}
+.mini-agent .dot{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--card)}
+.tcard .info-row{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:6px}
+.tcard .bar{height:3px;background:var(--bg);border-radius:2px;margin-top:6px;overflow:hidden}
+.agent-ctrl{display:flex;gap:4px;margin-top:6px}
+.agent-ctrl .ctrl-btn{padding:3px 8px;font-size:9px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif}
+.agent-ctrl .ctrl-btn:hover{background:var(--accent);border-color:var(--accent)}
+.agent-ctrl .ctrl-btn.active-ctrl{background:var(--green);border-color:var(--green);color:#000}
+.canvas-wrap{position:relative;overflow:hidden;background:var(--bg)}
+#c3d{width:100%;height:100%;display:block;cursor:grab}
+#c3d:active{cursor:grabbing}
+.c-overlay{position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:60}
+.vbtn{padding:5px 10px;border-radius:6px;background:rgba(17,24,39,.85);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:11px;font-family:'Heebo',sans-serif;backdrop-filter:blur(8px)}
+.vbtn:hover,.vbtn.on{background:var(--accent);border-color:var(--accent)}
+.c-help{position:absolute;top:10px;right:10px;font-size:10px;color:var(--dim);background:rgba(17,24,39,.7);padding:5px 8px;border-radius:6px;backdrop-filter:blur(8px);z-index:60}
+#tooltip3d{position:absolute;pointer-events:none;background:rgba(17,24,39,.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;z-index:200;display:none;min-width:200px;backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#tooltip3d .t-name{font-weight:600;font-size:14px;margin-bottom:3px}
+#tooltip3d .t-team{font-size:11px;color:var(--dim);margin-bottom:6px}
+#tooltip3d .t-task{font-size:11px;background:var(--bg);padding:6px 8px;border-radius:6px;margin-bottom:6px}
+#tooltip3d .t-status{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:500}
+#tooltip3d .t-bar-wrap{margin-top:6px}
+#tooltip3d .t-bar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
+#tooltip3d .t-bar .fill{height:100%;border-radius:2px}
+#tooltip3d .t-bar-label{font-size:9px;color:var(--dim);margin-top:2px}
+.room-label{position:absolute;pointer-events:none;z-index:50;text-align:center;transform:translate(-50%,-50%)}
+.room-label .rl-name{font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.65);padding:3px 10px;border-radius:6px;backdrop-filter:blur(4px);white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+.room-label .rl-count{font-size:9px;margin-top:2px}
+.right{background:var(--panel);display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);padding:0 10px}
+.tab{padding:10px 14px;cursor:pointer;font-size:12px;color:var(--dim);border-bottom:2px solid transparent;transition:all .2s}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tpanel{display:none;overflow-y:auto;flex:1;padding:10px}
+.tpanel.on{display:flex;flex-direction:column}
+.ahero{text-align:center;padding:12px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.ahero .big{width:60px;height:60px;margin:0 auto 8px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;border:2px solid}
+.ahero h3{font-size:14px;font-weight:600;margin-bottom:2px}
+.ahero p{font-size:11px;color:var(--dim)}
+.ainfo{margin-bottom:10px}
+.ainfo .lbl{font-size:10px;color:var(--dim);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.ainfo .val{font-size:12px;color:var(--text);font-weight:500}
+.aprog{margin-top:6px}
+.pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;transition:width .3s}
+.plbl{font-size:10px;color:var(--dim);margin-top:3px}
+.bprev{background:var(--bg);border-radius:8px;padding:8px;margin-top:10px}
+.bbar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.dots{display:flex;gap:3px}
+.dots span{width:8px;height:8px;border-radius:50%}
+.url{font-size:9px;color:var(--dim);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbody{font-size:10px;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;color:var(--dim)}
+.log{display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.log:hover{background:var(--card)}
+.log .ico{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.log .body{flex:1;min-width:0}
+.log .ttl{font-size:11px;font-weight:600;margin-bottom:2px}
+.log .dsc{font-size:10px;color:var(--dim);margin-bottom:2px}
+.log .tm{font-size:8px;color:var(--dim)}
+#actLog{overflow-y:auto;flex:1}
+#timeline{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px 12px;gap:0;align-items:stretch;scrollbar-width:thin}
+#timeline::-webkit-scrollbar{height:5px}
+#timeline::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.titem{min-width:160px;max-width:200px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-shrink:0;font-size:10px;position:relative;border-top:3px solid var(--border)}
+.titem .tt{font-weight:600;color:var(--glow);margin-bottom:2px;font-size:9px}
+.titem .tn{color:var(--text);margin-bottom:2px;line-height:1.3}
+.titem .tteam{color:var(--dim);font-size:9px;margin-bottom:3px}
+.titem .tst{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:500}
+.titem .tdecision{font-size:9px;color:var(--cyan);margin-top:3px;font-style:italic}
+.tline-connector{width:16px;min-width:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tline-connector::before{content:'';width:16px;height:2px;background:var(--border)}
+.titem.expandable{cursor:pointer;transition:all .2s}
+.titem.expandable:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.titem .t-expand{display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:9px;color:var(--dim);line-height:1.4}
+.titem.expanded .t-expand{display:block}
+.titem .t-result{font-size:9px;margin-top:3px;font-weight:500}
+.history-panel{position:fixed;top:56px;right:0;width:400px;height:calc(100vh - 56px);background:var(--panel);border-left:1px solid var(--border);z-index:250;transform:translateX(100%);transition:transform .3s;overflow-y:auto;padding:16px}
+.history-panel.open{transform:translateX(0)}
+.history-panel .hp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.history-panel .hp-title{font-size:14px;font-weight:600}
+.history-panel .hp-close{cursor:pointer;font-size:18px;color:var(--dim);padding:4px 8px;border-radius:4px}
+.history-panel .hp-close:hover{background:var(--card);color:var(--text)}
+.hist-entry{padding:8px;background:var(--bg);border-radius:6px;margin-bottom:6px;border-right:3px solid var(--border);font-size:10px}
+.hist-entry.success{border-right-color:var(--green)}
+.hist-entry.fail{border-right-color:var(--red)}
+.hist-entry .he-time{font-size:9px;color:var(--dim);margin-bottom:2px}
+.hist-entry .he-action{font-weight:600;color:var(--text);margin-bottom:2px}
+.hist-entry .he-result{color:var(--dim);line-height:1.3}
+.vault-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.vault-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.vault-card .vc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.vault-card .vc-name{font-size:12px;font-weight:600;color:var(--green)}
+.vault-card .vc-date{font-size:9px;color:var(--dim)}
+.vault-card .vc-source{font-size:10px;color:var(--dim);margin-bottom:6px}
+.vault-card .vc-metrics{display:flex;gap:8px;flex-wrap:wrap}
+.vault-card .vc-m{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--card)}
+.vault-card .vc-m.good{color:var(--green);background:rgba(34,197,94,.1)}
+.vault-card .vc-m.warn{color:var(--yellow);background:rgba(234,179,8,.1)}
+.vault-card .vc-detail{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
+.vault-card.expanded .vc-detail{display:block}
+.vault-card .vc-code{background:var(--card);padding:6px;border-radius:4px;font-family:monospace;font-size:9px;color:#c9d1d9;max-height:120px;overflow-y:auto;margin-top:4px;white-space:pre-wrap;direction:ltr;text-align:left}
+.notif{position:fixed;bottom:20px;left:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px;z-index:300;transform:translateY(120px);transition:transform .3s;backdrop-filter:blur(8px)}
+.notif.show{transform:translateY(0)}
+.notif #nIco{font-size:18px}
+.notif #nTxt{font-size:12px;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">
+      <h1>🏢 Agent Office 3D - מרכז שליטה</h1>
+      <div class="live-dot off" id="liveDot"></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="val" id="kAg">0</div><div class="lbl">סוכנים</div></div>
+      <div class="kpi"><div class="val" id="kF">0</div><div class="lbl">אסטרטגיות</div></div>
+      <div class="kpi"><div class="val" id="kT">0</div><div class="lbl">בדיקות</div></div>
+      <div class="kpi"><div class="val" id="kA">0</div><div class="lbl">אושרו</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn go" id="btnStartAll" onclick="startAll()">▶ הפעל הכל</button>
+      <button class="btn stop hidden" id="btnStopAll" onclick="stopAll()">⏹ עצור הכל</button>
+    </div>
+  </div>
+  <div class="left">
+    <div class="sec-title">צוותים ופעילות</div>
+    <div id="teamsList"></div>
+  </div>
+  <div id="cWrap" class="canvas-wrap">
+    <canvas id="c3d"></canvas>
+    <div id="roomLabels"></div>
+    <div class="c-overlay">
+      <button class="vbtn on" onclick="setView(this,'office')">משרד</button>
+      <button class="vbtn" onclick="setView(this,'top')">מעל</button>
+      <button class="vbtn" onclick="setView(this,'focus')">התמקד</button>
+    </div>
+    <div class="c-help">גרור לסיבוב | לחץ ימין לתנועה | גלגל לזום</div>
+    <div id="tooltip3d">
+      <div class="t-name"></div>
+      <div class="t-team"></div>
+      <div class="t-task"></div>
+      <div class="t-status"></div>
+      <div class="t-bar-wrap"><div class="t-bar"><div class="fill"></div></div><div class="t-bar-label" id="t-prog-text">0%</div></div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="tabs">
+      <div class="tab on" data-t="log" onclick="swTab(this)">📋 פעילות</div>
+      <div class="tab" data-t="detail" onclick="swTab(this)">👤 פרטים</div>
+      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כספת</div>
+    </div>
+    <div id="tp-log" class="tpanel on"><div id="actLog"></div></div>
+    <div id="tp-detail" class="tpanel"><div id="agDetail" style="text-align:center;color:var(--dim);padding:20px">בחר סוכן לצפייה בפרטים</div></div>
+    <div id="tp-vault" class="tpanel">
+      <div id="vaultLocked" style="text-align:center;padding:30px">
+        <div style="font-size:40px;margin-bottom:10px">🔐</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">כספת אסטרטגיות</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הזן סיסמה לצפייה באסטרטגיות שאושרו</div>
+        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
+        <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כספת</button>
+        <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">סיסמה שגויה</div>
+      </div>
+      <div id="vaultContent" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+          <span style="font-size:13px;font-weight:600">🏆 אסטרטגיות שאושרו</span>
+          <span id="vaultCount" style="font-size:10px;color:var(--dim)">0 אסטרטגיות</span>
+        </div>
+        <div id="vaultList"></div>
+      </div>
+    </div>
+  </div>
+  <div style="grid-column:1/-1;background:var(--panel);border-top:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">
+    <div style="font-size:11px;font-weight:600;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px">⏱ ציר הזמן</div>
+    <div id="timeline" style="flex:1"></div>
+  </div>
+</div>
+<div class="notif" id="notif"><div id="nIco"></div><div id="nTxt"></div></div>
+<div class="history-panel" id="historyPanel">
+  <div class="hp-header">
+    <div class="hp-title" id="histTitle">📜 היסטוריית סוכן</div>
+    <div class="hp-close" onclick="closeHistory()">✕</div>
+  </div>
+  <div id="histContent"></div>
+</div>
+
+<script>
+// ============ DATA ============
+const TEAMS = [
+  {id:'funding', name:'מחקר חברות מימון', icon:'💰', color:'#ec4899',
+   desc:'סריקה ומחקר של חברות מימון וכללי מסחר',
+   agents:[
+     {id:'f1',name:'סוכן FTMO',emoji:'🏦',status:'idle',task:'ממתין',taskProg:0,spec:'FTMO Research',browserUrl:'',browserContent:''},
+     {id:'f2',name:'סוכן MyFunded',emoji:'💳',status:'idle',task:'ממתין',taskProg:0,spec:'MyFunded Research',browserUrl:'',browserContent:''},
+     {id:'f3',name:'סוכן Topstep',emoji:'📈',status:'idle',task:'ממתין',taskProg:0,spec:'Topstep Research',browserUrl:'',browserContent:''},
+     {id:'f4',name:'סוכן Take Profit',emoji:'💹',status:'idle',task:'ממתין',taskProg:0,spec:'Take Profit Trader',browserUrl:'',browserContent:''},
+     {id:'f5',name:'סוכן Lucid',emoji:'🔮',status:'idle',task:'ממתין',taskProg:0,spec:'Lucid Trading',browserUrl:'',browserContent:''},
+     {id:'f6',name:'סוכן Alpha',emoji:'🐺',status:'idle',task:'ממתין',taskProg:0,spec:'Alpha Futures',browserUrl:'',browserContent:''},
+   ]},
+  {id:'matching', name:'התאמת מסלולים', icon:'🎯', color:'#22c55e',
+   desc:'השוואת ROI, עמלות ותנאי מסחר',
+   agents:[
+     {id:'m1',name:'משווה ROI',emoji:'📊',status:'idle',task:'ממתין',taskProg:0,spec:'ROI Analysis',browserUrl:'',browserContent:''},
+     {id:'m2',name:'משווה עמלות',emoji:'💲',status:'idle',task:'ממתין',taskProg:0,spec:'Fee Comparison',browserUrl:'',browserContent:''},
+   ]},
+  {id:'research', name:'מחקר אסטרטגיות', icon:'📚', color:'#a855f7',
+   desc:'סריקת TradingView, Reddit, YouTube לאסטרטגיות',
+   agents:[
+     {id:'r1',name:'סורק TradingView',emoji:'📺',status:'idle',task:'ממתין',taskProg:0,spec:'TradingView Scanner',browserUrl:'',browserContent:''},
+     {id:'r2',name:'סורק Reddit',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'Reddit Scanner',browserUrl:'',browserContent:''},
+     {id:'r3',name:'סורק YouTube',emoji:'🎬',status:'idle',task:'ממתין',taskProg:0,spec:'YouTube Scanner',browserUrl:'',browserContent:''},
+     {id:'r4',name:'מסנן אסטרטגיות',emoji:'🔍',status:'idle',task:'ממתין',taskProg:0,spec:'Strategy Filter',browserUrl:'',browserContent:''},
+   ]},
+  {id:'deepdive', name:'העמקה באסטרטגיה', icon:'🎓', color:'#06b6d4',
+   desc:'ניתוח כללים ותיעוד מעמיק',
+   agents:[
+     {id:'d1',name:'מנתח כללים',emoji:'🧠',status:'idle',task:'ממתין',taskProg:0,spec:'Rule Analysis',browserUrl:'',browserContent:''},
+     {id:'d2',name:'מתעד',emoji:'📝',status:'idle',task:'ממתין',taskProg:0,spec:'Documentation',browserUrl:'',browserContent:''},
+   ]},
+  {id:'pinescript', name:'Pine Script Coders', icon:'⚙️', color:'#f59e0b',
+   desc:'כתיבת קוד Pine Script V5/V6',
+   agents:[
+     {id:'p1',name:'מומחה V5',emoji:'💻',status:'idle',task:'ממתין',taskProg:0,spec:'Pine V5 Expert',browserUrl:'',browserContent:''},
+     {id:'p2',name:'מומחה V6',emoji:'🖥️',status:'idle',task:'ממתין',taskProg:0,spec:'Pine V6 Expert',browserUrl:'',browserContent:''},
+     {id:'p3',name:'מנקה באגים',emoji:'🐛',status:'idle',task:'ממתין',taskProg:0,spec:'Debugging',browserUrl:'',browserContent:''},
+     {id:'p4',name:'בודק QA',emoji:'✅',status:'idle',task:'ממתין',taskProg:0,spec:'QA Testing',browserUrl:'',browserContent:''},
+     {id:'p5',name:'מייעל קוד',emoji:'⚡',status:'idle',task:'ממתין',taskProg:0,spec:'Code Optimization',browserUrl:'',browserContent:''},
+   ]},
+  {id:'chrome', name:'ניהול Chrome/TradingView', icon:'🌐', color:'#f97316',
+   desc:'הפעלת גרפים, הרצת קוד והורדת דוחות',
+   agents:[
+     {id:'c1',name:'מגדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
+     {id:'c2',name:'מנקה סביבה',emoji:'🧹',status:'idle',task:'ממתין',taskProg:0,spec:'Cleanup',browserUrl:'',browserContent:''},
+     {id:'c3',name:'מריץ קוד',emoji:'▶️',status:'idle',task:'ממתין',taskProg:0,spec:'Code Runner',browserUrl:'',browserContent:''},
+     {id:'c4',name:'מוריד דוחות',emoji:'📥',status:'idle',task:'ממתין',taskProg:0,spec:'Report Download',browserUrl:'',browserContent:''},
+   ]},
+  {id:'analysis', name:'בדיקת תוצאות', icon:'📊', color:'#ef4444',
+   desc:'ניתוח ביצועים, סיכונים והחלטות',
+   agents:[
+     {id:'a1',name:'מנתח ביצועים',emoji:'📈',status:'idle',task:'ממתין',taskProg:0,spec:'Performance',browserUrl:'',browserContent:''},
+     {id:'a2',name:'מנתח סיכונים',emoji:'⚠️',status:'idle',task:'ממתין',taskProg:0,spec:'Risk Analysis',browserUrl:'',browserContent:''},
+     {id:'a3',name:'מחליט',emoji:'🎯',status:'idle',task:'ממתין',taskProg:0,spec:'Decision Maker',browserUrl:'',browserContent:''},
+   ]},
+  {id:'paramopt', name:'ייעול פרמטרים', icon:'🔧', color:'#8b5cf6',
+   desc:'טיוב פרמטרים והשוואת גרסאות',
+   agents:[
+     {id:'po1',name:'מכוון פרמטרים',emoji:'🎛️',status:'idle',task:'ממתין',taskProg:0,spec:'Parameter Tuning',browserUrl:'',browserContent:''},
+     {id:'po2',name:'משווה גרסאות',emoji:'🔄',status:'idle',task:'ממתין',taskProg:0,spec:'Version Compare',browserUrl:'',browserContent:''},
+     {id:'po3',name:'בודק רגישות',emoji:'📐',status:'idle',task:'ממתין',taskProg:0,spec:'Sensitivity',browserUrl:'',browserContent:''},
+   ]},
+  {id:'improvement', name:'שיפור אסטרטגיות', icon:'🚀', color:'#3b82f6',
+   desc:'שיפור לוגיקה, פילטרים ושמירה בכספת',
+   agents:[
+     {id:'i1',name:'מייעל לוגיקה',emoji:'🧩',status:'idle',task:'ממתין',taskProg:0,spec:'Logic Optimization',browserUrl:'',browserContent:''},
+     {id:'i2',name:'מוסיף פילטרים',emoji:'🎯',status:'idle',task:'ממתין',taskProg:0,spec:'Filter Addition',browserUrl:'',browserContent:''},
+     {id:'i3',name:'שומר כספת',emoji:'🔐',status:'idle',task:'ממתין',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
+   ]},
+  {id:'visual', name:'עיצוב ויזואלי', icon:'🎨', color:'#f472b6',
+   desc:'עיצוב גרפים וסמנים על המסך',
+   agents:[
+     {id:'v1',name:'מעצב גרפים',emoji:'🖌️',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
+     {id:'v2',name:'סמני מסחר',emoji:'🏷️',status:'idle',task:'ממתין',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
+   ]},
+  {id:'alerts', name:'התראות ו-Auto Trading', icon:'🔔', color:'#facc15',
+   desc:'Webhooks, AutoView, 3Commas ותזמונים',
+   agents:[
+     {id:'al1',name:'מגדיר Webhooks',emoji:'🪝',status:'idle',task:'ממתין',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
+     {id:'al2',name:'סוכן AutoView',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
+     {id:'al3',name:'מתזמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
+   ]},
+];
+
+const AGENT_LOOKS = [
+  {skin:0xf0d6b4,hair:0x3d2b1f},{skin:0xd4a574,hair:0x2c1b0e},{skin:0xc68642,hair:0x854442},
+  {skin:0x8d5524,hair:0xd4a76a},{skin:0xffe0bd,hair:0x1a1a2e},{skin:0xf1c27d,hair:0x8b0000},
+  {skin:0xe0ac69,hair:0x4a3728},{skin:0xffdbac,hair:0x5c3317},{skin:0xc68642,hair:0x222222},
+  {skin:0xf5cba7,hair:0x6b3a2a},{skin:0xd5a67b,hair:0x111111},{skin:0xfcd5b0,hair:0x8b4513},
+];
+
+let selTeam=null, selAgent=null, realLog=[], timelineItems=[], eventSource=null;
+let anyAgentsRunning=false;
+let agentHistoryData={}; // agentId -> [{action,result,time,success}]
+
+// ============ THREE.JS ============
+let scene, cam, renderer, clock;
+let agentMeshes=[], roomGroups={};
+let raycaster, mouse=new THREE.Vector2();
+let hoveredAgent=null;
+let camDist=55, camTheta=Math.PI/4, camPhi=Math.PI/3.2;
+let camTarget=new THREE.Vector3(0,2,0);
+let isDragging=false, isPanning=false;
+let prevMouse={x:0,y:0};
+let targetDist=55, targetTheta=Math.PI/4, targetPhi=Math.PI/3.2;
+let targetCenter=new THREE.Vector3(0,2,0);
+
+const BW=90, BD=50, CW=5; // building width, depth, corridor width
+
+const ROOM_LAYOUT = [
+  // Top row (z positive, doors face corridor at z~2.5)
+  {id:'funding',   x:-33, z:15, w:14, h:10},
+  {id:'matching',  x:-17, z:15, w:10, h:10},
+  {id:'research',  x:-4,  z:15, w:12, h:10},
+  {id:'deepdive',  x:11,  z:15, w:10, h:10},
+  {id:'pinescript', x:24, z:15, w:12, h:10},
+  {id:'chrome',    x:38,  z:15, w:12, h:10},
+  // Bottom row (z negative, doors face corridor at z~-2.5)
+  {id:'analysis',    x:-33, z:-15, w:14, h:10},
+  {id:'paramopt',    x:-17, z:-15, w:10, h:10},
+  {id:'improvement', x:-4,  z:-15, w:12, h:10},
+  {id:'visual',      x:11,  z:-15, w:10, h:10},
+  {id:'alerts',      x:24,  z:-15, w:12, h:10},
+];
+
+function generateDeskPositions(teamId){
+  const team=TEAMS.find(t=>t.id===teamId);
+  if(!team)return[[0,0,0]];
+  const n=team.agents.length;
+  const cols=Math.ceil(Math.sqrt(n));
+  const sp=2.0;
+  const positions=[];
+  for(let i=0;i<n;i++){
+    const row=Math.floor(i/cols), col=i%cols;
+    const x=(col-(cols-1)/2)*sp;
+    const z=(row-Math.floor(n/cols)/2)*sp;
+    positions.push([x,0,z]);
+  }
+  return positions;
+}
+
+function init3D(){
+  const wrap=document.getElementById('cWrap');
+  const canvas=document.getElementById('c3d');
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x87ceeb);
+  clock=new THREE.Clock();
+
+  cam=new THREE.PerspectiveCamera(50,wrap.clientWidth/wrap.clientHeight,1,500);
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true});
+  renderer.setSize(wrap.clientWidth,wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  raycaster=new THREE.Raycaster();
+
+  // Warm lighting
+  scene.add(new THREE.AmbientLight(0xfff5e6,0.5));
+  const dir=new THREE.DirectionalLight(0xffffff,0.8);
+  dir.position.set(40,50,30);
+  dir.castShadow=true;
+  dir.shadow.mapSize.width=2048;
+  dir.shadow.mapSize.height=2048;
+  dir.shadow.camera.left=-60;
+  dir.shadow.camera.right=60;
+  dir.shadow.camera.top=40;
+  dir.shadow.camera.bottom=-40;
+  scene.add(dir);
+
+  // Hemisphere light for natural sky bounce
+  scene.add(new THREE.HemisphereLight(0x87ceeb,0x8b7355,0.3));
+
+  buildOffice();
+  buildAgents();
+
+  canvas.addEventListener('mousedown',onMD);
+  canvas.addEventListener('mousemove',onMM);
+  canvas.addEventListener('mouseup',onMU);
+  canvas.addEventListener('mouseleave',onMU);
+  canvas.addEventListener('wheel',onWH,{passive:false});
+  canvas.addEventListener('click',on3DClick);
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  window.addEventListener('resize',onRS);
+  animate();
+  connectSSE();
+}
+
+function buildOffice(){
+  // === MAIN FLOOR (wood) ===
+  const floorMat=new THREE.MeshStandardMaterial({color:0xc49a6c,roughness:0.7});
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(BW,0.3,BD),floorMat);
+  floor.position.y=-0.15;
+  floor.receiveShadow=true;
+  scene.add(floor);
+
+  // === OUTER WALLS (cream) ===
+  const wallMat=new THREE.MeshStandardMaterial({color:0xf0ebe0,roughness:0.6});
+  const wallH=3.5, wt=0.25;
+
+  // Front/Back walls
+  const fw=new THREE.Mesh(new THREE.BoxGeometry(BW,wallH,wt),wallMat);
+  fw.position.set(0,wallH/2,BD/2); fw.castShadow=true; scene.add(fw);
+  const bw=new THREE.Mesh(new THREE.BoxGeometry(BW,wallH,wt),wallMat);
+  bw.position.set(0,wallH/2,-BD/2); bw.castShadow=true; scene.add(bw);
+  // Left/Right walls
+  const lw=new THREE.Mesh(new THREE.BoxGeometry(wt,wallH,BD),wallMat);
+  lw.position.set(-BW/2,wallH/2,0); lw.castShadow=true; scene.add(lw);
+  const rw=new THREE.Mesh(new THREE.BoxGeometry(wt,wallH,BD),wallMat);
+  rw.position.set(BW/2,wallH/2,0); rw.castShadow=true; scene.add(rw);
+
+  // === CORRIDOR: warm strip ===
+  const corridorMat=new THREE.MeshStandardMaterial({color:0xb8956a,roughness:0.6});
+  const corridorFloor=new THREE.Mesh(new THREE.PlaneGeometry(BW-wt*2,CW),corridorMat);
+  corridorFloor.rotation.x=-Math.PI/2;
+  corridorFloor.position.y=0.01;
+  scene.add(corridorFloor);
+
+  // Corridor ceiling lights
+  for(let x=-35;x<=35;x+=14){
+    const lightPanel=new THREE.Mesh(
+      new THREE.BoxGeometry(3,0.08,0.5),
+      new THREE.MeshBasicMaterial({color:0xfffff0})
+    );
+    lightPanel.position.set(x,wallH-0.1,0);
+    scene.add(lightPanel);
+    const pl=new THREE.PointLight(0xfff5e6,0.15,15);
+    pl.position.set(x,wallH-0.3,0);
+    scene.add(pl);
+  }
+
+  // Corridor decorations: plants + water cooler
+  [-30,-10,10,30].forEach(x=>{
+    addPlant(x,0,CW/2-0.5);
+  });
+  addWaterCooler(20,0,CW/2-0.8);
+
+  // === ROOMS ===
+  const glassMat=new THREE.MeshStandardMaterial({color:0xaaddff,transparent:true,opacity:0.18,roughness:0.2});
+  const solidWallMat=new THREE.MeshStandardMaterial({color:0xf0ebe0,roughness:0.6});
+  const doorFrameMat=new THREE.MeshStandardMaterial({color:0x8b6f47,roughness:0.5});
+
+  ROOM_LAYOUT.forEach(rl=>{
+    const team=TEAMS.find(t=>t.id===rl.id);
+    const g=new THREE.Group();
+
+    // Room carpet (slightly different shade)
+    const carpetColors=[0xd4c4a8,0xcbb99a,0xc9b896,0xd0c0a0,0xc5b590,0xd2bc9e,0xcfb898,0xc8b494,0xd1bf9c,0xcab292,0xc7b08e];
+    const ci=ROOM_LAYOUT.indexOf(rl);
+    const carpetMat=new THREE.MeshStandardMaterial({color:carpetColors[ci%carpetColors.length],roughness:0.9});
+    const carpet=new THREE.Mesh(new THREE.PlaneGeometry(rl.w-0.5,rl.h-0.5),carpetMat);
+    carpet.rotation.x=-Math.PI/2;
+    carpet.position.y=0.02;
+    g.add(carpet);
+
+    // Team color accent strip along door wall
+    if(team){
+      const accentMat=new THREE.MeshStandardMaterial({color:team.color,emissive:team.color,emissiveIntensity:0.15});
+      const isTop=rl.z>0;
+      const strip=new THREE.Mesh(new THREE.BoxGeometry(rl.w-0.5,0.06,0.4),accentMat);
+      strip.position.set(0,0.03,isTop?-rl.h/2+0.5:rl.h/2-0.5);
+      g.add(strip);
+    }
+
+    // Walls: bottom half solid, top half glass
+    const isTop=rl.z>0;
+    const wallDefs=[
+      {pos:[0,0,-rl.h/2],size:[rl.w,wallH,wt],isDoorWall:isTop}, // back
+      {pos:[0,0,rl.h/2],size:[rl.w,wallH,wt],isDoorWall:!isTop},  // front
+      {pos:[-rl.w/2,0,0],size:[wt,wallH,rl.h],isDoorWall:false},
+      {pos:[rl.w/2,0,0],size:[wt,wallH,rl.h],isDoorWall:false},
+    ];
+    wallDefs.forEach(wd=>{
+      // Solid lower portion
+      const lowerH=1.2;
+      const lower=new THREE.Mesh(
+        new THREE.BoxGeometry(wd.size[0],lowerH,wd.size[2]),
+        solidWallMat
+      );
+      lower.position.set(wd.pos[0],lowerH/2,wd.pos[2]);
+      lower.castShadow=true;
+      g.add(lower);
+
+      // Glass upper portion
+      const upperH=wallH-lowerH;
+      const upper=new THREE.Mesh(
+        new THREE.BoxGeometry(wd.size[0],upperH,wd.size[2]),
+        glassMat
+      );
+      upper.position.set(wd.pos[0],lowerH+upperH/2,wd.pos[2]);
+      g.add(upper);
+
+      // Door opening on corridor side
+      if(wd.isDoorWall){
+        const doorW=1.2, doorH=2.4;
+        const doorMask=new THREE.Mesh(
+          new THREE.BoxGeometry(doorW,doorH,wt+0.1),
+          new THREE.MeshStandardMaterial({color:0xc49a6c}) // show floor color through
+        );
+        doorMask.position.set(0,doorH/2,wd.pos[2]);
+        g.add(doorMask);
+        // Frame
+        const ft=new THREE.Mesh(new THREE.BoxGeometry(doorW+0.15,0.08,wt+0.05),doorFrameMat);
+        ft.position.set(0,doorH+0.04,wd.pos[2]); g.add(ft);
+        const fl=new THREE.Mesh(new THREE.BoxGeometry(0.07,doorH,wt+0.05),doorFrameMat);
+        fl.position.set(-doorW/2-0.04,doorH/2,wd.pos[2]); g.add(fl);
+        const fr=new THREE.Mesh(new THREE.BoxGeometry(0.07,doorH,wt+0.05),doorFrameMat);
+        fr.position.set(doorW/2+0.04,doorH/2,wd.pos[2]); g.add(fr);
+      }
+    });
+
+    // Team banner sign above door
+    if(team){
+      const bannerMat=new THREE.MeshBasicMaterial({color:team.color});
+      const bannerZ=isTop?-rl.h/2-0.2:rl.h/2+0.2;
+      const banner=new THREE.Mesh(new THREE.BoxGeometry(rl.w*0.7,0.5,0.06),bannerMat);
+      banner.position.set(0,wallH+0.3,bannerZ);
+      g.add(banner);
+    }
+
+    // Ceiling light panels
+    const clp=new THREE.Mesh(
+      new THREE.BoxGeometry(rl.w*0.6,0.06,0.4),
+      new THREE.MeshBasicMaterial({color:0xfffff0})
+    );
+    clp.position.y=wallH-0.05;
+    g.add(clp);
+    const rLight=new THREE.PointLight(0xfff5e6,0.35,18);
+    rLight.position.set(0,wallH-0.3,0);
+    g.add(rLight);
+
+    // === FURNITURE: desks, chairs, monitors ===
+    const deskPositions=generateDeskPositions(rl.id);
+    const deskMat=new THREE.MeshStandardMaterial({color:0xe8dcc8,roughness:0.5});
+    const deskLegMat=new THREE.MeshStandardMaterial({color:0x888888,roughness:0.4});
+    const monitorMat=new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3});
+    const chairMat=new THREE.MeshStandardMaterial({color:0x333333,roughness:0.6});
+
+    deskPositions.forEach(([dx,dy,dz])=>{
+      // Desk top
+      const deskTop=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.7),deskMat);
+      deskTop.position.set(dx,0.72,dz);
+      deskTop.castShadow=true;
+      g.add(deskTop);
+      // Desk legs
+      [[-0.6,-0.3],[0.6,-0.3],[-0.6,0.3],[0.6,0.3]].forEach(([lx,lz])=>{
+        const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.7,4),deskLegMat);
+        leg.position.set(dx+lx,0.35,dz+lz);
+        g.add(leg);
+      });
+      // Monitor
+      const monitor=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.4,0.03),monitorMat);
+      monitor.position.set(dx,1.0,dz-0.2);
+      g.add(monitor);
+      // Monitor screen (light)
+      const screen=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.01),
+        new THREE.MeshBasicMaterial({color:0x1a2a4a}));
+      screen.position.set(dx,1.0,dz-0.18);
+      g.add(screen);
+      // Monitor stand
+      const stand=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.04,0.25,6),deskLegMat);
+      stand.position.set(dx,0.85,dz-0.2);
+      g.add(stand);
+      // Chair
+      const chairSeat=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.05,0.45),chairMat);
+      chairSeat.position.set(dx,0.45,dz+0.5);
+      g.add(chairSeat);
+      const chairBase=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.45,6),deskLegMat);
+      chairBase.position.set(dx,0.22,dz+0.5);
+      g.add(chairBase);
+      const chairBack=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.35,0.04),chairMat);
+      chairBack.position.set(dx,0.65,dz+0.72);
+      g.add(chairBack);
+      // Chair wheel base
+      const wheelBase=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.02,6),deskLegMat);
+      wheelBase.position.set(dx,0.01,dz+0.5);
+      g.add(wheelBase);
+    });
+
+    // Plant in room corner
+    const cornerX=rl.w/2-1;
+    const cornerZ=isTop?rl.h/2-1:-rl.h/2+1;
+    addPlantToGroup(g,cornerX,0,cornerZ);
+
+    g.position.set(rl.x,0,rl.z);
+    g.userData={teamId:rl.id,type:'room',layout:rl};
+    scene.add(g);
+    roomGroups[rl.id]=g;
+  });
+
+  // Meeting room in bottom-right corner
+  const mrx=38, mrz=-15, mrw=12, mrh=10;
+  const mrg=new THREE.Group();
+  const mrGlass=new THREE.MeshStandardMaterial({color:0xaaddff,transparent:true,opacity:0.22,roughness:0.2});
+  // Walls
+  [[0,0,-mrh/2,mrw,wallH,wt],[0,0,mrh/2,mrw,wallH,wt],[-mrw/2,0,0,wt,wallH,mrh],[mrw/2,0,0,wt,wallH,mrh]].forEach(([px,py,pz,sx,sy,sz])=>{
+    const w=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mrGlass);
+    w.position.set(px,sy/2,pz); mrg.add(w);
+  });
+  // Round table
+  const table=new THREE.Mesh(new THREE.CylinderGeometry(2,2,0.08,24),new THREE.MeshStandardMaterial({color:0xd4a76a,roughness:0.4}));
+  table.position.y=0.72; mrg.add(table);
+  const tLeg=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,0.7,8),new THREE.MeshStandardMaterial({color:0x666666}));
+  tLeg.position.y=0.35; mrg.add(tLeg);
+  // Chairs around table
+  for(let a=0;a<8;a++){
+    const angle=a*Math.PI*2/8;
+    const cx=Math.cos(angle)*2.8, cz=Math.sin(angle)*2.8;
+    const cs=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.05,0.45),new THREE.MeshStandardMaterial({color:0x333333}));
+    cs.position.set(cx,0.45,cz); mrg.add(cs);
+    const cb=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.45,4),new THREE.MeshStandardMaterial({color:0x666666}));
+    cb.position.set(cx,0.22,cz); mrg.add(cb);
+  }
+  const mSign=new THREE.Mesh(new THREE.BoxGeometry(4,0.5,0.06),new THREE.MeshBasicMaterial({color:0x94a3b8}));
+  mSign.position.set(0,wallH+0.3,mrh/2+0.2); mrg.add(mSign);
+  const mLight=new THREE.PointLight(0xfff5e6,0.3,15);
+  mLight.position.set(0,wallH-0.5,0); mrg.add(mLight);
+  mrg.position.set(mrx,0,mrz);
+  scene.add(mrg);
+}
+
+function addPlant(x,y,z){
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.08,0.8,6),new THREE.MeshStandardMaterial({color:0x5c3317}));
+  stem.position.set(x,y+0.4,z); scene.add(stem);
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.2,0.3,8),new THREE.MeshStandardMaterial({color:0x8b6f47}));
+  pot.position.set(x,y+0.15,z); scene.add(pot);
+  const leaves=new THREE.Mesh(new THREE.SphereGeometry(0.4,8,6),new THREE.MeshStandardMaterial({color:0x2d8a4e}));
+  leaves.position.set(x,y+1.0,z); leaves.castShadow=true; scene.add(leaves);
+}
+
+function addPlantToGroup(g,x,y,z){
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.06,0.6,6),new THREE.MeshStandardMaterial({color:0x5c3317}));
+  stem.position.set(x,y+0.3,z); g.add(stem);
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.15,0.25,8),new THREE.MeshStandardMaterial({color:0x8b6f47}));
+  pot.position.set(x,y+0.12,z); g.add(pot);
+  const leaves=new THREE.Mesh(new THREE.SphereGeometry(0.3,8,6),new THREE.MeshStandardMaterial({color:0x2d8a4e}));
+  leaves.position.set(x,y+0.75,z); g.add(leaves);
+}
+
+function addWaterCooler(x,y,z){
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.4,1.0,0.35),new THREE.MeshStandardMaterial({color:0xcccccc}));
+  body.position.set(x,y+0.5,z); scene.add(body);
+  const jug=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.12,0.4,8),new THREE.MeshStandardMaterial({color:0x88ccff,transparent:true,opacity:0.5}));
+  jug.position.set(x,y+1.2,z); scene.add(jug);
+}
+
+// ============ AGENTS ============
+function buildAgents(){
+  agentMeshes=[];
+  let idx=0;
+  TEAMS.forEach(team=>{
+    const rl=ROOM_LAYOUT.find(r=>r.id===team.id);
+    if(!rl)return;
+    const deskPos=generateDeskPositions(team.id);
+    team.agents.forEach((ag,i)=>{
+      const g=createHumanoid(team.color,i,idx);
+      idx++;
+      g.userData.agentId=ag.id;
+      g.userData.teamId=team.id;
+      g.userData.type='agent';
+      g.userData.agentData=ag;
+      g.userData.behavior='idle';
+      g.userData.walkSpeed=0.018;
+      g.userData.walkCycle=Math.random()*Math.PI*2;
+
+      // Start inside room
+      const startX=rl.x+(Math.random()-0.5)*(rl.w-2);
+      const startZ=rl.z+(Math.random()-0.5)*(rl.h-2);
+      g.position.set(startX,0,startZ);
+
+      g.userData.targetPos=new THREE.Vector3(startX,0,startZ);
+      g.userData.deskPositions=deskPos.map(([x,y,z])=>new THREE.Vector3(rl.x+x,0,rl.z+z));
+      g.userData.assignedDeskIdx=i%deskPos.length;
+      g.userData.roomBounds={
+        minX:rl.x-rl.w/2+0.5, maxX:rl.x+rl.w/2-0.5,
+        minZ:rl.z-rl.h/2+0.5, maxZ:rl.z+rl.h/2-0.5,
+      };
+      g.userData.roomCenter={x:rl.x,z:rl.z};
+
+      scene.add(g);
+      agentMeshes.push(g);
+    });
+  });
+}
+
+function createHumanoid(teamColor,lookIdx,agentIndex){
+  const g=new THREE.Group();
+  const look=AGENT_LOOKS[agentIndex%AGENT_LOOKS.length];
+  const skin=look.skin, hair=look.hair;
+  const tc=new THREE.Color(teamColor);
+
+  // Legs
+  const legMat=new THREE.MeshStandardMaterial({color:0x1e293b});
+  const legG=new THREE.CylinderGeometry(0.06,0.07,0.55,6);
+  const lLeg=new THREE.Mesh(legG,legMat); lLeg.position.set(-0.1,0.28,0); g.add(lLeg);
+  const rLeg=new THREE.Mesh(legG,legMat); rLeg.position.set(0.1,0.28,0); g.add(rLeg);
+  g.userData._lLeg=lLeg; g.userData._rLeg=rLeg;
+
+  // Shoes
+  const shoeMat=new THREE.MeshStandardMaterial({color:0x111827});
+  const shoeG=new THREE.BoxGeometry(0.1,0.06,0.15);
+  g.add(new THREE.Mesh(shoeG,shoeMat).translateX(-0.1).translateY(0.03).translateZ(0.02));
+  g.add(new THREE.Mesh(shoeG,shoeMat).translateX(0.1).translateY(0.03).translateZ(0.02));
+
+  // Torso
+  const shirtColor=new THREE.Color(tc).multiplyScalar(0.9+(lookIdx%3)*0.05);
+  const torso=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18,0.2,0.5,8),
+    new THREE.MeshStandardMaterial({color:shirtColor,emissive:shirtColor,emissiveIntensity:0.08})
+  );
+  torso.position.y=0.8; torso.castShadow=true; g.add(torso);
+
+  // Arms
+  const armMat=new THREE.MeshStandardMaterial({color:shirtColor.clone().multiplyScalar(0.85)});
+  const armG=new THREE.CylinderGeometry(0.04,0.05,0.45,6);
+  const lArm=new THREE.Mesh(armG,armMat); lArm.position.set(-0.25,0.75,0); lArm.rotation.z=0.15; g.add(lArm);
+  const rArm=new THREE.Mesh(armG,armMat); rArm.position.set(0.25,0.75,0); rArm.rotation.z=-0.15; g.add(rArm);
+  g.userData._lArm=lArm; g.userData._rArm=rArm;
+
+  // Hands
+  const handMat=new THREE.MeshStandardMaterial({color:skin});
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.05,6,6),handMat).translateX(-0.27).translateY(0.52));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.05,6,6),handMat).translateX(0.27).translateY(0.52));
+
+  // Neck
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.08,6),new THREE.MeshStandardMaterial({color:skin})).translateY(1.08));
+
+  // Head
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10),new THREE.MeshStandardMaterial({color:skin,roughness:0.5}));
+  head.position.y=1.25; head.castShadow=true; g.add(head);
+  g.userData._head=head;
+
+  // Hair
+  const hairMesh=new THREE.Mesh(new THREE.SphereGeometry(0.185,10,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:hair}));
+  hairMesh.position.y=1.27; g.add(hairMesh);
+
+  // Eyes
+  const eyeMat=new THREE.MeshBasicMaterial({color:0x222222});
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.02,4,4),eyeMat).translateX(-0.06).translateY(1.27).translateZ(0.16));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.02,4,4),eyeMat).translateX(0.06).translateY(1.27).translateZ(0.16));
+
+  // Status ring
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.35,0.04,8,24),new THREE.MeshBasicMaterial({color:0xeab308}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.02; g.add(ring);
+  g.userData._ring=ring;
+
+  // Status light
+  const sLight=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6),new THREE.MeshBasicMaterial({color:0xeab308}));
+  sLight.position.y=1.55; g.add(sLight);
+  g.userData._sLight=sLight;
+
+  return g;
+}
+
+// ============ SSE ============
+function connectSSE(){
+  try{
+    eventSource=new EventSource('/api/events');
+    eventSource.onopen=()=>{
+      document.getElementById('liveDot').className='live-dot on';
+    };
+    eventSource.onmessage=(e)=>{
+      try{ handleServerEvent(JSON.parse(e.data)); }catch(err){}
+    };
+    eventSource.onerror=()=>{
+      document.getElementById('liveDot').className='live-dot off';
+      if(eventSource)eventSource.close();
+      eventSource=null;
+      setTimeout(connectSSE,3000);
+    };
+  }catch(e){
+    setTimeout(connectSSE,3000);
+  }
+}
+
+function handleServerEvent(event){
+  switch(event.type){
+    case 'init':
+      Object.entries(event.data.agents||{}).forEach(([aid,state])=>applyAgentState(aid,state));
+      Object.entries(event.data.kpi||{}).forEach(([k,v])=>updateKPIDisplay(k,v));
+      if(event.data.vault&&event.data.vault.length){
+        vaultStrategies=event.data.vault;
+        if(vaultUnlocked) renderVault();
+      }
+      if(event.data.history){
+        agentHistoryData=event.data.history;
+      }
+      break;
+    case 'agent_update':
+      applyAgentState(event.data.agentId,event.data);
+      break;
+    case 'log':
+      addRealLog(event.data.icon,'rgba(59,130,246,.15)',event.data.title,event.data.desc,event.data.teamId);
+      addTimeline(event.data.title,event.data.teamId||'','wip');
+      break;
+    case 'kpi':
+      Object.entries(event.data).forEach(([k,v])=>updateKPIDisplay(k,v));
+      break;
+    case 'team_activated':
+      notify('⚡',`צוות ${event.data.teamId} הופעל - ${event.data.agentCount} סוכנים`);
+      addTimeline(`צוות ${event.data.teamId} הופעל`,event.data.teamId,'wip');
+      break;
+    case 'team_stopped':
+      notify('⏹',`צוות ${event.data.teamId} נעצר`);
+      addTimeline(`צוות ${event.data.teamId} נעצר`,event.data.teamId,'done');
+      break;
+    case 'vault_update':
+      if(event.data.strategies){
+        vaultStrategies=event.data.strategies;
+        if(vaultUnlocked) renderVault();
+      }
+      break;
+    case 'agent_history':
+      if(event.data.agentId && event.data.history){
+        agentHistoryData[event.data.agentId]=event.data.history;
+      }
+      break;
+  }
+}
+
+function applyAgentState(agentId,state){
+  TEAMS.forEach(team=>{
+    const ag=team.agents.find(a=>a.id===agentId);
+    if(ag){
+      // Check old status BEFORE overwriting
+      const oldStatus=ag.status;
+
+      // Timeline + log for status changes
+      if(state.status==='working'&&oldStatus!=='working'){
+        addRealLog('⚡','rgba(34,197,94,.15)',ag.name+' התחיל עבודה',state.task||ag.task,team.id);
+        addTimeline(ag.name+': '+(state.task||'עובד'),team.name,'wip');
+      }
+      if(state.status==='idle'&&oldStatus==='working'){
+        addRealLog('✅','rgba(34,197,94,.15)',ag.name+' סיים',state.task||'הושלם',team.id);
+        addTimeline(ag.name+' סיים',team.name,'done',state.task||'הושלם');
+        // Vault additions now handled by server via vault_update SSE events
+      }
+      // Update task progress even during working
+      if(state.status==='working'&&oldStatus==='working'&&state.task!==ag.task){
+        addRealLog('🔄','rgba(59,130,246,.12)',ag.name,state.task,team.id);
+      }
+
+      // Now update agent data
+      ag.status=state.status;
+      ag.task=state.task;
+      ag.taskProg=state.taskProg;
+      if(state.browserUrl)ag.browserUrl=state.browserUrl;
+      if(state.browserContent)ag.browserContent=state.browserContent;
+
+      const mesh=agentMeshes.find(m=>m.userData.agentId===agentId);
+      if(mesh){
+        if(state.status==='working'){
+          mesh.userData.behavior='working';
+          const dp=mesh.userData.deskPositions[mesh.userData.assignedDeskIdx];
+          if(dp) mesh.userData.targetPos=dp.clone();
+        }else{
+          mesh.userData.behavior='idle';
+          pickRandomTarget(mesh);
+        }
+      }
+    }
+  });
+  renderTeams();
+  updateTopbarButtons();
+  // Auto-refresh detail panel if this agent is currently selected
+  if(selAgent && selAgent.agentId===agentId){
+    selectAgent(selAgent.teamId, selAgent.agentId);
+  }
+}
+
+function pickRandomTarget(mesh){
+  const rb=mesh.userData.roomBounds;
+  if(!rb)return;
+  // 80% stay in room, 20% go to corridor
+  if(Math.random()<0.8){
+    mesh.userData.targetPos=new THREE.Vector3(
+      rb.minX+Math.random()*(rb.maxX-rb.minX),
+      0,
+      rb.minZ+Math.random()*(rb.maxZ-rb.minZ)
+    );
+  }else{
+    const rc=mesh.userData.roomCenter;
+    mesh.userData.targetPos=new THREE.Vector3(
+      rc.x+(Math.random()-0.5)*8,
+      0,
+      (Math.random()-0.5)*CW*0.8
+    );
+  }
+}
+
+function updateKPIDisplay(k,v){
+  const m={found:'kF',tested:'kT',approved:'kA',rejected:'kR'};
+  if(m[k])document.getElementById(m[k]).textContent=v;
+}
+
+// ============ CAMERA ============
+function updateCamera(){
+  camDist+=(targetDist-camDist)*0.08;
+  camTheta+=(targetTheta-camTheta)*0.08;
+  camPhi+=(targetPhi-camPhi)*0.08;
+  camTarget.lerp(targetCenter,0.08);
+  cam.position.set(
+    camTarget.x+camDist*Math.sin(camPhi)*Math.cos(camTheta),
+    camTarget.y+camDist*Math.cos(camPhi),
+    camTarget.z+camDist*Math.sin(camPhi)*Math.sin(camTheta)
+  );
+  cam.lookAt(camTarget);
+}
+
+function onMD(e){
+  if(e.button===2)isPanning=true;
+  else if(e.button===0)isDragging=true;
+  prevMouse={x:e.clientX,y:e.clientY};
+}
+
+function onMM(e){
+  const dx=e.clientX-prevMouse.x, dy=e.clientY-prevMouse.y;
+  if(isDragging){
+    targetTheta-=dx*0.005;
+    targetPhi=Math.max(0.15,Math.min(Math.PI/2-0.05,targetPhi-dy*0.005));
+  }
+  if(isPanning){
+    const s=targetDist*0.002;
+    const right=new THREE.Vector3();
+    cam.getWorldDirection(right).cross(cam.up).normalize();
+    targetCenter.add(right.multiplyScalar(dx*s));
+    targetCenter.y=Math.max(0,targetCenter.y-dy*s);
+  }
+  prevMouse={x:e.clientX,y:e.clientY};
+  updateHover(e);
+}
+
+function onMU(){isDragging=false;isPanning=false}
+
+function onWH(e){
+  e.preventDefault();
+  targetDist=Math.max(8,Math.min(100,targetDist+e.deltaY*0.04));
+}
+
+function updateHover(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,cam);
+  const objs=[];
+  agentMeshes.forEach(g=>g.traverse(c=>{if(c.isMesh){c._pg=g;objs.push(c)}}));
+  const hits=raycaster.intersectObjects(objs);
+  const tip=document.getElementById('tooltip3d');
+  if(hits.length>0){
+    const pg=hits[0].object._pg;
+    if(pg&&pg.userData.agentId){
+      const ad=pg.userData.agentData;
+      const team=TEAMS.find(t=>t.id===pg.userData.teamId);
+      const sc=ad.status==='working'?'var(--green)':ad.status==='idle'?'var(--yellow)':'var(--red)';
+      const st=ad.status==='working'?'⚡ עובד':ad.status==='idle'?'😴 ממתין':'❌ שגיאה';
+      tip.querySelector('.t-name').innerHTML=ad.emoji+' '+ad.name;
+      tip.querySelector('.t-team').textContent=team.name+' | '+ad.spec;
+      tip.querySelector('.t-task').textContent=ad.task;
+      tip.querySelector('.t-status').innerHTML=st;
+      tip.querySelector('.t-status').style.cssText=`background:${sc}22;color:${sc}`;
+      tip.querySelector('.t-bar .fill').style.cssText=`width:${ad.taskProg}%;background:${sc}`;
+      document.getElementById('t-prog-text').textContent=ad.taskProg>0?ad.taskProg+'%':'אין משימה';
+      tip.style.display='block';
+      const wr=document.getElementById('cWrap').getBoundingClientRect();
+      tip.style.left=(e.clientX-wr.left+15)+'px';
+      tip.style.top=(e.clientY-wr.top-10)+'px';
+      document.getElementById('c3d').style.cursor='pointer';
+      hoveredAgent=pg;
+      return;
+    }
+  }
+  tip.style.display='none';
+  if(!isDragging&&!isPanning)document.getElementById('c3d').style.cursor='grab';
+  hoveredAgent=null;
+}
+
+function on3DClick(){
+  if(!isDragging&&!isPanning&&hoveredAgent){
+    selectAgent(hoveredAgent.userData.teamId,hoveredAgent.userData.agentId);
+  }
+}
+
+function onRS(){
+  const w=document.getElementById('cWrap');
+  cam.aspect=w.clientWidth/w.clientHeight;
+  cam.updateProjectionMatrix();
+  renderer.setSize(w.clientWidth,w.clientHeight);
+}
+
+function updateRoomLabels(){
+  let html='';
+  ROOM_LAYOUT.forEach(rl=>{
+    const team=TEAMS.find(t=>t.id===rl.id);
+    if(!team)return;
+    const pos=new THREE.Vector3(rl.x,4,rl.z);
+    pos.project(cam);
+    const rect=renderer.domElement.getBoundingClientRect();
+    const x=(pos.x*0.5+0.5)*rect.width, y=(-pos.y*0.5+0.5)*rect.height;
+    if(pos.z<1&&x>-100&&x<rect.width+100&&y>-50&&y<rect.height+50){
+      const wk=team.agents.filter(a=>a.status==='working').length;
+      const sc=wk>0?'color:var(--green)':'color:var(--yellow)';
+      html+=`<div class="room-label" style="left:${x}px;top:${y}px"><div class="rl-name" style="border-color:${team.color}55">${team.icon} ${team.name}</div><div class="rl-count" style="${sc}">${wk}/${team.agents.length} פעילים</div></div>`;
+    }
+  });
+  document.getElementById('roomLabels').innerHTML=html;
+}
+
+// ============ ANIMATE ============
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  updateCamera();
+
+  agentMeshes.forEach(mesh=>{
+    const ad=mesh.userData.agentData;
+    if(!ad)return;
+    const behavior=mesh.userData.behavior||'idle';
+
+    if(behavior==='idle'){
+      // Reset seated state
+      if(mesh.userData._seated){
+        mesh.userData._seated=false;
+        mesh.userData._lArm.rotation.z=0.15;
+        mesh.userData._rArm.rotation.z=-0.15;
+      }
+      const diff=mesh.userData.targetPos.clone().sub(mesh.position);
+      if(diff.length()>0.15){
+        const dir=diff.normalize().multiplyScalar(mesh.userData.walkSpeed);
+        mesh.position.add(dir);
+        mesh.lookAt(mesh.userData.targetPos.x,mesh.position.y,mesh.userData.targetPos.z);
+        mesh.userData.walkCycle+=0.12;
+        const swing=Math.sin(mesh.userData.walkCycle);
+        mesh.userData._lLeg.rotation.x=swing*0.5;
+        mesh.userData._rLeg.rotation.x=-swing*0.5;
+        mesh.userData._lArm.rotation.x=-swing*0.3;
+        mesh.userData._rArm.rotation.x=swing*0.3;
+      }else{
+        mesh.userData._lLeg.rotation.x=0;
+        mesh.userData._rLeg.rotation.x=0;
+        mesh.userData._lArm.rotation.x=0;
+        mesh.userData._rArm.rotation.x=0;
+        if(Math.random()<0.005) pickRandomTarget(mesh);
+      }
+    }else if(behavior==='working'){
+      const dp=mesh.userData.deskPositions[mesh.userData.assignedDeskIdx];
+      const diff=dp?dp.clone().sub(mesh.position):mesh.userData.targetPos.clone().sub(mesh.position);
+      if(diff.length()>0.3){
+        // Walking to desk
+        const dir=diff.normalize().multiplyScalar(mesh.userData.walkSpeed*1.5);
+        mesh.position.add(dir);
+        mesh.lookAt(dp?dp.x:mesh.userData.targetPos.x,mesh.position.y,dp?dp.z:mesh.userData.targetPos.z);
+        mesh.userData.walkCycle+=0.15;
+        const swing=Math.sin(mesh.userData.walkCycle);
+        mesh.userData._lLeg.rotation.x=swing*0.5;
+        mesh.userData._rLeg.rotation.x=-swing*0.5;
+        mesh.userData._lArm.rotation.x=-swing*0.3;
+        mesh.userData._rArm.rotation.x=swing*0.3;
+        mesh.userData._seated=false;
+      }else{
+        // Seated at desk — typing animation
+        if(!mesh.userData._seated){
+          mesh.userData._seated=true;
+          // Face the desk (toward negative Z in room local space)
+          if(dp) mesh.lookAt(dp.x,mesh.position.y,dp.z-1);
+        }
+        // Sitting pose: legs bent forward, body slightly lower
+        mesh.userData._lLeg.rotation.x=-0.9;
+        mesh.userData._rLeg.rotation.x=-0.9;
+        // Active typing: arms move rhythmically
+        mesh.userData._lArm.rotation.x=-0.6+Math.sin(t*8+mesh.userData.walkCycle)*0.15;
+        mesh.userData._rArm.rotation.x=-0.6+Math.sin(t*8+mesh.userData.walkCycle+1.5)*0.15;
+        mesh.userData._lArm.rotation.z=0.3;
+        mesh.userData._rArm.rotation.z=-0.3;
+        // Subtle head bob while working
+        if(mesh.userData._head) mesh.userData._head.rotation.x=Math.sin(t*2)*0.03;
+      }
+    }
+
+    // Status colors (direct refs - no traverse needed)
+    const sColor=ad.status==='working'?0x22c55e:ad.status==='idle'?0xeab308:0xef4444;
+    if(mesh.userData._sLight){
+      mesh.userData._sLight.material.color.setHex(sColor);
+      if(ad.status==='working') mesh.userData._sLight.position.y=1.55+Math.sin(t*4)*0.02;
+    }
+    if(mesh.userData._ring){
+      const s=1+Math.sin(t*3)*0.08;
+      mesh.userData._ring.scale.set(s,s,s);
+      mesh.userData._ring.material.color.setHex(sColor);
+    }
+  });
+
+  renderer.render(scene,cam);
+  // Throttle room labels update to every 5 frames
+  if(!window._rlFrame) window._rlFrame=0;
+  if(++window._rlFrame%5===0) updateRoomLabels();
+}
+
+function setView(btn,view){
+  document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  switch(view){
+    case 'office':targetDist=55;targetTheta=Math.PI/4;targetPhi=Math.PI/3.2;targetCenter.set(0,2,0);break;
+    case 'top':targetDist=80;targetTheta=0;targetPhi=0.15;targetCenter.set(0,0,0);break;
+    case 'focus':if(selTeam){const rl=ROOM_LAYOUT.find(r=>r.id===selTeam);if(rl){targetCenter.set(rl.x,1,rl.z);targetDist=22;targetPhi=Math.PI/3.5}}break;
+  }
+}
+
+// ============ TOPBAR ============
+function updateTopbarButtons(){
+  anyAgentsRunning=TEAMS.some(t=>t.agents.some(a=>a.status==='working'));
+  document.getElementById('btnStopAll').classList.toggle('hidden',!anyAgentsRunning);
+}
+
+// ============ UI ============
+function renderTeams(){
+  let total=0;
+  document.getElementById('teamsList').innerHTML=TEAMS.map(team=>{
+    const wk=team.agents.filter(a=>a.status==='working').length;
+    total+=team.agents.length;
+    const st=wk>0?'working':'idle';
+    return `<div class="tcard ${selTeam===team.id?'active':''}" style="border-right-color:${team.color}" onclick="selectTeam('${team.id}')">
+      <div class="hdr"><span class="nm">${team.icon} ${team.name}</span><span class="st ${st}">${wk>0?'⚡ עובד':'😴 ממתין'}</span></div>
+      <div class="desc">${team.desc}</div>
+      <div class="agents-row">${team.agents.map(a=>{
+        const sc=a.status==='working'?'var(--green)':a.status==='idle'?'var(--yellow)':'var(--red)';
+        return `<div class="mini-agent" style="background:${team.color}18" onclick="event.stopPropagation();selectAgent('${team.id}','${a.id}')" title="${a.name} [${a.spec}] - ${a.task}">${a.emoji}<div class="dot" style="background:${sc}"></div></div>`;
+      }).join('')}</div>
+      <div class="info-row"><span>${wk}/${team.agents.length} פעילים</span></div>
+      <div class="bar"><div class="fill" style="width:${wk>0?Math.round((wk/team.agents.length)*100):0}%;background:${team.color}"></div></div>
+      <div class="agent-ctrl">
+        <button class="ctrl-btn ${wk>0?'active-ctrl':''}" onclick="event.stopPropagation();activateTeam('${team.id}')">⚡ הפעל</button>
+        <button class="ctrl-btn" onclick="event.stopPropagation();stopTeam('${team.id}')">⏹ עצור</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('kAg').textContent=total;
+  updateTopbarButtons();
+}
+
+function startAll(){
+  fetch('/api/start-all').catch(e=>console.log('Start-all failed:',e));
+  notify('▶','בקשה להפעלת כל הצוותים נשלחה לשרת');
+}
+
+function stopAll(){
+  fetch('/api/stop-all').catch(e=>console.log('Stop-all failed:',e));
+  notify('⏹','בקשה לעצירת כל הצוותים נשלחה לשרת');
+}
+
+function activateTeam(tid){
+  fetch('/api/start/'+tid).catch(e=>console.log('Activate failed:',e));
+  const team=TEAMS.find(t=>t.id===tid);
+  notify('⚡',`בקשה להפעלת ${team.name} נשלחה`);
+}
+
+function stopTeam(tid){
+  fetch('/api/stop/'+tid).catch(e=>console.log('Stop failed:',e));
+  const team=TEAMS.find(t=>t.id===tid);
+  notify('⏹',`בקשה לעצירת ${team.name} נשלחה`);
+}
+
+function selectTeam(tid){
+  selTeam=tid;
+  renderTeams();
+  const rl=ROOM_LAYOUT.find(r=>r.id===tid);
+  if(rl){targetCenter.set(rl.x,1,rl.z);targetDist=22;targetPhi=Math.PI/3.2}
+}
+
+function selectAgent(tid,aid){
+  selAgent={teamId:tid,agentId:aid};
+  selTeam=tid;
+  renderTeams();
+  const team=TEAMS.find(t=>t.id===tid), ag=team.agents.find(a=>a.id===aid);
+  const sc=ag.status==='working'?'var(--green)':ag.status==='idle'?'var(--yellow)':'var(--red)';
+  const st=ag.status==='working'?'⚡ עובד':ag.status==='idle'?'😴 ממתין':'❌ שגיאה';
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelector('[data-t="detail"]').classList.add('on');
+  document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tp-detail').classList.add('on');
+
+  const browserUrl=ag.browserUrl||'about:blank';
+  const browserContent=ag.browserContent||'<div style="color:var(--dim);text-align:center;padding:20px">ממתין לפעילות...</div>';
+
+  // Get last action from history
+  const hist=agentHistoryData[aid]||[];
+  const lastAction=hist.length>0?hist[hist.length-1]:null;
+  let lastActionHtml='';
+  if(lastAction){
+    const laSc=lastAction.success?'var(--green)':'var(--red)';
+    lastActionHtml=`<div class="ainfo" style="background:var(--bg);padding:8px;border-radius:6px;margin-top:6px;border-right:3px solid ${laSc}">
+      <div class="lbl">פעולה אחרונה</div>
+      <div class="val" style="font-size:11px">${lastAction.action}</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px;line-height:1.3">${lastAction.result}</div>
+      <div style="font-size:9px;color:var(--dim);margin-top:3px">${lastAction.time} | ${lastAction.success?'✅ הצלחה':'❌ שגיאה'}</div>
+    </div>`;
+  }
+
+  document.getElementById('agDetail').innerHTML=`
+    <div class="ahero"><div class="big" style="background:${team.color}18;border-color:${team.color}">${ag.emoji}</div>
+    <h3>${ag.name}</h3><p>${team.name} | ${ag.spec}</p>
+    <div style="margin-top:6px"><span class="st ${ag.status}" style="font-size:12px">${st}</span></div></div>
+    <div class="ainfo"><div class="lbl">משימה נוכחית</div><div class="val">${ag.task}</div>
+      <div class="aprog"><div class="pbar"><div class="pfill" style="width:${ag.taskProg}%;background:${sc}"></div></div>
+      <div class="plbl"><span>${ag.taskProg>0?ag.taskProg+'%':'אין משימה'}</span></div></div>
+    </div>
+    <div class="ainfo"><div class="lbl">התמחות</div><div class="val">${ag.spec}</div></div>
+    ${lastActionHtml}
+    <button class="btn" onclick="openHistory('${aid}','${ag.name}')" style="width:100%;justify-content:center;margin-top:8px">📜 היסטוריה מלאה (${hist.length} פעולות)</button>
+    <div class="bprev"><div class="bbar"><div class="dots"><span style="background:var(--red)"></span><span style="background:var(--yellow)"></span><span style="background:var(--green)"></span></div><div class="url">${browserUrl}</div></div>
+    <div class="bbody">${browserContent}</div></div>`;
+
+  const mesh=agentMeshes.find(m=>m.userData.agentId===aid);
+  if(mesh){targetCenter.set(mesh.position.x,1,mesh.position.z);targetDist=10;targetPhi=Math.PI/3.5}
+}
+
+function swTab(el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tp-'+el.dataset.t).classList.add('on');
+}
+
+function addRealLog(icon,bg,title,desc,teamId){
+  realLog.unshift({icon,bg,title,desc,teamId,time:new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+  if(realLog.length>80)realLog.pop();
+  renderLog();
+}
+
+function renderLog(){
+  if(!realLog.length){document.getElementById('actLog').innerHTML='<p style="text-align:center;color:var(--dim);padding:30px">😴 אין פעילות - הפעל צוות</p>';return}
+  document.getElementById('actLog').innerHTML=realLog.slice(0,30).map(l=>
+    `<div class="log" onclick="selectTeam('${l.teamId}')"><div class="ico" style="background:${l.bg}">${l.icon}</div><div class="body"><div class="ttl">${l.title}</div><div class="dsc">${l.desc}</div><div class="tm">${l.time}</div></div></div>`
+  ).join('');
+}
+
+function getTeamColor(teamName){
+  const t=TEAMS.find(t=>t.name===teamName||t.id===teamName);
+  return t?t.color:'var(--accent)';
+}
+
+function addTimeline(title,team,status,decision,success){
+  // Merge with existing if same agent+wip then done (avoid duplication)
+  const lastIdx=timelineItems.length-1;
+  if(status==='done'&&lastIdx>=0&&timelineItems[lastIdx].status==='wip'){
+    // Check if it's the same agent (same title prefix)
+    const lastAgent=timelineItems[lastIdx].title.split(':')[0];
+    const thisAgent=title.split(' ')[0]+' '+title.split(' ')[1];
+    if(lastAgent && title.includes(lastAgent.trim())){
+      // Merge: update the existing item instead of creating new
+      timelineItems[lastIdx].status='done';
+      timelineItems[lastIdx].decision=decision||'';
+      timelineItems[lastIdx].success=success!==undefined?success:true;
+      timelineItems[lastIdx].title=title;
+      timelineItems[lastIdx].endTime=new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      renderTimeline();
+      return;
+    }
+  }
+  timelineItems.push({
+    time:new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    title,team,status,decision:decision||'',
+    success:success!==undefined?success:status==='done',
+    teamColor:getTeamColor(team)
+  });
+  if(timelineItems.length>80)timelineItems.shift();
+  renderTimeline();
+}
+
+function renderTimeline(){
+  const el=document.getElementById('timeline');
+  if(!timelineItems.length){el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px;font-size:11px">אין אירועים עדיין - הפעל את הסוכנים</p>';return}
+  let html='';
+  timelineItems.forEach((item,i)=>{
+    const tc=item.teamColor||getTeamColor(item.team);
+    const isDone=item.status==='done';
+    const isWip=item.status==='wip';
+    const resultIcon=isDone?(item.success!==false?'✅':'❌'):isWip?'⚡':'⏳';
+    const resultText=isDone?(item.success!==false?'הצליח':'נכשל'):isWip?'בתהליך':'ממתין';
+    if(i>0) html+='<div class="tline-connector"></div>';
+    html+=`<div class="titem expandable" style="border-top-color:${tc}" onclick="this.classList.toggle('expanded')">
+      <div class="tt">${item.time}${item.endTime?' → '+item.endTime:''}</div>
+      <div class="tn">${item.title}</div>
+      <div class="tteam" style="color:${tc}">${item.team}</div>
+      <div class="t-result" style="color:${isDone?(item.success!==false?'var(--green)':'var(--red)'):'var(--accent)'}">${resultIcon} ${resultText}</div>
+      ${item.decision?`<div class="t-expand"><div style="color:var(--text);margin-bottom:4px;font-weight:500">סיכום:</div><div>${item.decision}</div></div>`:''}
+    </div>`;
+  });
+  el.innerHTML=html;
+  el.scrollLeft=el.scrollWidth;
+}
+
+function notify(icon,text){
+  const n=document.getElementById('notif');
+  document.getElementById('nIco').innerHTML=icon;
+  document.getElementById('nTxt').textContent=text;
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),3000);
+}
+
+// ============ VAULT ============
+const VAULT_PASSWORD='1234';
+let vaultUnlocked=false;
+let vaultStrategies=[];
+
+function unlockVault(){
+  const pass=document.getElementById('vaultPass').value;
+  if(pass===VAULT_PASSWORD){
+    vaultUnlocked=true;
+    document.getElementById('vaultLocked').style.display='none';
+    document.getElementById('vaultContent').style.display='block';
+    document.getElementById('vaultErr').style.display='none';
+    renderVault();
+  }else{
+    document.getElementById('vaultErr').style.display='block';
+    document.getElementById('vaultPass').value='';
+  }
+}
+
+function addToVault(agentName, task, teamName){
+  const strategy={
+    name:task.replace(/סיים.*?-\s*/,'').replace(/נמצאו|אושרה?|מוכן/g,'').trim()||'אסטרטגיה חדשה',
+    source:agentName+' ('+teamName+')',
+    date:new Date().toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    winRate:Math.floor(55+Math.random()*25),
+    profitFactor:(1.5+Math.random()*2).toFixed(1),
+    maxDD:Math.floor(5+Math.random()*15),
+    trades:Math.floor(500+Math.random()*5000),
+    status:Math.random()>0.3?'approved':'pending',
+    code:generateSampleCode(task),
+  };
+  vaultStrategies.unshift(strategy);
+  if(vaultUnlocked) renderVault();
+  notify('🏆','אסטרטגיה חדשה נוספה לכספת: '+strategy.name);
+}
+
+function generateSampleCode(task){
+  if(task.includes('ORB')||task.includes('Breakout'))
+    return '//@version=6\nstrategy("ORB Breakout", overlay=true)\norbHigh = ta.highest(high, 6)\norbLow = ta.lowest(low, 6)\nif ta.crossover(close, orbHigh)\n    strategy.entry("Long", strategy.long)\nif ta.crossunder(close, orbLow)\n    strategy.entry("Short", strategy.short)';
+  if(task.includes('VWAP'))
+    return '//@version=5\nstrategy("VWAP Reclaim", overlay=true)\nvwapVal = ta.vwap(hlc3)\nif ta.crossover(close, vwapVal)\n    strategy.entry("Long", strategy.long)\nstrategy.exit("TP", profit=15, loss=8)';
+  return '//@version=6\nstrategy("Auto Strategy", overlay=true)\nfast = ta.ema(close, 9)\nslow = ta.ema(close, 21)\nif ta.crossover(fast, slow)\n    strategy.entry("Long", strategy.long)\nif ta.crossunder(fast, slow)\n    strategy.entry("Short", strategy.short)';
+}
+
+function renderVault(){
+  document.getElementById('vaultCount').textContent=vaultStrategies.length+' אסטרטגיות';
+  if(!vaultStrategies.length){
+    document.getElementById('vaultList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">עדיין אין אסטרטגיות בכספת.<br>הפעל את הסוכנים כדי למצוא ולאשר אסטרטגיות.</p>';
+    return;
+  }
+  document.getElementById('vaultList').innerHTML=vaultStrategies.map((s,i)=>{
+    const wrClass=s.winRate>65?'good':'warn';
+    const pfClass=parseFloat(s.profitFactor)>2?'good':'warn';
+    const ddClass=s.maxDD<12?'good':'warn';
+    const statusIcon=s.status==='approved'?'✅':'⏳';
+    return `<div class="vault-card" onclick="this.classList.toggle('expanded')">
+      <div class="vc-hdr"><span class="vc-name">${statusIcon} ${s.name}</span><span class="vc-date">${s.date}</span></div>
+      <div class="vc-source">מקור: ${s.source}</div>
+      ${s.asset?`<div style="font-size:9px;color:var(--cyan);margin-bottom:4px">📊 ${s.asset} | ⏱ ${s.timeframe||'N/A'} | 📅 ${s.testRange||'N/A'}${s.sharpe?' | Sharpe: '+s.sharpe:''}</div>`:''}
+      <div class="vc-metrics">
+        <span class="vc-m ${wrClass}">WR: ${s.winRate}%</span>
+        <span class="vc-m ${pfClass}">PF: ${s.profitFactor}</span>
+        <span class="vc-m ${ddClass}">DD: ${s.maxDD}%</span>
+        <span class="vc-m">עסקאות: ${s.trades.toLocaleString()}</span>
+      </div>
+      <div class="vc-detail">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:500;color:var(--text)">קוד Pine Script:</span>
+          <button class="btn" onclick="event.stopPropagation();copyPineScript(${i})" style="padding:3px 10px;font-size:10px">📋 העתק קוד</button>
+        </div>
+        ${s.decision?'<div style="font-size:10px;color:var(--cyan);margin-bottom:4px">החלטה: '+s.decision+'</div>':''}
+        <div class="vc-code">${s.code}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openHistory(agentId, agentName){
+  document.getElementById('histTitle').textContent='📜 היסטוריה: '+agentName;
+  const hist=agentHistoryData[agentId]||[];
+  if(!hist.length){
+    document.getElementById('histContent').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px">אין היסטוריה עדיין</p>';
+  }else{
+    document.getElementById('histContent').innerHTML=hist.slice().reverse().map(h=>{
+      return `<div class="hist-entry ${h.success?'success':'fail'}">
+        <div class="he-time">${h.time}</div>
+        <div class="he-action">${h.success?'✅':'❌'} ${h.action}</div>
+        <div class="he-result">${h.result}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('historyPanel').classList.add('open');
+}
+
+function closeHistory(){
+  document.getElementById('historyPanel').classList.remove('open');
+}
+
+function copyPineScript(idx){
+  const s=vaultStrategies[idx];
+  if(!s)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(s.code).then(()=>{
+      notify('📋','קוד Pine Script הועתק ללוח!');
+    }).catch(()=>{
+      fallbackCopy(s.code);
+    });
+  }else{
+    fallbackCopy(s.code);
+  }
+}
+
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');notify('📋','קוד Pine Script הועתק ללוח!')}
+  catch(e){notify('❌','לא ניתן להעתיק')}
+  document.body.removeChild(ta);
+}
+
+// Load vault from server on init
+function loadVaultFromServer(){
+  fetch('/api/vault').then(r=>r.json()).then(data=>{
+    if(data.strategies&&data.strategies.length){
+      vaultStrategies=data.strategies;
+      if(vaultUnlocked) renderVault();
+    }
+  }).catch(()=>{});
+}
+
+window.AgentOffice={
+  setAgentStatus(agentId,status,task,progress){
+    TEAMS.forEach(team=>{
+      const ag=team.agents.find(a=>a.id===agentId);
+      if(ag){
+        const old=ag.status;
+        ag.status=status;
+        if(task)ag.task=task;
+        if(progress!==undefined)ag.taskProg=progress;
+        renderTeams();
+        if(status==='working'&&old!=='working')addRealLog('⚡','rgba(34,197,94,.15)',ag.name+' התחיל',task||ag.task,team.id);
+        if(status==='idle'&&old==='working')addRealLog('✅','rgba(34,197,94,.15)',ag.name+' סיים',task||'הושלם',team.id);
+      }
+    });
+  },
+  activateTeam,stopTeam,
+  getTeams(){return TEAMS},
+  log(icon,title,desc,tid){addRealLog(icon,'rgba(59,130,246,.15)',title,desc,tid)},
+  updateKPI(k,v){updateKPIDisplay(k,v)},
+  notify
+};
+
+// ============ INIT ============
+init3D();
+renderTeams();
+renderLog();
+renderTimeline();
+loadVaultFromServer();
+
+// Server health check on load
+fetch('/api/state').then(r=>r.json()).then(data=>{
+  document.getElementById('liveDot').className='live-dot on';
+  if(data.agents){
+    Object.entries(data.agents).forEach(([aid,state])=>applyAgentState(aid,state));
+  }
+  if(data.kpi){
+    Object.entries(data.kpi).forEach(([k,v])=>updateKPIDisplay(k,v));
+  }
+  if(data.vault&&data.vault.length){
+    vaultStrategies=data.vault;
+    if(vaultUnlocked) renderVault();
+  }
+  if(data.history){
+    agentHistoryData=data.history;
+  }
+}).catch(()=>{
+  document.getElementById('liveDot').className='live-dot off';
+});
+</script>
+</body>
+</html>
