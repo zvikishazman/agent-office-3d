@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Office 3D - מרכז שליטה</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
@@ -1520,12 +1521,14 @@ function renderVault(){
       </div>
       ${s.decision?'<div style="font-size:10px;color:var(--cyan);margin-top:4px">החלטה: '+s.decision+'</div>':''}
       <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
         <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">📋 העתק V5</button>
         <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">📋 העתק V6</button>
-        <button class="btn" onclick="event.stopPropagation();downloadReport(${i})" style="padding:3px 8px;font-size:10px">📥 הורד דוח</button>
+        <button class="btn" onclick="event.stopPropagation();downloadReport(${i})" style="padding:3px 8px;font-size:10px">📊 הורד Excel</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('')+'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="downloadAllReports()" style="padding:6px 16px;font-size:11px;background:var(--accent)">📊 הורד דוח Excel מלא (כל האסטרטגיות)</button></div>';
+}
 }
 
 function openHistory(agentId, agentName){
@@ -1567,29 +1570,73 @@ function copyVaultCode(idx,version){
 function downloadReport(idx){
   const s=vaultStrategies[idx];
   if(!s)return;
-  let report='=== דוח אסטרטגיה ===\n\n';
-  report+='שם: '+s.name+'\n';
-  report+='מקור: '+s.source+'\n';
-  report+='תאריך: '+s.date+'\n';
-  report+='סטטוס: '+(s.status==='approved'?'מאושר':'ממתין')+'\n\n';
-  report+='=== נתוני ביצועים ===\n';
-  report+='Win Rate: '+s.winRate+'%\n';
-  report+='Profit Factor: '+s.profitFactor+'\n';
-  report+='Max Drawdown: '+s.maxDD+'%\n';
-  report+='עסקאות: '+s.trades+'\n';
-  if(s.asset) report+='נכס: '+s.asset+'\n';
-  if(s.timeframe) report+='טיימפריים: '+s.timeframe+'\n';
-  if(s.testRange) report+='תקופת בדיקה: '+s.testRange+'\n';
-  if(s.sharpe) report+='Sharpe Ratio: '+s.sharpe+'\n';
-  if(s.decision) report+='\nהחלטה: '+s.decision+'\n';
-  report+='\n=== Pine Script V6 ===\n'+(s.code_v6||s.code||'N/A')+'\n';
-  report+='\n=== Pine Script V5 ===\n'+(s.code_v5||s.code||'N/A')+'\n';
-  const blob=new Blob([report],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=(s.name||'strategy').replace(/\s+/g,'_')+'_report.txt';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  notify('📥','דוח הורד בהצלחה!');
+  if(typeof XLSX==='undefined'){notify('❌','SheetJS לא נטען');return}
+  const wb=XLSX.utils.book_new();
+  // Summary sheet
+  const summaryData=[
+    ['דוח אסטרטגיה',''],
+    ['',''],
+    ['שם',s.name],
+    ['מקור',s.source],
+    ['תאריך',s.date],
+    ['סטטוס',s.status==='approved'?'מאושר':'ממתין'],
+    ['',''],
+    ['נתוני ביצועים',''],
+    ['Win Rate',s.winRate+'%'],
+    ['Profit Factor',s.profitFactor],
+    ['Max Drawdown',s.maxDD+'%'],
+    ['עסקאות',s.trades],
+    ['נכס',s.asset||'N/A'],
+    ['טיימפריים',s.timeframe||'N/A'],
+    ['תקופת בדיקה',s.testRange||'N/A'],
+    ['Sharpe Ratio',s.sharpe||'N/A'],
+    ['',''],
+    ['החלטה',s.decision||''],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(summaryData);
+  ws['!cols']=[{wch:18},{wch:45}];
+  XLSX.utils.book_append_sheet(wb,ws,'סיכום');
+  // Pine V6 sheet
+  const v6Lines=(s.code_v6||s.code||'N/A').split('\n').map(l=>[l]);
+  v6Lines.unshift(['Pine Script V6']);
+  const wsV6=XLSX.utils.aoa_to_sheet(v6Lines);
+  wsV6['!cols']=[{wch:80}];
+  XLSX.utils.book_append_sheet(wb,wsV6,'Pine V6');
+  // Pine V5 sheet
+  const v5Lines=(s.code_v5||s.code||'N/A').split('\n').map(l=>[l]);
+  v5Lines.unshift(['Pine Script V5']);
+  const wsV5=XLSX.utils.aoa_to_sheet(v5Lines);
+  wsV5['!cols']=[{wch:80}];
+  XLSX.utils.book_append_sheet(wb,wsV5,'Pine V5');
+  XLSX.writeFile(wb,(s.name||'strategy').replace(/\s+/g,'_')+'_report.xlsx');
+  notify('📥','דוח Excel הורד בהצלחה!');
+}
+
+function downloadAllReports(){
+  if(!vaultStrategies.length){notify('❌','אין אסטרטגיות בכספת');return}
+  if(typeof XLSX==='undefined'){notify('❌','SheetJS לא נטען');return}
+  const wb=XLSX.utils.book_new();
+  // All strategies summary sheet
+  const header=['שם','מקור','תאריך','סטטוס','Win Rate','Profit Factor','Max DD','עסקאות','נכס','טיימפריים','Sharpe','החלטה'];
+  const rows=vaultStrategies.map(s=>[
+    s.name,s.source,s.date,s.status==='approved'?'מאושר':'ממתין',
+    s.winRate+'%',s.profitFactor,s.maxDD+'%',s.trades,
+    s.asset||'',s.timeframe||'',s.sharpe||'',s.decision||''
+  ]);
+  rows.unshift(header);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=header.map(()=>({wch:16}));
+  XLSX.utils.book_append_sheet(wb,ws,'כל האסטרטגיות');
+  // Individual code sheets
+  vaultStrategies.forEach((s,i)=>{
+    const name=(s.name||'Strategy '+(i+1)).substring(0,28);
+    const codeData=[['Pine Script V6'],[s.code_v6||s.code||'N/A'],[''],['Pine Script V5'],[s.code_v5||s.code||'N/A']];
+    const wsc=XLSX.utils.aoa_to_sheet(codeData);
+    wsc['!cols']=[{wch:80}];
+    XLSX.utils.book_append_sheet(wb,wsc,name.substring(0,31));
+  });
+  XLSX.writeFile(wb,'vault_report_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  notify('📥','דוח Excel מלא הורד!');
 }
 
 function fallbackCopy(text){
