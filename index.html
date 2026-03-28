@@ -146,6 +146,13 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .vault-card .vc-detail{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
 .vault-card.expanded .vc-detail{display:block}
 .vault-card .vc-code{background:var(--card);padding:6px;border-radius:4px;font-family:monospace;font-size:9px;color:#c9d1d9;max-height:120px;overflow-y:auto;margin-top:4px;white-space:pre-wrap;direction:ltr;text-align:left}
+.error-card{background:var(--panel);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px;margin-bottom:8px;border-right:3px solid var(--red)}
+.error-card .ec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.error-card .ec-agent{font-size:12px;font-weight:600;color:var(--text)}
+.error-card .ec-time{font-size:9px;color:var(--dim)}
+.error-card .ec-action{font-size:11px;color:var(--cyan);margin-bottom:4px}
+.error-card .ec-error{font-size:11px;color:var(--red);line-height:1.4}
+.error-card .ec-suggestion{font-size:10px;color:var(--yellow);margin-top:4px;padding:4px 6px;background:rgba(234,179,8,.08);border-radius:4px}
 .notif{position:fixed;bottom:20px;left:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px;z-index:300;transform:translateY(120px);transition:transform .3s;backdrop-filter:blur(8px)}
 .notif.show{transform:translateY(0)}
 .notif #nIco{font-size:18px}
@@ -195,16 +202,24 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
     <div class="tabs">
       <div class="tab on" data-t="log" onclick="swTab(this)">📋 פעילות</div>
       <div class="tab" data-t="detail" onclick="swTab(this)">👤 פרטים</div>
-      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כספת</div>
+      <div class="tab" data-t="errors" onclick="swTab(this)">⚠️ שגיאות</div>
+      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כסשת</div>
     </div>
     <div id="tp-log" class="tpanel on"><div id="actLog"></div></div>
     <div id="tp-detail" class="tpanel"><div id="agDetail" style="text-align:center;color:var(--dim);padding:20px">בחר סוכן לצפייה בפרטים</div></div>
+    <div id="tp-errors" class="tpanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600">⚠️ שגיאות סוכנים</span>
+        <span id="errorCount" style="font-size:10px;color:var(--dim)">0 שגיאות</span>
+      </div>
+      <div id="errorsList"></div>
+    </div>
     <div id="tp-vault" class="tpanel">
       <div id="vaultLocked" style="text-align:center;padding:30px">
         <div style="font-size:40px;margin-bottom:10px">🔐</div>
         <div style="font-size:14px;font-weight:600;margin-bottom:6px">כספת אסטרטגיות</div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הזן סיסמה לצפייה באסטרטגיות שאושרו</div>
-        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הוןסיסמה לפתיחה באסטרטגיות שאושרו</div>
+        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',s-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
         <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כספת</button>
         <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">סיסמה שגויה</div>
       </div>
@@ -225,7 +240,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <div class="notif" id="notif"><div id="nIco"></div><div id="nTxt"></div></div>
 <div class="history-panel" id="historyPanel">
   <div class="hp-header">
-    <div class="hp-title" id="histTitle">📜 היסטוריית סוכן</div>
+    <div class="hp-title" id="histTitle">📜 היסטורייt סוכן</div>
     <div class="hp-close" onclick="closeHistory()">✕</div>
   </div>
   <div id="histContent"></div>
@@ -234,8 +249,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <script>
 // ============ DATA ============
 const TEAMS = [
-  {id:'funding', name:'מחקר חברות מימון', icon:'💰', color:'#ec4899',
-   desc:'סריקה ומחקר של חברות מימון וכללי מסחר',
+  {id:'funding', name:'מחקר חברות מיצון', icon:'💰', color:'#ec4899',
+   desc:'סריקה ומחקר של חברות מיצון וכלכלי מסחר',
    agents:[
      {id:'f1',name:'סוכן FTMO',emoji:'🏦',status:'idle',task:'ממתין',taskProg:0,spec:'FTMO Research',browserUrl:'',browserContent:''},
      {id:'f2',name:'סוכן MyFunded',emoji:'💳',status:'idle',task:'ממתין',taskProg:0,spec:'MyFunded Research',browserUrl:'',browserContent:''},
@@ -276,7 +291,7 @@ const TEAMS = [
   {id:'chrome', name:'ניהול Chrome/TradingView', icon:'🌐', color:'#f97316',
    desc:'הפעלת גרפים, הרצת קוד והורדת דוחות',
    agents:[
-     {id:'c1',name:'מגדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
+     {id:'c1',name:'מאדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
      {id:'c2',name:'מנקה סביבה',emoji:'🧹',status:'idle',task:'ממתין',taskProg:0,spec:'Cleanup',browserUrl:'',browserContent:''},
      {id:'c3',name:'מריץ קוד',emoji:'▶️',status:'idle',task:'ממתין',taskProg:0,spec:'Code Runner',browserUrl:'',browserContent:''},
      {id:'c4',name:'מוריד דוחות',emoji:'📥',status:'idle',task:'ממתין',taskProg:0,spec:'Report Download',browserUrl:'',browserContent:''},
@@ -303,7 +318,7 @@ const TEAMS = [
      {id:'i3',name:'שומר כספת',emoji:'🔐',status:'idle',task:'ממתין',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
    ]},
   {id:'visual', name:'עיצוב ויזואלי', icon:'🎨', color:'#f472b6',
-   desc:'עיצוב גרפים וסמנים על המסך',
+   desc:'עיצוג גרפים וסמנים על המסך',
    agents:[
      {id:'v1',name:'מעצב גרפים',emoji:'🖌️',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
      {id:'v2',name:'סמני מסחר',emoji:'🏷️',status:'idle',task:'ממתין',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
@@ -313,7 +328,7 @@ const TEAMS = [
    agents:[
      {id:'al1',name:'מגדיר Webhooks',emoji:'🪝',status:'idle',task:'ממתין',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
      {id:'al2',name:'סוכן AutoView',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
-     {id:'al3',name:'מתזמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
+     {id:'al3',name:'מתצמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
    ]},
 ];
 
@@ -327,6 +342,7 @@ const AGENT_LOOKS = [
 let selTeam=null, selAgent=null, realLog=[], timelineItems=[], eventSource=null;
 let anyAgentsRunning=false;
 let agentHistoryData={}; // agentId -> [{action,result,time,success}]
+let agentErrors=[]; // [{agentId, agentName, teamId, action, error, suggestion, time}]
 
 // ============ THREE.JS ============
 let scene, cam, renderer, clock;
@@ -819,6 +835,16 @@ function handleServerEvent(event){
       if(event.data.history){
         agentHistoryData=event.data.history;
       }
+      if(event.data.errors){
+        agentErrors=event.data.errors;
+        renderErrors();
+      }
+      if(event.data.activities && event.data.activities.length){
+        event.data.activities.forEach(a=>{
+          realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:a.title,desc:a.desc,teamId:a.teamId,time:a.time});
+        });
+        renderLog();
+      }
       break;
     case 'agent_update':
       applyAgentState(event.data.agentId,event.data);
@@ -848,6 +874,10 @@ function handleServerEvent(event){
       if(event.data.agentId && event.data.history){
         agentHistoryData[event.data.agentId]=event.data.history;
       }
+      break;
+    case 'agent_error':
+      agentErrors.push(event.data);
+      renderErrors();
       break;
   }
 }
@@ -1195,9 +1225,80 @@ function stopTeam(tid){
 
 function selectTeam(tid){
   selTeam=tid;
+  selAgent=null;
   renderTeams();
   const rl=ROOM_LAYOUT.find(r=>r.id===tid);
   if(rl){targetCenter.set(rl.x,1,rl.z);targetDist=22;targetPhi=Math.PI/3.2}
+
+  // Show team info in detail panel
+  const team=TEAMS.find(t=>t.id===tid);
+  if(!team)return;
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelector('[data-t="detail"]').classList.add('on');
+  document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tp-detail').classList.add('on');
+
+  const working=team.agents.filter(a=>a.status==='working');
+  const idle=team.agents.filter(a=>a.status!=='working');
+
+  // Collect all history for this team
+  let teamHistory=[];
+  team.agents.forEach(a=>{
+    const hist=agentHistoryData[a.id]||[];
+    hist.forEach(h=>{teamHistory.push({...h,agentName:a.name,agentEmoji:a.emoji})});
+  });
+  teamHistory.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+
+  // Collect errors for this team
+  const teamErrors=agentErrors.filter(e=>e.teamId===tid);
+
+  let html=`<div class="ahero"><div class="big" style="background:${team.color}18;border-color:${team.color};font-size:28px">${team.icon}</div>
+    <h3>${team.name}</h3><p>${team.desc}</p>
+    <div style="margin-top:6px"><span style="font-size:12px;color:var(--green)">${working.length} עובדים</span> | <span style="font-size:12px;color:var(--dim)">${idle.length} ממתינים</span></div>
+  </div>`;
+
+  // Agent list
+  html+='<div style="margin-top:8px"><div class="lbl" style="margin-bottom:6px">סוכנים בצוות:</div>';
+  team.agents.forEach(a=>{
+    const sc=a.status==='working'?'var(--green)':'var(--dim)';
+    const lastHist=(agentHistoryData[a.id]||[]).slice(-1)[0];
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border);cursor:pointer" onclick="selectAgent('${tid}','${a.id}')">
+      <span>${a.emoji}</span>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:600;color:var(--text)">${a.name} <span style="color:${sc};font-size:9px">(${a.status==='working'?'עובד':'לא פעיל'})</span></div>
+        <div style="font-size:10px;color:var(--dim)">${a.task}</div>
+        ${lastHist?'<div style="font-size:9px;color:var(--dim);margin-top:2px">אחרון: '+(lastHist.success?'✅':'❌')+' '+lastHist.action+'</div>':''}
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+
+  // Team errors summary
+  if(teamErrors.length){
+    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px;color:var(--red)">⚠️ שגיאות (${teamErrors.length}):</div>`;
+    teamErrors.slice(-5).reverse().forEach(e=>{
+      html+=`<div style="font-size:10px;padding:4px 6px;margin-bottom:4px;background:rgba(239,68,68,.08);border-radius:4px;border-right:2px solid var(--red)">
+        <span style="color:var(--text)">${e.agentName||e.agentId}</span>: <span style="color:var(--red)">${e.error}</span>
+        ${e.suggestion?'<div style="color:var(--yellow);margin-top:2px">💡 '+e.suggestion+'</div>':''}
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // Recent team history
+  if(teamHistory.length){
+    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px">📜 היסטוריה אחרונה:</div>`;
+    teamHistory.slice(0,10).forEach(h=>{
+      html+=`<div style="font-size:10px;padding:4px 6px;margin-bottom:3px;background:var(--bg);border-radius:4px;border-right:2px solid ${h.success?'var(--green)':'var(--red)'}">
+        <span>${h.agentEmoji} ${h.agentName}</span>: ${h.success?'✅':'❌'} ${h.action}
+        <div style="color:var(--dim);margin-top:1px">${h.result}</div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  document.getElementById('agDetail').innerHTML=html;
 }
 
 function selectAgent(tid,aid){
@@ -1205,8 +1306,9 @@ function selectAgent(tid,aid){
   selTeam=tid;
   renderTeams();
   const team=TEAMS.find(t=>t.id===tid), ag=team.agents.find(a=>a.id===aid);
-  const sc=ag.status==='working'?'var(--green)':ag.status==='idle'?'var(--yellow)':'var(--red)';
-  const st=ag.status==='working'?'⚡ עובד':ag.status==='idle'?'😴 ממתין':'❌ שגיאה';
+  const isInactive=ag.task==='נעצר'||ag.task==='ממתין';
+  const sc=ag.status==='working'?'var(--green)':isInactive?'var(--dim)':'var(--yellow)';
+  const st=ag.status==='working'?'⚡ עובד':isInactive?'💤 לא פעיל':'✅ סיים';
 
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelector('[data-t="detail"]').classList.add('on');
@@ -1376,6 +1478,25 @@ function generateSampleCode(task){
   return '//@version=6\nstrategy("Auto Strategy", overlay=true)\nfast = ta.ema(close, 9)\nslow = ta.ema(close, 21)\nif ta.crossover(fast, slow)\n    strategy.entry("Long", strategy.long)\nif ta.crossunder(fast, slow)\n    strategy.entry("Short", strategy.short)';
 }
 
+function renderErrors(){
+  document.getElementById('errorCount').textContent=agentErrors.length+' שגיאות';
+  if(!agentErrors.length){
+    document.getElementById('errorsList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">אין שגיאות - כל הסוכנים עובדים כשורה</p>';
+    return;
+  }
+  document.getElementById('errorsList').innerHTML=agentErrors.slice().reverse().map(e=>{
+    const team=TEAMS.find(t=>t.id===e.teamId);
+    const teamName=team?team.name:e.teamId;
+    return `<div class="error-card">
+      <div class="ec-header"><span class="ec-agent">${e.agentName||e.agentId} (${teamName})</span><span class="ec-time">${e.time}</span></div>
+      <div class="ec-action">📌 ${e.action}</div>
+      <div class="ec-error">❌ ${e.error}</div>
+      ${e.suggestion?'<div class="ec-suggestion">💡 '+e.suggestion+'</div>':''}
+      ${e.url?'<div style="font-size:9px;color:var(--dim);margin-top:4px">URL: '+e.url+'</div>':''}
+    </div>`;
+  }).join('');
+}
+
 function renderVault(){
   document.getElementById('vaultCount').textContent=vaultStrategies.length+' אסטרטגיות';
   if(!vaultStrategies.length){
@@ -1387,7 +1508,7 @@ function renderVault(){
     const pfClass=parseFloat(s.profitFactor)>2?'good':'warn';
     const ddClass=s.maxDD<12?'good':'warn';
     const statusIcon=s.status==='approved'?'✅':'⏳';
-    return `<div class="vault-card" onclick="this.classList.toggle('expanded')">
+    return `<div class="vault-card">
       <div class="vc-hdr"><span class="vc-name">${statusIcon} ${s.name}</span><span class="vc-date">${s.date}</span></div>
       <div class="vc-source">מקור: ${s.source}</div>
       ${s.asset?`<div style="font-size:9px;color:var(--cyan);margin-bottom:4px">📊 ${s.asset} | ⏱ ${s.timeframe||'N/A'} | 📅 ${s.testRange||'N/A'}${s.sharpe?' | Sharpe: '+s.sharpe:''}</div>`:''}
@@ -1397,13 +1518,11 @@ function renderVault(){
         <span class="vc-m ${ddClass}">DD: ${s.maxDD}%</span>
         <span class="vc-m">עסקאות: ${s.trades.toLocaleString()}</span>
       </div>
-      <div class="vc-detail">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-weight:500;color:var(--text)">קוד Pine Script:</span>
-          <button class="btn" onclick="event.stopPropagation();copyPineScript(${i})" style="padding:3px 10px;font-size:10px">📋 העתק קוד</button>
-        </div>
-        ${s.decision?'<div style="font-size:10px;color:var(--cyan);margin-bottom:4px">החלטה: '+s.decision+'</div>':''}
-        <div class="vc-code">${s.code}</div>
+      ${s.decision?'<div style="font-size:10px;color:var(--cyan);margin-top:4px">החלטה: '+s.decision+'</div>':''}
+      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">📋 העתק V5</button>
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">📋 העתק V6</button>
+        <button class="btn" onclick="event.stopPropagation();downloadReport(${i})" style="padding:3px 8px;font-size:10px">📥 הורד דוח</button>
       </div>
     </div>`;
   }).join('');
@@ -1430,18 +1549,47 @@ function closeHistory(){
   document.getElementById('historyPanel').classList.remove('open');
 }
 
-function copyPineScript(idx){
+function copyVaultCode(idx,version){
   const s=vaultStrategies[idx];
   if(!s)return;
+  let code;
+  if(version==='v5') code=s.code_v5||s.code||'// No V5 code available';
+  else code=s.code_v6||s.code||'// No V6 code available';
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(s.code).then(()=>{
-      notify('📋','קוד Pine Script הועתק ללוח!');
-    }).catch(()=>{
-      fallbackCopy(s.code);
-    });
+    navigator.clipboard.writeText(code).then(()=>{
+      notify('📋',`קוד Pine Script ${version.toUpperCase()} הועתק ללוח!`);
+    }).catch(()=>fallbackCopy(code));
   }else{
-    fallbackCopy(s.code);
+    fallbackCopy(code);
   }
+}
+
+function downloadReport(idx){
+  const s=vaultStrategies[idx];
+  if(!s)return;
+  let report='=== דוח אסטרטגיה ===\n\n';
+  report+='שם: '+s.name+'\n';
+  report+='מקור: '+s.source+'\n';
+  report+='תאריך: '+s.date+'\n';
+  report+='סטטוס: '+(s.status==='approved'?'מאושר':'ממתין')+'\n\n';
+  report+='=== נתוני ביצועים ===\n';
+  report+='Win Rate: '+s.winRate+'%\n';
+  report+='Profit Factor: '+s.profitFactor+'\n';
+  report+='Max Drawdown: '+s.maxDD+'%\n';
+  report+='עסקאות: '+s.trades+'\n';
+  if(s.asset) report+='נכס: '+s.asset+'\n';
+  if(s.timeframe) report+='טיימפריים: '+s.timeframe+'\n';
+  if(s.testRange) report+='תקופת בדיקה: '+s.testRange+'\n';
+  if(s.sharpe) report+='Sharpe Ratio: '+s.sharpe+'\n';
+  if(s.decision) report+='\nהחלטה: '+s.decision+'\n';
+  report+='\n=== Pine Script V6 ===\n'+(s.code_v6||s.code||'N/A')+'\n';
+  report+='\n=== Pine Script V5 ===\n'+(s.code_v5||s.code||'N/A')+'\n';
+  const blob=new Blob([report],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(s.name||'strategy').replace(/\s+/g,'_')+'_report.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  notify('📥','דוח הורד בהצלחה!');
 }
 
 function fallbackCopy(text){
@@ -1462,6 +1610,14 @@ function loadVaultFromServer(){
     }
   }).catch(()=>{});
 }
+
+// Load errors from server
+fetch('/api/errors').then(r=>r.json()).then(data=>{
+  if(data.errors&&data.errors.length){
+    agentErrors=data.errors;
+    renderErrors();
+  }
+}).catch(()=>{});
 
 window.AgentOffice={
   setAgentStatus(agentId,status,task,progress){
@@ -1490,6 +1646,7 @@ init3D();
 renderTeams();
 renderLog();
 renderTimeline();
+renderErrors();
 loadVaultFromServer();
 
 // Server health check on load
@@ -1507,6 +1664,16 @@ fetch('/api/state').then(r=>r.json()).then(data=>{
   }
   if(data.history){
     agentHistoryData=data.history;
+  }
+  if(data.errors){
+    agentErrors=data.errors;
+    renderErrors();
+  }
+  if(data.activities && data.activities.length){
+    data.activities.forEach(a=>{
+      realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:a.title,desc:a.desc,teamId:a.teamId,time:a.time});
+    });
+    renderLog();
   }
 }).catch(()=>{
   document.getElementById('liveDot').className='live-dot off';
