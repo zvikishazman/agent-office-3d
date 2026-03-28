@@ -27,12 +27,16 @@ sse_clients = []  # list of per-client queues
 sse_clients_lock = threading.Lock()
 agent_states = {}  # agentId -> {status, task, taskProg, lastUpdate, browserUrl, browserContent}
 agent_history = {}  # agentId -> [{action, result, time, success}]
+agent_errors = []  # [{agentId, agentName, teamId, action, error, suggestion, time}]
+activity_log = []  # [{icon, title, desc, teamId, time}]
 kpi = {"found": 0, "tested": 0, "approved": 0, "rejected": 0}
 vault_strategies = []
 running = True
 
 VAULT_FILE = Path(__file__).parent / "vault.json"
 HISTORY_FILE = Path(__file__).parent / "history.json"
+ERRORS_FILE = Path(__file__).parent / "errors.json"
+ACTIVITIES_FILE = Path(__file__).parent / "activities.json"
 
 # ============ CLOUD STORAGE (Upstash Redis) ============
 UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
@@ -128,6 +132,56 @@ def save_history():
         except:
             pass
 
+def load_errors():
+    global agent_errors
+    try:
+        if _use_cloud():
+            data = _upstash_get("agent_office_errors")
+            if data:
+                agent_errors = data
+                print(f"☁️ Loaded {len(agent_errors)} errors from Upstash")
+                return
+        if ERRORS_FILE.exists():
+            with open(ERRORS_FILE, 'r', encoding='utf-8') as f:
+                agent_errors = json.load(f)
+    except:
+        agent_errors = []
+
+def save_errors():
+    with _save_lock:
+        try:
+            if _use_cloud():
+                _upstash_set("agent_office_errors", agent_errors[-200:])
+            with open(ERRORS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(agent_errors[-200:], f, ensure_ascii=False, indent=2)
+        except:
+            pass
+
+def load_activities():
+    global activity_log
+    try:
+        if _use_cloud():
+            data = _upstash_get("agent_office_activities")
+            if data:
+                activity_log = data
+                print(f"☁️ Loaded {len(activity_log)} activities from Upstash")
+                return
+        if ACTIVITIES_FILE.exists():
+            with open(ACTIVITIES_FILE, 'r', encoding='utf-8') as f:
+                activity_log = json.load(f)
+    except:
+        activity_log = []
+
+def save_activities():
+    with _save_lock:
+        try:
+            if _use_cloud():
+                _upstash_set("agent_office_activities", activity_log[-200:])
+            with open(ACTIVITIES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(activity_log[-200:], f, ensure_ascii=False, indent=2)
+        except:
+            pass
+
 def load_kpi():
     global kpi
     try:
@@ -193,7 +247,15 @@ def update_agent(agent_id, status, task, progress, browser_url="", browser_conte
     })
 
 def log_activity(icon, title, desc, team_id):
-    emit_event("log", {"icon": icon, "title": title, "desc": desc, "teamId": team_id})
+    entry = {
+        "icon": icon, "title": title, "desc": desc, "teamId": team_id,
+        "time": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    }
+    activity_log.append(entry)
+    if len(activity_log) > 200:
+        activity_log[:] = activity_log[-200:]
+    save_activities()
+    emit_event("log", entry)
 
 def update_kpi(key, value):
     kpi[key] = value
@@ -254,6 +316,23 @@ class BaseAgent(threading.Thread):
             browser_html += f"<div style='margin-top:4px;color:#eab308'>💡 {html_module.escape(suggestion)}</div>"
         if url:
             browser_html += f"<div style='margin-top:4px;color:#94a3b8;font-size:9px'>URL: {url}</div>"
+
+        # Store error for errors tab
+        error_entry = {
+            "agentId": self.agent_id,
+            "agentName": self.name,
+            "teamId": self.team_id,
+            "action": action,
+            "error": error_msg,
+            "suggestion": suggestion,
+            "url": url,
+            "time": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }
+        agent_errors.append(error_entry)
+        if len(agent_errors) > 200:
+            agent_errors[:] = agent_errors[-200:]
+        save_errors()
+        emit_event("agent_error", error_entry)
 
         update_agent(self.agent_id, "working",
                     f"שגיאה: {action} - {error_msg[:40]}...",
@@ -798,9 +877,15 @@ class AnalysisAgent(BaseAgent):
                     kpi["approved"] = kpi.get("approved", 0) + 1
                     update_kpi("approved", kpi["approved"])
                     log_activity("✅", f"{strat['name']} אושרה!", f"WR:{strat['winRate']}% PF:{strat['pf']}", self.team_id)
-                    pine_code = PineScriptAgent.TEMPLATES.get(
-                        "ORB" if "ORB" in strat["name"] else "VWAP", {}
-                    ).get("code", "// No code available")
+                    # Include both V5 and V6 code
+                    pine_code_v6 = PineScriptAgent.TEMPLATES.get("ORB", {}).get("code", "") if "ORB" in strat["name"] else PineScriptAgent.TEMPLATES.get("VWAP", {}).get("code", "")
+                    pine_code_v5 = PineScriptAgent.TEMPLATES.get("VWAP", {}).get("code", "") if "ORB" in strat["name"] else PineScriptAgent.TEMPLATES.get("ORB", {}).get("code", "")
+                    # For ORB: V6 is the ORB template, create V5 version
+                    if "ORB" in strat["name"]:
+                        pine_code_v5 = pine_code_v6.replace("//@version=6", "//@version=5").replace("math.max", "max").replace("math.min", "min")
+                    else:
+                        pine_code_v5 = pine_code_v6  # VWAP is already V5
+                        pine_code_v6 = pine_code_v5.replace("//@version=5", "//@version=6")
                     add_to_vault({
                         "name": strat["name"],
                         "source": f"{self.name} ({self.team_id})",
@@ -810,7 +895,9 @@ class AnalysisAgent(BaseAgent):
                         "maxDD": strat["maxDD"],
                         "trades": strat["trades"],
                         "status": "approved",
-                        "code": pine_code,
+                        "code_v5": pine_code_v5,
+                        "code_v6": pine_code_v6,
+                        "code": pine_code_v6,
                         "asset": strat["asset"],
                         "timeframe": strat["tf"],
                         "testRange": strat["range"],
@@ -1398,7 +1485,7 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
         if self.path == '/api/events':
             self.send_sse_stream()
         elif self.path == '/api/state':
-            self.send_json({"agents": agent_states, "kpi": kpi, "vault": vault_strategies, "history": agent_history})
+            self.send_json({"agents": agent_states, "kpi": kpi, "vault": vault_strategies, "history": agent_history, "errors": agent_errors, "activities": activity_log})
         elif self.path.startswith('/api/start/'):
             team_id = self.path.split('/')[-1]
             threading.Thread(target=start_team, args=(team_id,), daemon=True).start()
@@ -1421,6 +1508,10 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             self.send_json({"agentId": agent_id, "history": agent_history.get(agent_id, [])})
         elif self.path == '/api/history':
             self.send_json({"history": agent_history})
+        elif self.path == '/api/errors':
+            self.send_json({"errors": agent_errors})
+        elif self.path == '/api/activities':
+            self.send_json({"activities": activity_log})
         else:
             super().do_GET()
 
@@ -1444,7 +1535,7 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             sse_clients.append(client_queue)
 
         try:
-            self.wfile.write(f"data: {json.dumps({'type': 'init', 'data': {'agents': agent_states, 'kpi': kpi, 'vault': vault_strategies, 'history': agent_history}})}\n\n".encode())
+            self.wfile.write(f"data: {json.dumps({'type': 'init', 'data': {'agents': agent_states, 'kpi': kpi, 'vault': vault_strategies, 'history': agent_history, 'errors': agent_errors, 'activities': activity_log}})}\n\n".encode())
             self.wfile.flush()
 
             while running:
@@ -1476,6 +1567,8 @@ def main():
     load_vault()
     load_history()
     load_kpi()
+    load_errors()
+    load_activities()
     if _use_cloud():
         print(f"☁️ Cloud storage: Upstash Redis connected")
     else:
