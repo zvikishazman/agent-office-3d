@@ -660,9 +660,9 @@ class FundingResearchAgent(BaseAgent):
                         suggestion = "\u05d1\u05d3\u05d5\u05e7 \u05d7\u05d9\u05d1\u05d5\u05e8 \u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8 \u05d0\u05d5 \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1 \u05de\u05d0\u05d5\u05d7\u05e8 \u05d9\u05d5\u05ea\u05e8"
                     self.report_error(f"\u05e1\u05e8\u05d9\u05e7\u05ea {company_name}", error_type, url, suggestion)
 
-time.sleep(1)
-        update_agent(self.agent_id, "idle", f"×¡××× ×¡×¨××§×ª {company_name}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{company_name} × ×××§", self.team_id)
+            time.sleep(1)
+        update_agent(self.agent_id, "idle", f"סיים סריקת {company_name}", 100)
+        log_activity("✅", f"{self.name} סיים", f"{company_name} נסרק", self.team_id)
 
 
 class PineScriptAgent(BaseAgent):
