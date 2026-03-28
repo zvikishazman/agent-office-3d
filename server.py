@@ -684,8 +684,8 @@ class FundingResearchAgent(BaseAgent):
                     self.report_error(f"\u05e1\u05e8\u05d9\u05e7\u05ea {company_name}", error_type, url, suggestion)
 
             time.sleep(1)
-        update_agent(self.agent_id, "idle", f"���� ����� {company_name}", 100)
-        log_activity("", f"{self.name} ����", f"{company_name} ����", self.team_id)
+        update_agent(self.agent_id, "idle", f"\u05e1\u05d9\u05d9\u05dd \u05e1\u05e8\u05d9\u05e7\u05ea {company_name}", 100)
+        log_activity("", f"{self.name} \u05e1\u05d9\u05d9\u05dd", f"{company_name} \u05e0\u05e1\u05e8\u05e7", self.team_id)
 
 
 class PineScriptAgent(BaseAgent):
