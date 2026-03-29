@@ -802,8 +802,10 @@ if not orbActive and not orbDone and not na(orbHigh)
 orbRange = orbHigh - orbLow
 
 // Entry signals
-longSignal  = orbDone and ta.crossover(close, orbHigh)
-shortSignal = orbDone and ta.crossunder(close, orbLow)
+crossUp = ta.crossover(close, orbHigh)
+longSignal  = orbDone and crossUp
+crossDown = ta.crossunder(close, orbLow)
+shortSignal = orbDone and crossDown
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1078,8 +1080,10 @@ if not orbActive and not orbDone and not na(orbHigh)
     orbDone := true
 
 orbRange = orbHigh - orbLow
-longSignal  = orbDone and ta.crossover(close, orbHigh)
-shortSignal = orbDone and ta.crossunder(close, orbLow)
+crossUp = ta.crossover(close, orbHigh)
+longSignal  = orbDone and crossUp
+crossDown = ta.crossunder(close, orbLow)
+shortSignal = orbDone and crossDown
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1146,8 +1150,10 @@ emaFast = ta.ema(close, fastLen)
 emaSlow = ta.ema(close, slowLen)
 [diPlus, diMinus, adx] = ta.dmi(14, 14)
 
-longSignal = ta.crossover(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
-shortSignal = ta.crossunder(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
+crossUp = ta.crossover(emaFast, emaSlow)
+longSignal = crossUp and (not useADX or adx > adxThreshold)
+crossDown = ta.crossunder(emaFast, emaSlow)
+shortSignal = crossDown and (not useADX or adx > adxThreshold)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1171,8 +1177,10 @@ tpPoints = input.float({round(tp, 1)}, "TP Points")
 slPoints = input.float({round(sl, 1)}, "SL Points")
 
 rsiVal = ta.rsi(close, rsiLen)
-longSignal = ta.crossover(rsiVal, oversold)
-shortSignal = ta.crossunder(rsiVal, overbought)
+crossUp = ta.crossover(rsiVal, oversold)
+longSignal = crossUp
+crossDown = ta.crossunder(rsiVal, overbought)
+shortSignal = crossDown
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1198,8 +1206,10 @@ slPoints = input.float({round(sl, 1)}, "SL Points")
 
 [macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, signalLen)
 
-longSignal = ta.crossover(macdLine, signalLine) and histLine > 0
-shortSignal = ta.crossunder(macdLine, signalLine) and histLine < 0
+crossUp = ta.crossover(macdLine, signalLine)
+longSignal = crossUp and histLine > 0
+crossDown = ta.crossunder(macdLine, signalLine)
+shortSignal = crossDown and histLine < 0
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1256,8 +1266,10 @@ slPoints = input.float({round(sl, 1)}, "SL Points")
 fast = ta.ema(close, fastLen)
 slow = ta.sma(close, slowLen)
 
-longSignal = ta.crossover(fast, slow) and close > ta.sma(close, 200)
-shortSignal = ta.crossunder(fast, slow) and close < ta.sma(close, 200)
+crossUp = ta.crossover(fast, slow)
+longSignal = crossUp and close > ta.sma(close, 200)
+crossDown = ta.crossunder(fast, slow)
+shortSignal = crossDown and close < ta.sma(close, 200)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1883,7 +1895,7 @@ class ImprovementAgent(BaseAgent):
                 {"strategy": "ORB Breakout", "suggestion": "הוספת Volume Filter",
                  "detail": "הוספת תנאי volume > SMA(volume,20)*1.5 לכניסה - מסנן פריצות שווא",
                  "impact": "WR צפוי לעלות ב-4-6%, פחות עסקאות אבל יותר איכותיות",
-                 "code_change": "volumeFilter = volume > ta.sma(volume, 20) * 1.5\nlongSignal = orbDone and ta.crossover(close, orbHigh) and volumeFilter"},
+                 "code_change": "volumeFilter = volume > ta.sma(volume, 20) * 1.5\ncrossUp = ta.crossover(close, orbHigh)\nlongSignal = orbDone and crossUp and volumeFilter"},
                 {"strategy": "VWAP Reclaim", "suggestion": "הוספת Session Filter",
                  "detail": "הגבלת מסחר לשעות 9:30-15:00 בלבד, כדי להימנע מ-pre/post market",
                  "impact": "הפחתת DD צפויה של 2-3%, סינון תנודתיות מיותרת",
@@ -1896,7 +1908,7 @@ class ImprovementAgent(BaseAgent):
                 {"strategy": "ORB Breakout", "suggestion": "הוספת VWAP כפילטר",
                  "detail": "Long רק מעל VWAP, Short רק מתחת VWAP - מגביר הסתברות להצלחה",
                  "impact": "WR צפוי לעלות ב-8-10%, מגביל עסקאות נגד המגמה",
-                 "code_change": "vwapVal = ta.vwap(hlc3)\nlongSignal = orbDone and ta.crossover(close, orbHigh) and close > vwapVal"},
+                 "code_change": "vwapVal = ta.vwap(hlc3)\ncrossUp = ta.crossover(close, orbHigh)\nlongSignal = orbDone and crossUp and close > vwapVal"},
                 {"strategy": "VWAP Reclaim", "suggestion": "הוספת ATR-based Stop Loss",
                  "detail": "שימוש ב-ATR(14) * 1.5 כ-Stop Loss דינמי במקום קבוע",
                  "impact": "DD צפוי לרדת ב-2%, SL מותאם לתנודתיות השוק",
