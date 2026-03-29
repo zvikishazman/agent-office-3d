@@ -105,11 +105,39 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .log .ttl{font-size:11px;font-weight:600;margin-bottom:2px}
 .log .dsc{font-size:10px;color:var(--dim);margin-bottom:2px}
 .log .tm{font-size:8px;color:var(--dim)}
-#actLog{overflow-y:auto;flex:1}
+#actLog{overflow-y:auto;flex:1;padding:8px}
+.at-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border-right:3px solid var(--border);cursor:pointer;transition:all .2s;display:flex;gap:10px;align-items:flex-start}
+.at-card:hover{background:var(--card);transform:translateX(-2px)}
+.at-card.working{border-right-color:var(--green);animation:atPulse 2s infinite}
+.at-card.done{border-right-color:var(--accent)}
+@keyframes atPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.15)}50%{box-shadow:0 0 8px 0 rgba(34,197,94,.1)}}
+.at-card .at-emoji{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.at-card .at-body{flex:1;min-width:0}
+.at-card .at-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.at-card .at-team{font-size:9px;margin-bottom:4px}
+.at-card .at-task{font-size:10px;color:var(--dim);margin-bottom:3px;line-height:1.3}
+.at-card .at-time{font-size:9px;color:var(--dim)}
+.at-card .at-status{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:500;display:inline-block}
+.at-popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.at-popup-overlay.open{display:flex}
+.at-popup{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:420px;max-height:80vh;overflow-y:auto;padding:0;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.at-popup .atp-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1}
+.at-popup .atp-header h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.at-popup .atp-close{cursor:pointer;font-size:18px;color:var(--dim);padding:4px 8px;border-radius:4px}
+.at-popup .atp-close:hover{background:var(--card);color:var(--text)}
+.at-popup .atp-info{padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
+.at-popup .atp-info span{display:flex;align-items:center;gap:4px}
+.at-popup .atp-history{padding:12px 16px}
+.at-popup .atp-entry{padding:8px;background:var(--bg);border-radius:6px;margin-bottom:6px;border-right:3px solid var(--border);font-size:10px}
+.at-popup .atp-entry.success{border-right-color:var(--green)}
+.at-popup .atp-entry.fail{border-right-color:var(--red)}
+.at-popup .atp-entry .ae-time{font-size:9px;color:var(--dim);margin-bottom:2px}
+.at-popup .atp-entry .ae-action{font-weight:600;color:var(--text);margin-bottom:2px}
+.at-popup .atp-entry .ae-result{color:var(--dim);line-height:1.3}
 #timeline{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px 12px;gap:0;align-items:stretch;scrollbar-width:thin}
 #timeline::-webkit-scrollbar{height:5px}
 #timeline::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.titem{min-width:160px;max-width:200px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-shrink:0;font-size:10px;position:relative;border-top:3px solid var(--border)}
+.titem{min-width:160px;max-width:200px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-shrink:0;font-size:10px;position:relative;border-top:3px solid var(--border);align-self:stretch;display:flex;flex-direction:column}
 .titem .tt{font-weight:600;color:var(--glow);margin-bottom:2px;font-size:9px}
 .titem .tn{color:var(--text);margin-bottom:2px;line-height:1.3}
 .titem .tteam{color:var(--dim);font-size:9px;margin-bottom:3px}
@@ -201,7 +229,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
   </div>
   <div class="right">
     <div class="tabs">
-      <div class="tab on" data-t="log" onclick="swTab(this)">📋 פעילות</div>
+      <div class="tab on" data-t="log" onclick="swTab(this)">🧑‍💼 סוכנים</div>
       <div class="tab" data-t="detail" onclick="swTab(this)">👤 פרטים</div>
       <div class="tab" data-t="errors" onclick="swTab(this)">⚠️ שגיאות</div>
       <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כספת</div>
@@ -246,6 +274,13 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
   </div>
 </div>
 <div class="notif" id="notif"><div id="nIco"></div><div id="nTxt"></div></div>
+<div class="at-popup-overlay" id="atPopup" onclick="if(event.target===this)closeAtPopup()">
+  <div class="at-popup">
+    <div class="atp-header"><h3 id="atpTitle">סוכן</h3><div class="atp-close" onclick="closeAtPopup()">✕</div></div>
+    <div class="atp-info" id="atpInfo"></div>
+    <div class="atp-history" id="atpHistory"></div>
+  </div>
+</div>
 <div class="history-panel" id="historyPanel">
   <div class="hp-header">
     <div class="hp-title" id="histTitle">📜 היסטוריית סוכן</div>
@@ -350,7 +385,8 @@ const AGENT_LOOKS = [
 let selTeam=null, selAgent=null, realLog=[], timelineItems=[], eventSource=null;
 let anyAgentsRunning=false;
 let agentHistoryData={}; // agentId -> [{action,result,time,success}]
-let agentErrors=[]; // [{agentId, agentName, teamId, action, error, suggestion, time}]
+let agentErrors=[];
+let agentTimelineCards=[]; // [{agentId, agentName, teamId, action, error, suggestion, time}]
 
 // ============ THREE.JS ============
 let scene, cam, renderer, clock;
@@ -901,15 +937,18 @@ function applyAgentState(agentId,state){
       if(state.status==='working'&&oldStatus!=='working'){
         addRealLog('⚡','rgba(34,197,94,.15)',ag.name+' התחיל עבודה',state.task||ag.task,team.id);
         addTimeline(ag.name+': '+(state.task||'עובד'),team.name,'wip');
+        addAgentCard(ag.id,ag.name,ag.emoji,team.id,team.name,team.color,state.task||ag.task);
       }
       if(state.status==='idle'&&oldStatus==='working'){
         addRealLog('✅','rgba(34,197,94,.15)',ag.name+' סיים',state.task||'הושלם',team.id);
         addTimeline(ag.name+' סיים',team.name,'done',state.task||'הושלם');
+        finishAgentCard(ag.id,state.task||'הושלם');
         // Vault additions now handled by server via vault_update SSE events
       }
       // Update task progress even during working
       if(state.status==='working'&&oldStatus==='working'&&state.task!==ag.task){
         addRealLog('🔄','rgba(59,130,246,.12)',ag.name,state.task,team.id);
+        updateAgentCardTask(ag.id,state.task);
       }
 
       // Now update agent data
@@ -1378,11 +1417,78 @@ function addRealLog(icon,bg,title,desc,teamId){
 }
 
 function renderLog(){
-  if(!realLog.length){document.getElementById('actLog').innerHTML='<p style="text-align:center;color:var(--dim);padding:30px">😴 אין פעילות - הפעל צוות</p>';return}
-  document.getElementById('actLog').innerHTML=realLog.slice(0,30).map(l=>
-    `<div class="log" onclick="selectTeam('${l.teamId}')"><div class="ico" style="background:${l.bg}">${l.icon}</div><div class="body"><div class="ttl">${l.title}</div><div class="dsc">${l.desc}</div><div class="tm">${l.time}</div></div></div>`
-  ).join('');
+  const el=document.getElementById('actLog');
+  if(!agentTimelineCards.length){
+    el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px">😴 אין פעילות - הפעל צוות</p>';
+    return;
+  }
+  el.innerHTML=agentTimelineCards.slice().reverse().map((c,i)=>{
+    const idx=agentTimelineCards.length-1-i;
+    const isW=c.status==='working';
+    const stT=isW?'⚡ עובד':'✅ סיים';
+    const stC=isW?'var(--green)':'var(--accent)';
+    const stB=isW?'rgba(34,197,94,.12)':'rgba(59,130,246,.12)';
+    return `<div class="at-card ${c.status}" onclick="openAtPopup(${idx})" style="border-right-color:${c.teamColor}">
+      <div class="at-emoji" style="background:${c.teamColor}18">${c.emoji}</div>
+      <div class="at-body">
+        <div class="at-name">${c.agentName}</div>
+        <div class="at-team" style="color:${c.teamColor}">${c.teamName}</div>
+        <div class="at-task">${c.task||''}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="at-time">🕐 ${c.startTime}${c.endTime?' → '+c.endTime:''}</div>
+          <span class="at-status" style="color:${stC};background:${stB}">${stT}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
+
+function addAgentCard(agentId,agentName,emoji,teamId,teamName,teamColor,task){
+  const existing=agentTimelineCards.find(c=>c.agentId===agentId&&c.status==='working');
+  if(existing){existing.task=task;renderLog();return}
+  agentTimelineCards.push({agentId,agentName,emoji,teamId,teamName,teamColor,
+    startTime:new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    endTime:null,status:'working',task});
+  renderLog();
+}
+
+function finishAgentCard(agentId,task){
+  const card=agentTimelineCards.find(c=>c.agentId===agentId&&c.status==='working');
+  if(card){card.status='done';card.endTime=new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});if(task)card.task=task}
+  renderLog();
+}
+
+function updateAgentCardTask(agentId,task){
+  const card=agentTimelineCards.find(c=>c.agentId===agentId&&c.status==='working');
+  if(card)card.task=task;
+  renderLog();
+}
+
+function openAtPopup(idx){
+  const c=agentTimelineCards[idx];if(!c)return;
+  document.getElementById('atpTitle').innerHTML=c.emoji+' '+c.agentName;
+  const isW=c.status==='working';
+  document.getElementById('atpInfo').innerHTML=`
+    <span style="color:${c.teamColor}">🏢 ${c.teamName}</span>
+    <span>🕐 התחלה: ${c.startTime}</span>
+    ${c.endTime?`<span>🏁 סיום: ${c.endTime}</span>`:''}
+    <span style="color:${isW?'var(--green)':'var(--accent)'}">📌 ${isW?'עובד כרגע':'סיים'}</span>
+    <span>📋 ${c.task||'—'}</span>`;
+  const hist=agentHistoryData[c.agentId]||[];
+  if(!hist.length){
+    document.getElementById('atpHistory').innerHTML='<p style="text-align:center;color:var(--dim);padding:16px">אין היסטוריה עדיין</p>';
+  }else{
+    document.getElementById('atpHistory').innerHTML='<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--dim)">📜 היסטוריית פעולות ('+hist.length+')</div>'+
+      hist.slice().reverse().map(h=>`<div class="atp-entry ${h.success?'success':'fail'}">
+        <div class="ae-time">${h.time}</div>
+        <div class="ae-action">${h.success?'✅':'❌'} ${h.action}</div>
+        <div class="ae-result">${h.result}</div>
+      </div>`).join('');
+  }
+  document.getElementById('atPopup').classList.add('open');
+}
+
+function closeAtPopup(){document.getElementById('atPopup').classList.remove('open')}
 
 function getTeamColor(teamName){
   const t=TEAMS.find(t=>t.name===teamName||t.id===teamName);
