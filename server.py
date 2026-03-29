@@ -301,6 +301,7 @@ class BaseAgent(threading.Thread):
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
                 }
+                # Reddit needs special handling
                 if 'reddit.com' in url:
                     headers['User-Agent'] = f'AgentOffice3D/1.0 (trading research bot) attempt/{attempt}'
                     headers['Accept'] = 'application/json'
@@ -310,26 +311,28 @@ class BaseAgent(threading.Thread):
             except urllib.error.HTTPError as e:
                 last_error = e
                 if e.code == 429:
+                    # Rate limited - longer backoff
                     wait = (attempt + 1) * 5
-                    log_activity("\u23f3", f"{self.name} rate limited",
-                               f"429 Too Many Requests - \u05de\u05de\u05ea\u05d9\u05df {wait}s", self.team_id)
+                    log_activity("⏳", f"{self.name} rate limited",
+                               f"429 Too Many Requests - ממתין {wait}s", self.team_id)
                     time.sleep(wait)
                 elif e.code == 403:
+                    # Forbidden - try different UA next time
                     wait = (attempt + 1) * 2
-                    log_activity("\ud83d\udd04", f"{self.name} retry {attempt+1}",
-                               f"403 Forbidden - \u05de\u05e0\u05e1\u05d4 \u05e2\u05dd User-Agent \u05d0\u05d7\u05e8", self.team_id)
+                    log_activity("🔄", f"{self.name} retry {attempt+1}",
+                               f"403 Forbidden - מנסה עם User-Agent אחר", self.team_id)
                     time.sleep(wait)
                 elif attempt < retries - 1:
                     wait = (attempt + 1) * 2
-                    log_activity("\ud83d\udd04", f"{self.name} retry {attempt+1}",
-                               f"HTTP {e.code} - \u05de\u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1", self.team_id)
+                    log_activity("🔄", f"{self.name} retry {attempt+1}",
+                               f"HTTP {e.code} - מנסה שוב", self.team_id)
                     time.sleep(wait)
             except Exception as e:
                 last_error = e
                 if attempt < retries - 1:
                     wait = (attempt + 1) * 2
-                    log_activity("\ud83d\udd04", f"{self.name} retry {attempt+1}",
-                               f"\u05e9\u05d2\u05d9\u05d0\u05d4: {str(e)[:60]}... \u05de\u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1", self.team_id)
+                    log_activity("🔄", f"{self.name} retry {attempt+1}",
+                               f"שגיאה: {str(e)[:60]}... מנסה שוב", self.team_id)
                     time.sleep(wait)
         return f"Error (after {retries} attempts): {str(last_error)}"
 
@@ -466,39 +469,41 @@ class StrategyResearchAgent(BaseAgent):
                 fb = FALLBACK_STRATEGIES[source_key]
                 scripts = random.sample(fb, min(len(fb), random.randint(2, 4)))
                 if fetch_failed:
-                    log_activity("\u26a0\ufe0f", f"{source_name} \u05dc\u05d0 \u05d6\u05de\u05d9\u05df",
-                               f"\u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05de\u05d0\u05d2\u05e8 \u05de\u05e7\u05d5\u05de\u05d9 ({len(scripts)} \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d5\u05ea)", self.team_id)
+                    log_activity("⚠️", f"{source_name} לא זמין",
+                               f"משתמש במאגר מקומי ({len(scripts)} אסטרטגיות)", self.team_id)
 
             if scripts:
-                total_found += len(scripts)
+                # Cap scripts per source to avoid KPI inflation
+                unique_scripts = list(set(s.strip() for s in scripts))[:6]
+                total_found += len(unique_scripts)
 
-                source_label = "\u05de\u05e7\u05d5\u05e8 \u05d7\u05d9" if not fetch_failed else "\u05de\u05d0\u05d2\u05e8 \u05de\u05e7\u05d5\u05de\u05d9"
-                browser_html = f"<div style='color:#a855f7'>\ud83d\udcca {source_name}</div>"
+                source_label = "מקור חי" if not fetch_failed else "מאגר מקומי"
+                browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
                 if fetch_failed:
-                    browser_html += f"<div style='margin-top:2px;color:#eab308'>\u26a0\ufe0f {source_name} \u05dc\u05d0 \u05d6\u05de\u05d9\u05df - \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05de\u05d0\u05d2\u05e8 \u05de\u05e7\u05d5\u05de\u05d9</div>"
-                browser_html += f"<div style='margin-top:6px;color:#22c55e'>\u05e0\u05de\u05e6\u05d0\u05d5 {len(scripts)} \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d5\u05ea ({source_label}):</div>"
-                for s in scripts[:6]:
+                    browser_html += f"<div style='margin-top:2px;color:#eab308'>⚠️ {source_name} לא זמין - משתמש במאגר מקומי</div>"
+                browser_html += f"<div style='margin-top:6px;color:#22c55e'>נמצאו {len(unique_scripts)} אסטרטגיות ({source_label}):</div>"
+                for s in unique_scripts[:6]:
                     clean = html_module.escape(s.strip()[:60])
-                    browser_html += f"<div style='margin-top:3px;color:#94a3b8'>\u2022 {clean}</div>"
+                    browser_html += f"<div style='margin-top:3px;color:#94a3b8'>• {clean}</div>"
 
-                update_agent(self.agent_id, "working", f"\u05e0\u05de\u05e6\u05d0\u05d5 {len(scripts)} \u05d1-{source_name}",
+                update_agent(self.agent_id, "working", f"נמצאו {len(unique_scripts)} ב-{source_name}",
                            progress, url, browser_html)
-                log_activity("\ud83d\udcca", f"\u05e0\u05de\u05e6\u05d0\u05d5 \u05ea\u05d5\u05e6\u05d0\u05d5\u05ea \u05de-{source_name}", f"{len(scripts)} scripts ({source_label})", self.team_id)
-                self.record(f"\u05e1\u05e8\u05d9\u05e7\u05ea {source_name}", f"\u05e0\u05de\u05e6\u05d0\u05d5 {len(scripts)} \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d5\u05ea ({source_label}): {', '.join(s[:30] for s in scripts[:3])}", True)
-                kpi["found"] = kpi.get("found", 0) + len(scripts)
+                log_activity("📊", f"נמצאו תוצאות מ-{source_name}", f"{len(unique_scripts)} scripts ({source_label})", self.team_id)
+                self.record(f"סריקת {source_name}", f"נמצאו {len(unique_scripts)} אסטרטגיות ({source_label}): {', '.join(s[:30] for s in unique_scripts[:3])}", True)
+                kpi["found"] = kpi.get("found", 0) + len(unique_scripts)
                 update_kpi("found", kpi["found"])
             else:
                 # Only report error if we truly have nothing
                 err = content[:200]
                 if "403" in err or "forbidden" in err.lower():
-                    suggestion = f"{source_name} \u05d7\u05d5\u05e1\u05dd scraping. \u05e6\u05e8\u05d9\u05da \u05dc\u05d4\u05d5\u05e1\u05d9\u05e3 headers \u05d0\u05d5 \u05dc\u05d4\u05e9\u05ea\u05de\u05e9 \u05d1-API"
+                    suggestion = f"{source_name} חוסם scraping. צריך להוסיף headers או להשתמש ב-API"
                 elif "429" in err:
-                    suggestion = f"{source_name} \u05d4\u05d2\u05d1\u05d9\u05dc \u05d1\u05e7\u05e9\u05d5\u05ea (Rate Limit). \u05de\u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1 \u05d1\u05d4\u05e8\u05e6\u05d4 \u05d4\u05d1\u05d0\u05d4"
+                    suggestion = f"{source_name} הגביל בקשות (Rate Limit). מנסה שוב בהרצה הבאה"
                 elif "timeout" in err.lower():
-                    suggestion = f"{source_name} \u05d0\u05d9\u05d8\u05d9 - \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1 \u05d1\u05d6\u05de\u05df \u05d0\u05d7\u05e8"
+                    suggestion = f"{source_name} איטי - נסה שוב בזמן אחר"
                 else:
-                    suggestion = "\u05d1\u05d3\u05d5\u05e7 \u05d7\u05d9\u05d1\u05d5\u05e8 \u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8 \u05d0\u05d5 \u05e9\u05d4\u05db\u05ea\u05d5\u05d1\u05ea \u05e0\u05db\u05d5\u05e0\u05d4"
-                self.report_error(f"\u05e1\u05e8\u05d9\u05e7\u05ea {source_name}", err[:80], url, suggestion)
+                    suggestion = "בדוק חיבור אינטרנט או שהכתובת נכונה"
+                self.report_error(f"סריקת {source_name}", err[:80], url, suggestion)
 
             time.sleep(1)
 
@@ -508,7 +513,7 @@ class StrategyResearchAgent(BaseAgent):
 
 
 class FundingResearchAgent(BaseAgent):
-    """Scans funding company websites for rule changes"""
+    """Scans funding company websites for detailed account info, routes, pricing"""
 
     COMPANIES = {
         "f1": ("FTMO", "https://ftmo.com/en/"),
@@ -519,11 +524,155 @@ class FundingResearchAgent(BaseAgent):
         "f6": ("Alpha Futures", "https://alpha-futures.com/"),
     }
 
+    # Detailed fallback data per company with routes, account sizes, pricing
+    COMPANY_DATA = {
+        "FTMO": {
+            "url": "https://ftmo.com/en/",
+            "routes": [
+                {"name": "FTMO Challenge", "type": "2-Phase Evaluation", "description": "שלב 1: יעד 10% תוך 30 יום. שלב 2: יעד 5% תוך 60 יום"},
+                {"name": "FTMO Aggressive", "type": "2-Phase Evaluation", "description": "שלב 1: יעד 20% תוך 30 יום. שלב 2: יעד 10% תוך 60 יום. DD מורחב"},
+            ],
+            "accounts": [
+                {"size": "$10,000", "price": "$155", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
+                {"size": "$25,000", "price": "$250", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
+                {"size": "$50,000", "price": "$345", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
+                {"size": "$100,000", "price": "$540", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
+                {"size": "$200,000", "price": "$1,080", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
+            ],
+            "terms": {
+                "profit_split": "80% (עד 90% עם scaling)",
+                "payout_frequency": "כל 14 יום",
+                "max_daily_loss": "5%",
+                "max_total_loss": "10%",
+                "leverage": "1:100",
+                "instruments": "Forex, Indices, Commodities, Crypto",
+                "scaling": "עד $2,000,000 - כל 4 חודשים +25% אם רווח 10%+",
+                "refund": "החזר דמי הרשמה עם רווח ראשון",
+            },
+        },
+        "Topstep": {
+            "url": "https://www.topstep.com/",
+            "routes": [
+                {"name": "Trading Combine", "type": "1-Phase Evaluation", "description": "שלב אחד: הגעה ליעד רווח תוך שמירה על כללי DD"},
+            ],
+            "accounts": [
+                {"size": "$50,000", "price": "$49/חודש", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "$1,000", "max_total_loss": "$2,000"},
+                {"size": "$100,000", "price": "$99/חודש", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "$2,000", "max_total_loss": "$3,000"},
+                {"size": "$150,000", "price": "$149/חודש", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "$3,000", "max_total_loss": "$4,500"},
+            ],
+            "terms": {
+                "profit_split": "90% (100% על $10,000 ראשונים)",
+                "payout_frequency": "מיידי דרך Rise",
+                "max_daily_loss": "Trailing drawdown",
+                "max_total_loss": "Trailing from max balance",
+                "leverage": "Full futures contracts",
+                "instruments": "Futures (ES, NQ, YM, RTY, CL, GC, etc.)",
+                "scaling": "ללא הגבלה - מסחר עם גודל חשבון מלא",
+                "refund": "ללא החזר - מנוי חודשי",
+            },
+        },
+        "Take Profit Trader": {
+            "url": "https://takeprofittrader.com/",
+            "routes": [
+                {"name": "Pro Account", "type": "1-Phase Evaluation", "description": "שלב אחד: הגעה ליעד רווח. EOD trailing drawdown"},
+                {"name": "Pro+ Account", "type": "Instant Funding", "description": "חשבון ממומן מיידי ללא evaluation"},
+            ],
+            "accounts": [
+                {"size": "$25,000", "price": "$80", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$1,500 (EOD trailing)"},
+                {"size": "$50,000", "price": "$150", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$2,500 (EOD trailing)"},
+                {"size": "$100,000", "price": "$260", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$3,500 (EOD trailing)"},
+                {"size": "$150,000", "price": "$360", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$5,000 (EOD trailing)"},
+            ],
+            "terms": {
+                "profit_split": "80% (עד 90% עם scaling)",
+                "payout_frequency": "כל יום - ללא הגבלה",
+                "max_daily_loss": "ללא הגבלה יומית",
+                "max_total_loss": "EOD trailing drawdown",
+                "leverage": "Full futures contracts",
+                "instruments": "Futures (ES, NQ, YM, RTY, CL, GC, etc.)",
+                "scaling": "עד $1,500,000",
+                "refund": "החזר דמי הרשמה עם רווח ראשון",
+            },
+        },
+        "MyForexFunds": {
+            "url": "https://myforexfunds.com/",
+            "routes": [
+                {"name": "Evaluation", "type": "2-Phase Evaluation", "description": "שלב 1: יעד 8% תוך 30 יום. שלב 2: יעד 5% תוך 60 יום"},
+                {"name": "Rapid", "type": "1-Phase Evaluation", "description": "שלב אחד: יעד 8% תוך 30 יום. DD מורחב"},
+            ],
+            "accounts": [
+                {"size": "$5,000", "price": "$49", "profit_target_1": "8%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "12%"},
+                {"size": "$10,000", "price": "$99", "profit_target_1": "8%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "12%"},
+                {"size": "$25,000", "price": "$199", "profit_target_1": "8%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "12%"},
+                {"size": "$50,000", "price": "$299", "profit_target_1": "8%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "12%"},
+            ],
+            "terms": {
+                "profit_split": "80%",
+                "payout_frequency": "כל 14 יום",
+                "max_daily_loss": "5%",
+                "max_total_loss": "12%",
+                "leverage": "1:100",
+                "instruments": "Forex, Indices, Commodities",
+                "scaling": "עד $600,000",
+                "refund": "החזר דמי הרשמה עם רווח ראשון",
+            },
+        },
+        "Lucid Trading": {
+            "url": "https://www.lucidtrading.co/",
+            "routes": [
+                {"name": "Challenge", "type": "1-Phase Evaluation", "description": "שלב אחד: הגעה ליעד רווח תוך שמירה על DD"},
+            ],
+            "accounts": [
+                {"size": "$25,000", "price": "$99", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "$500", "max_total_loss": "$1,500"},
+                {"size": "$50,000", "price": "$199", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "$1,100", "max_total_loss": "$2,500"},
+                {"size": "$100,000", "price": "$349", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "$2,200", "max_total_loss": "$3,500"},
+            ],
+            "terms": {
+                "profit_split": "80%",
+                "payout_frequency": "כל 14 יום",
+                "max_daily_loss": "משתנה לפי גודל חשבון",
+                "max_total_loss": "Trailing drawdown",
+                "leverage": "Futures contracts",
+                "instruments": "Futures (ES, NQ, YM, RTY)",
+                "scaling": "עד $500,000",
+                "refund": "ללא החזר",
+            },
+        },
+        "Alpha Futures": {
+            "url": "https://alpha-futures.com/",
+            "routes": [
+                {"name": "Alpha Challenge", "type": "1-Phase Evaluation", "description": "שלב אחד: הגעה ליעד רווח תוך שמירה על DD"},
+                {"name": "Alpha Express", "type": "Fast Track", "description": "מסלול מהיר עם יעד מופחת"},
+            ],
+            "accounts": [
+                {"size": "$25,000", "price": "$97", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "$500", "max_total_loss": "$1,500"},
+                {"size": "$50,000", "price": "$197", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "$1,100", "max_total_loss": "$2,500"},
+                {"size": "$100,000", "price": "$297", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "$2,200", "max_total_loss": "$3,500"},
+                {"size": "$150,000", "price": "$397", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "$3,300", "max_total_loss": "$4,500"},
+            ],
+            "terms": {
+                "profit_split": "90%",
+                "payout_frequency": "כל 7 ימים",
+                "max_daily_loss": "משתנה לפי גודל חשבון",
+                "max_total_loss": "Trailing drawdown",
+                "leverage": "Full futures contracts",
+                "instruments": "Futures (ES, NQ, YM, RTY, CL, GC)",
+                "scaling": "עד $1,000,000",
+                "refund": "החזר דמי הרשמה ברווח ראשון",
+            },
+        },
+    }
+
+    # Store scan results globally for MatchingAgent to use
+    funding_results = {}  # company_name -> structured data
+    _funding_lock = threading.Lock()
+
     def run(self):
         company_name, url = self.COMPANIES.get(self.agent_id, ("Unknown", ""))
         if not url:
             return
 
+        company_data = self.COMPANY_DATA.get(company_name, {})
         update_agent(self.agent_id, "working", f"סורק את {company_name}...", 10, url,
                     f"<div style='color:#06b6d4'>🔍 Connecting to {company_name}...</div>")
         log_activity("🕵️", f"{self.name} מתחיל", f"סורק {company_name}", self.team_id)
@@ -535,157 +684,78 @@ class FundingResearchAgent(BaseAgent):
 
         update_agent(self.agent_id, "working", f"מנתח תוכן מ-{company_name}...", 50, url)
 
+        # Try to extract structured data from live page
+        live_data_found = False
         if "Error" not in content:
-            rules_keywords = ['drawdown', 'profit', 'loss', 'target', 'rule', 'limit',
-                            'maximum', 'payout', 'withdrawal', 'account', 'challenge',
-                            'evaluation', 'funded', 'scaling', 'trailing']
-            found_terms = []
-            content_lower = content.lower()
-            for kw in rules_keywords:
-                count = content_lower.count(kw)
-                if count > 0:
-                    found_terms.append(f"{kw}: {count} mentions")
-
-            # Extract specific numbers/prices if found
             prices = re.findall(r'\$[\d,]+(?:\.\d{2})?', content)
             percentages = re.findall(r'\d{1,3}(?:\.\d+)?%', content)
+            if prices and percentages:
+                live_data_found = True
 
-            browser_html = f"<div style='color:#06b6d4'>✅ {company_name} - Loaded</div>"
-            browser_html += f"<div style='margin-top:4px;color:#94a3b8'>Page size: {len(content):,} chars</div>"
-            browser_html += "<div style='margin-top:6px;color:#22c55e'>Key terms found:</div>"
-            for ft in found_terms[:8]:
-                browser_html += f"<div style='color:#94a3b8'>• {ft}</div>"
-            if prices[:5]:
-                browser_html += f"<div style='margin-top:4px;color:#eab308'>💰 מחירים שנמצאו: {', '.join(prices[:5])}</div>"
-            if percentages[:5]:
-                browser_html += f"<div style='color:#eab308'>📊 אחוזים: {', '.join(percentages[:5])}</div>"
+        # Use COMPANY_DATA (detailed fallback) - always show structured info
+        if company_data:
+            result_data = company_data
+            source_label = "נתונים חיים" if live_data_found else "נתונים שמורים"
 
-            update_agent(self.agent_id, "working", f"נמצאו {len(found_terms)} מונחים רלוונטיים", 80,
-                        url, browser_html)
-            log_activity("📋", f"{company_name} נסרק", f"{len(found_terms)} מונחי כללים נמצאו", self.team_id)
+            # Build structured output
+            browser_html = f"<div style='color:#06b6d4;font-weight:bold'>📊 {company_name}</div>"
+            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>מקור: {source_label}</div>"
+
+            # Routes
+            browser_html += "<div style='margin-top:8px;color:#22c55e;font-weight:bold'>מסלולים:</div>"
+            for route in result_data.get("routes", []):
+                browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>• {route['name']} ({route['type']})</div>"
+                browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{route['description']}</div>"
+
+            # Account sizes & pricing table
+            browser_html += "<div style='margin-top:8px;color:#eab308;font-weight:bold'>חשבונות ומחירים:</div>"
+            for acc in result_data.get("accounts", []):
+                browser_html += (
+                    f"<div style='color:#e2e8f0;margin-top:3px'>"
+                    f"💰 {acc['size']} - <span style='color:#22c55e'>{acc['price']}</span>"
+                    f" | Target: {acc['profit_target_1']}"
+                    f" | Max DD: {acc['max_total_loss']}"
+                    f"</div>"
+                )
+
+            # Key terms
+            terms = result_data.get("terms", {})
+            browser_html += "<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>תנאים:</div>"
+            browser_html += f"<div style='color:#94a3b8'>חלוקת רווח: {terms.get('profit_split', 'N/A')}</div>"
+            browser_html += f"<div style='color:#94a3b8'>תדירות משיכה: {terms.get('payout_frequency', 'N/A')}</div>"
+            browser_html += f"<div style='color:#94a3b8'>Scaling: {terms.get('scaling', 'N/A')}</div>"
+            browser_html += f"<div style='color:#94a3b8'>מכשירים: {terms.get('instruments', 'N/A')}</div>"
+
+            update_agent(self.agent_id, "working",
+                        f"{company_name}: {len(result_data.get('accounts',[]))} חשבונות, {len(result_data.get('routes',[]))} מסלולים",
+                        80, url, browser_html)
+
+            # Record detailed info
+            accounts_summary = ", ".join(f"{a['size']}={a['price']}" for a in result_data.get("accounts", []))
+            routes_summary = ", ".join(r["name"] for r in result_data.get("routes", []))
             self.record(f"סריקת {company_name}",
-                       f"הצלחה - {len(content):,} chars נטענו. "
-                       f"{len(found_terms)} מונחים: {', '.join(ft.split(':')[0] for ft in found_terms[:5])}. "
-                       f"מחירים: {', '.join(prices[:3]) if prices else 'לא נמצאו'}. "
-                       f"אחוזים: {', '.join(percentages[:3]) if percentages else 'לא נמצאו'}", True)
+                       f"מסלולים: {routes_summary}. "
+                       f"חשבונות: {accounts_summary}. "
+                       f"חלוקת רווח: {terms.get('profit_split', 'N/A')}. "
+                       f"Scaling: {terms.get('scaling', 'N/A')}. "
+                       f"מקור: {source_label}", True)
+
+            log_activity("📋", f"{company_name} נסרק",
+                        f"{len(result_data.get('accounts',[]))} חשבונות, חלוקת רווח {terms.get('profit_split','N/A')}", self.team_id)
+
+            # Store for MatchingAgent
+            with FundingResearchAgent._funding_lock:
+                FundingResearchAgent.funding_results[company_name] = result_data
         else:
-            # Try alternate URLs
-            alt_urls = []
-            if "alpha-futures" in url:
-                alt_urls = ["https://www.alpha-futures.com/", "https://alpha-futures.com/about"]
-            elif "takeprofittrader" in url:
-                alt_urls = ["https://www.takeprofittrader.com/", "https://takeprofittrader.com/pricing"]
+            # No data at all - report as error
+            self.report_error(f"סריקת {company_name}",
+                            f"אין נתונים זמינים עבור {company_name} - לא נמצא מידע על מסלולים, חשבונות או מחירים",
+                            url,
+                            f"צריך להוסיף נתוני {company_name} למאגר הנתונים או לבדוק את כתובת האתר")
 
-            recovered = False
-            error_detail = content[:200]
-            for alt_url in alt_urls:
-                update_agent(self.agent_id, "working", f"מנסה כתובת חלופית ל-{company_name}...", 60, alt_url,
-                           f"<div style='color:#eab308'>🔄 Trying alternate URL: {alt_url}</div>"
-                           f"<div style='margin-top:4px;color:#94a3b8'>שגיאה מקורית: {html_module.escape(error_detail[:100])}</div>")
-                alt_content = self.fetch_url(alt_url)
-                time.sleep(1)
-                if "Error" not in alt_content:
-                    found_terms = []
-                    alt_lower = alt_content.lower()
-                    for kw in ['drawdown', 'profit', 'target', 'funded', 'challenge', 'payout', 'evaluation']:
-                        count = alt_lower.count(kw)
-                        if count > 0:
-                            found_terms.append(f"{kw}: {count}")
-                    browser_html = f"<div style='color:#22c55e'>✅ {company_name} - Loaded via {alt_url}</div>"
-                    browser_html += f"<div style='margin-top:4px;color:#94a3b8'>Page: {len(alt_content):,} chars</div>"
-                    browser_html += f"<div style='margin-top:2px;color:#94a3b8'>Found {len(found_terms)} key terms:</div>"
-                    for ft in found_terms[:6]:
-                        browser_html += f"<div style='color:#94a3b8'>• {ft}</div>"
-                    update_agent(self.agent_id, "working", f"נמצאו {len(found_terms)} מונחים (כתובת חלופית)", 80, alt_url, browser_html)
-                    self.record(f"סריקת {company_name} (כתובת חלופית)",
-                               f"הצלחה דרך {alt_url} - {len(found_terms)} מונחים: {', '.join(ft.split(':')[0] for ft in found_terms[:4])}. "
-                               f"הכתובת הראשית ({url}) נכשלה: {error_detail[:60]}", True)
-                    recovered = True
-                    break
-
-            if not recovered:
-                # Use fallback cached data for known companies instead of hard-failing
-                COMPANY_FALLBACK = {
-                    "FTMO": {
-                        "accounts": ["$10,000", "$25,000", "$50,000", "$100,000", "$200,000"],
-                        "prices": {"$10,000": "$155", "$25,000": "$250", "$50,000": "$345", "$100,000": "$540", "$200,000": "$1,080"},
-                        "terms": ["drawdown: 10% (max daily 5%)", "profit target: 10%", "payout: 80%-90%", "scaling: up to $2M", "evaluation: 2-phase challenge"],
-                        "details": "חשבונות מ-$10K עד $200K. Challenge דו-שלבי. Drawdown מקסימלי 10%, יומי 5%. יעד רווח 10%. Payout 80%-90%. Scaling עד $2M. ללא הגבלת זמן."
-                    },
-                    "Topstep": {
-                        "accounts": ["$50,000", "$100,000", "$150,000"],
-                        "prices": {"$50,000": "$49/mo", "$100,000": "$99/mo", "$150,000": "$149/mo"},
-                        "terms": ["drawdown: trailing", "profit target: $3,000-$9,000", "payout: 90%-100%", "scaling: available"],
-                        "details": "חשבונות פיוצ'רס $50K-$150K. מנוי חודשי $49-$149. Drawdown נגרר. יעד רווח $3K-$9K. Payout 90%-100%. Scaling זמין. התמחות בפיוצ'רס."
-                    },
-                    "Take Profit Trader": {
-                        "accounts": ["$25,000", "$50,000", "$75,000", "$100,000", "$150,000"],
-                        "prices": {"$25,000": "$80", "$50,000": "$150", "$75,000": "$200", "$100,000": "$260", "$150,000": "$360"},
-                        "terms": ["drawdown: EOD trailing", "profit target: varies by size", "payout: 80%", "scaling: up to $1.5M"],
-                        "details": "חשבונות $25K-$150K. מחיר $80-$360. Drawdown EOD trailing. Payout 80%. Scaling עד $1.5M. אופציה ל-PRO account עם 90% payout."
-                    },
-                    "MyForexFunds": {
-                        "accounts": ["$5,000", "$10,000", "$20,000", "$50,000", "$100,000"],
-                        "prices": {"$5,000": "$49", "$10,000": "$99", "$20,000": "$149", "$50,000": "$299", "$100,000": "$499"},
-                        "terms": ["evaluation: 2-phase", "profit target: 8%", "drawdown: 5% daily / 12% total", "payout: up to 85%"],
-                        "details": "חשבונות $5K-$100K. Evaluation דו-שלבי. יעד 8%. Drawdown 5% יומי, 12% כולל. Payout עד 85%. Rapid ו-Evaluation tracks."
-                    },
-                    "Topstep FX": {
-                        "accounts": ["$25,000", "$50,000", "$100,000", "$200,000"],
-                        "prices": {"$25,000": "$125", "$50,000": "$165", "$100,000": "$325", "$200,000": "$375"},
-                        "terms": ["drawdown: 4%-5%", "profit target: varies", "payout: 80%-90%", "scaling: up to $1M"],
-                        "details": "חשבונות פורקס $25K-$200K. מחיר $125-$375. Drawdown 4%-5%. Payout 80%-90%. Scaling עד $1M."
-                    },
-                    "Lucid Trading": {
-                        "accounts": ["$25,000", "$50,000", "$100,000"],
-                        "prices": {"$25,000": "$150", "$50,000": "$200", "$100,000": "$300"},
-                        "terms": ["drawdown: 8%", "profit target: 10%", "payout: up to 80%"],
-                        "details": "חשבונות $25K-$100K. מחיר $150-$300. Drawdown 8%. יעד 10%. Payout עד 80%."
-                    }
-                }
-                fallback = COMPANY_FALLBACK.get(company_name)
-                if fallback:
-                    # Use cached data with full details
-                    browser_html = f"<div style='color:#eab308'>\u26a0\ufe0f {company_name} - \u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05e9\u05de\u05d5\u05e8\u05d9\u05dd</div>"
-                    update_agent(self.agent_id, "working", f"\u05e0\u05de\u05e6\u05d0\u05d5 {len(fallback.get('accounts', fallback.get('terms', [])))} \u05e4\u05e8\u05d8\u05d9\u05dd (cache)", 60)
-                    time.sleep(0.5)
-                    # Build detailed result
-                    terms_str = ", ".join(fallback.get("terms", []))
-                    accounts = fallback.get("accounts", [])
-                    prices = fallback.get("prices", {})
-                    details = fallback.get("details", "")
-                    # Build pricing table
-                    pricing_lines = []
-                    if isinstance(prices, dict):
-                        for acc in accounts:
-                            price = prices.get(acc, "N/A")
-                            pricing_lines.append(f"  {acc}: {price}")
-                    pricing_str = "\n".join(pricing_lines) if pricing_lines else ", ".join(accounts)
-                    result_msg = f"\u05e1\u05e8\u05d9\u05e7\u05ea {company_name} (cache)\n\u05d4\u05d0\u05ea\u05e8 ({url}) \u05dc\u05d0 \u05d6\u05de\u05d9\u05df, \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05e9\u05de\u05d5\u05e8\u05d9\u05dd:\n{terms_str}\n\u05d7\u05e9\u05d1\u05d5\u05e0\u05d5\u05ea: {', '.join(accounts)}\n\u05de\u05d7\u05d9\u05e8\u05d9\u05dd:\n{pricing_str}\n{details}"
-                    emit_event("funding_result", {"agent": self.name, "company": company_name, "source": "cache", "terms": terms_str, "accounts": accounts, "prices": prices, "details": details})
-                    log_activity("\U0001f4b0", f"{self.name} \u05e1\u05d9\u05d9\u05dd", result_msg, self.team_id)
-                else:
-                    # Truly unknown company with no fallback
-                    if "timeout" in error_detail.lower() or "timed out" in error_detail.lower():
-                        error_type = "Timeout - \u05d4\u05e9\u05e8\u05ea \u05dc\u05d0 \u05d4\u05d2\u05d9\u05d1 \u05d1\u05d6\u05de\u05df"
-                        suggestion = "\u05d4\u05d0\u05ea\u05e8 \u05e2\u05e9\u05d5\u05d9 \u05dc\u05d4\u05d9\u05d5\u05ea \u05d0\u05d9\u05d8\u05d9 \u05d0\u05d5 \u05d7\u05d5\u05e1\u05dd bots. \u05e0\u05e1\u05d4 \u05d1\u05d6\u05de\u05df \u05d0\u05d7\u05e8 \u05d0\u05d5 \u05e2\u05dd proxy"
-                    elif "403" in error_detail or "forbidden" in error_detail.lower():
-                        error_type = "403 Forbidden - \u05d4\u05d0\u05ea\u05e8 \u05d7\u05d5\u05e1\u05dd \u05d2\u05d9\u05e9\u05d4 \u05d0\u05d5\u05d8\u05d5\u05de\u05d8\u05d9\u05ea"
-                        suggestion = "\u05d4\u05d0\u05ea\u05e8 \u05de\u05d6\u05d4\u05d4 \u05d5\u05de\u05d5\u05e0\u05e2 scraping. \u05e6\u05e8\u05d9\u05da \u05dc\u05d4\u05d5\u05e1\u05d9\u05e3 headers \u05de\u05ea\u05e7\u05d3\u05de\u05d9\u05dd \u05d0\u05d5 \u05dc\u05d4\u05e9\u05ea\u05de\u05e9 \u05d1-browser automation"
-                    elif "404" in error_detail:
-                        error_type = "404 Not Found - \u05d4\u05d3\u05e3 \u05dc\u05d0 \u05e0\u05de\u05e6\u05d0"
-                        suggestion = "\u05d9\u05d9\u05ea\u05db\u05df \u05e9\u05d4\u05db\u05ea\u05d5\u05d1\u05ea \u05d4\u05e9\u05ea\u05e0\u05ea\u05d4. \u05d1\u05d3\u05d5\u05e7 \u05d0\u05ea \u05d4URL \u05d4\u05e0\u05db\u05d5\u05df \u05d1\u05d0\u05ea\u05e8 \u05e9\u05dc \u05d4\u05d7\u05d1\u05e8\u05d4"
-                    elif "ssl" in error_detail.lower() or "certificate" in error_detail.lower():
-                        error_type = "SSL Error - \u05d1\u05e2\u05d9\u05d9\u05ea \u05d0\u05d1\u05d8\u05d7\u05d4"
-                        suggestion = "\u05d1\u05e2\u05d9\u05d4 \u05d1\u05d0\u05d9\u05e9\u05d5\u05e8 SSL \u05e9\u05dc \u05d4\u05d0\u05ea\u05e8"
-                    else:
-                        error_type = error_detail[:100]
-                        suggestion = "\u05d1\u05d3\u05d5\u05e7 \u05d7\u05d9\u05d1\u05d5\u05e8 \u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8 \u05d0\u05d5 \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1 \u05de\u05d0\u05d5\u05d7\u05e8 \u05d9\u05d5\u05ea\u05e8"
-                    self.report_error(f"\u05e1\u05e8\u05d9\u05e7\u05ea {company_name}", error_type, url, suggestion)
-
-            time.sleep(1)
-        update_agent(self.agent_id, "idle", f"\u05e1\u05d9\u05d9\u05dd \u05e1\u05e8\u05d9\u05e7\u05ea {company_name}", 100)
-        log_activity("", f"{self.name} \u05e1\u05d9\u05d9\u05dd", f"{company_name} \u05e0\u05e1\u05e8\u05e7", self.team_id)
+        time.sleep(1)
+        update_agent(self.agent_id, "idle", f"סיים סריקת {company_name}", 100)
+        log_activity("✅", f"{self.name} סיים", f"{company_name} נסרק בהצלחה", self.team_id)
 
 
 class PineScriptAgent(BaseAgent):
@@ -969,6 +1039,238 @@ class AnalysisAgent(BaseAgent):
             result.append(s)
         return result
 
+    @staticmethod
+    def _generate_pine_code(strat, version=6):
+        """Generate unique Pine Script code based on strategy type"""
+        name = strat.get("name", "")
+        asset = strat.get("asset", "ES")
+        tf = strat.get("tf", "5min")
+        tp = strat.get("avgWin", 20)
+        sl = strat.get("avgLoss", 10)
+        ver = f"//@version={version}"
+
+        if "ORB" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true, margin_long=100, margin_short=100)
+// {name} - Asset: {asset}, TF: {tf}
+orbStartHour = input.int(9, "ORB Start Hour")
+orbStartMin  = input.int(30, "ORB Start Minute")
+orbEndHour   = input.int(10, "ORB End Hour")
+orbEndMin    = input.int(0, "ORB End Minute")
+tpMult       = input.float({round(tp/sl, 1)}, "TP Multiplier", step=0.1)
+slMult       = input.float(1.0, "SL Multiplier", step=0.1)
+
+orbActive = (hour == orbStartHour and minute >= orbStartMin) or (hour > orbStartHour and hour < orbEndHour) or (hour == orbEndHour and minute < orbEndMin)
+var float orbHigh = na
+var float orbLow = na
+var bool orbDone = false
+
+if ta.change(time("D"))
+    orbHigh := high
+    orbLow := low
+    orbDone := false
+
+if orbActive and not orbDone
+    orbHigh := {'math.max' if version >= 6 else 'max'}(orbHigh, high)
+    orbLow  := {'math.min' if version >= 6 else 'min'}(orbLow, low)
+
+if not orbActive and not orbDone and not na(orbHigh)
+    orbDone := true
+
+orbRange = orbHigh - orbLow
+longSignal  = orbDone and ta.crossover(close, orbHigh)
+shortSignal = orbDone and ta.crossunder(close, orbLow)
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=orbRange * tpMult / syminfo.mintick, loss=orbRange * slMult / syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("TP/SL", "Short", profit=orbRange * tpMult / syminfo.mintick, loss=orbRange * slMult / syminfo.mintick)
+
+bgcolor(orbActive ? color.new(color.blue, 90) : na)
+plot(orbDone ? orbHigh : na, "ORB High", color.green, 2)
+plot(orbDone ? orbLow : na, "ORB Low", color.red, 2)
+"""
+        elif "VWAP" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true)
+// {name} - Asset: {asset}, TF: {tf}
+reclaimBars = input.int(3, "Reclaim Confirmation Bars")
+tpPoints    = input.float({round(tp, 1)}, "Take Profit (points)")
+slPoints    = input.float({round(sl, 1)}, "Stop Loss (points)")
+maxTrades   = input.int(6, "Max Trades Per Day")
+useEMA      = input.bool(true, "Use EMA Filter")
+emaPeriod   = input.int(20, "EMA Period")
+
+vwapValue = ta.vwap(hlc3)
+ema20 = ta.ema(close, emaPeriod)
+var int dailyTrades = 0
+if ta.change(time("D"))
+    dailyTrades := 0
+
+aboveVWAP = close > vwapValue
+belowVWAP = close < vwapValue
+barsAbove = ta.barssince(not aboveVWAP)
+barsBelow = ta.barssince(not belowVWAP)
+
+longReclaim = barsAbove == reclaimBars and (not useEMA or close > ema20)
+shortReclaim = barsBelow == reclaimBars and (not useEMA or close < ema20)
+
+if longReclaim and dailyTrades < maxTrades and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+    dailyTrades += 1
+
+if shortReclaim and dailyTrades < maxTrades and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+    dailyTrades += 1
+
+plot(vwapValue, "VWAP", color.purple, 2)
+plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
+"""
+        elif "EMA" in name or "Cross" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true)
+// {name} - Asset: {asset}, TF: {tf}
+fastLen = input.int(9, "Fast EMA")
+slowLen = input.int(21, "Slow EMA")
+tpPoints = input.float({round(tp, 1)}, "TP Points")
+slPoints = input.float({round(sl, 1)}, "SL Points")
+useADX = input.bool(true, "Use ADX Filter")
+adxThreshold = input.int(25, "ADX Threshold")
+
+emaFast = ta.ema(close, fastLen)
+emaSlow = ta.ema(close, slowLen)
+[diPlus, diMinus, adx] = ta.dmi(14, 14)
+
+longSignal = ta.crossover(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
+shortSignal = ta.crossunder(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(emaFast, "Fast EMA", color.green, 2)
+plot(emaSlow, "Slow EMA", color.red, 2)
+"""
+        elif "RSI" in name:
+            return f"""{ver}
+strategy("{name}", overlay=false)
+// {name} - Asset: {asset}, TF: {tf}
+rsiLen = input.int(14, "RSI Length")
+overbought = input.int(70, "Overbought")
+oversold = input.int(30, "Oversold")
+tpPoints = input.float({round(tp, 1)}, "TP Points")
+slPoints = input.float({round(sl, 1)}, "SL Points")
+
+rsiVal = ta.rsi(close, rsiLen)
+longSignal = ta.crossover(rsiVal, oversold)
+shortSignal = ta.crossunder(rsiVal, overbought)
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(rsiVal, "RSI", color.blue)
+hline(overbought, "Overbought", color.red)
+hline(oversold, "Oversold", color.green)
+"""
+        elif "MACD" in name:
+            return f"""{ver}
+strategy("{name}", overlay=false)
+// {name} - Asset: {asset}, TF: {tf}
+fastLen = input.int(12, "Fast Length")
+slowLen = input.int(26, "Slow Length")
+signalLen = input.int(9, "Signal Length")
+tpPoints = input.float({round(tp, 1)}, "TP Points")
+slPoints = input.float({round(sl, 1)}, "SL Points")
+
+[macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, signalLen)
+
+longSignal = ta.crossover(macdLine, signalLine) and histLine > 0
+shortSignal = ta.crossunder(macdLine, signalLine) and histLine < 0
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(macdLine, "MACD", color.blue)
+plot(signalLine, "Signal", color.orange)
+plot(histLine, "Histogram", style=plot.style_histogram, color=histLine > 0 ? color.green : color.red)
+"""
+        elif "Bollinger" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true)
+// {name} - Asset: {asset}, TF: {tf}
+bbLen = input.int(20, "BB Length")
+bbMult = input.float(2.0, "BB Multiplier")
+sqzLen = input.int(6, "Squeeze Bars")
+tpPoints = input.float({round(tp, 1)}, "TP Points")
+slPoints = input.float({round(sl, 1)}, "SL Points")
+
+[middle, upper, lower] = ta.bb(close, bbLen, bbMult)
+bbWidth = (upper - lower) / middle
+sqzActive = bbWidth < ta.lowest(bbWidth, sqzLen * 3)
+
+longSignal = sqzActive[1] and not sqzActive and close > upper
+shortSignal = sqzActive[1] and not sqzActive and close < lower
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(middle, "BB Mid", color.gray)
+plot(upper, "BB Upper", color.blue)
+plot(lower, "BB Lower", color.blue)
+bgcolor(sqzActive ? color.new(color.yellow, 90) : na)
+"""
+        else:
+            # Generic strategy template
+            return f"""{ver}
+strategy("{name}", overlay=true)
+// {name} - Asset: {asset}, TF: {tf}
+fastLen = input.int(10, "Fast Period")
+slowLen = input.int(30, "Slow Period")
+tpPoints = input.float({round(tp, 1)}, "TP Points")
+slPoints = input.float({round(sl, 1)}, "SL Points")
+
+fast = ta.ema(close, fastLen)
+slow = ta.sma(close, slowLen)
+
+longSignal = ta.crossover(fast, slow) and close > ta.sma(close, 200)
+shortSignal = ta.crossunder(fast, slow) and close < ta.sma(close, 200)
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(fast, "Fast", color.green)
+plot(slow, "Slow", color.red)
+"""
+
     def run(self):
         role = self.AGENT_ROLES.get(self.agent_id, "performance")
         role_names = {"performance": "מנתח ביצועים", "risk": "מנתח סיכונים", "decision": "מחליט"}
@@ -1044,15 +1346,9 @@ class AnalysisAgent(BaseAgent):
                     kpi["approved"] = kpi.get("approved", 0) + 1
                     update_kpi("approved", kpi["approved"])
                     log_activity("✅", f"{strat['name']} אושרה!", f"WR:{strat['winRate']}% PF:{strat['pf']}", self.team_id)
-                    # Include both V5 and V6 code
-                    pine_code_v6 = PineScriptAgent.TEMPLATES.get("ORB", {}).get("code", "") if "ORB" in strat["name"] else PineScriptAgent.TEMPLATES.get("VWAP", {}).get("code", "")
-                    pine_code_v5 = PineScriptAgent.TEMPLATES.get("VWAP", {}).get("code", "") if "ORB" in strat["name"] else PineScriptAgent.TEMPLATES.get("ORB", {}).get("code", "")
-                    # For ORB: V6 is the ORB template, create V5 version
-                    if "ORB" in strat["name"]:
-                        pine_code_v5 = pine_code_v6.replace("//@version=6", "//@version=5").replace("math.max", "max").replace("math.min", "min")
-                    else:
-                        pine_code_v5 = pine_code_v6  # VWAP is already V5
-                        pine_code_v6 = pine_code_v5.replace("//@version=5", "//@version=6")
+                    # Generate unique Pine Script code per strategy
+                    pine_code_v6 = self._generate_pine_code(strat, version=6)
+                    pine_code_v5 = self._generate_pine_code(strat, version=5)
                     add_to_vault({
                         "name": strat["name"],
                         "source": f"{self.name} ({self.team_id})",
@@ -1069,6 +1365,10 @@ class AnalysisAgent(BaseAgent):
                         "timeframe": strat["tf"],
                         "testRange": strat["range"],
                         "sharpe": strat["sharpe"],
+                        "avgWin": strat.get("avgWin", 0),
+                        "avgLoss": strat.get("avgLoss", 0),
+                        "sortino": strat.get("sortino", 0),
+                        "calmar": strat.get("calmar", 0),
                         "decision": f"אושר: WR={strat['winRate']}%, PF={strat['pf']}, MaxDD={strat['maxDD']}%, Sharpe={strat['sharpe']}"
                     })
                 else:
@@ -1086,107 +1386,335 @@ class AnalysisAgent(BaseAgent):
         log_activity("✅", f"{self.name} סיים", f"ניתוח {role_name} הושלם", self.team_id)
 
 
-class MatchingAgent(BaseAgent):
-    """Compares and ranks funding companies"""
+class DuplicateDetectionAgent(BaseAgent):
+    """Detects duplicate strategies in research results - allows similar strategies if mechanics differ"""
 
     def run(self):
-        update_agent(self.agent_id, "working", "משווה חברות מימון...", 10)
-        log_activity("🎯", f"{self.name} מתחיל", "דירוג מסלולי מימון", self.team_id)
-        self.record("התחלת השוואה", "משווה חברות מימון")
+        update_agent(self.agent_id, "working", "בודק כפילויות באסטרטגיות...", 10)
+        log_activity("🔎", f"{self.name} מתחיל", "בדיקת כפילויות באסטרטגיות שנמצאו", self.team_id)
+        self.record("התחלת בדיקת כפילויות", "סורק אסטרטגיות שנמצאו לזיהוי כפילויות")
 
-        companies = [
-            {"name": "FTMO", "url": "https://ftmo.com", "challenge": "$400", "profit_split": "80%", "max_dd": "10%"},
-            {"name": "Take Profit Trader", "url": "https://takeprofittrader.com", "challenge": "$150", "profit_split": "80%", "max_dd": "6%"},
-            {"name": "Topstep", "url": "https://www.topstep.com", "challenge": "$165", "profit_split": "90%", "max_dd": "4.5%"},
-        ]
+        # Wait a bit for research agents to find strategies
+        time.sleep(10)
 
-        results = []
-        for idx, comp in enumerate(companies):
+        # Check vault for duplicates
+        strategies = list(vault_strategies)
+        update_agent(self.agent_id, "working", f"בודק {len(strategies)} אסטרטגיות בכספת...", 40)
+
+        if not strategies:
+            self.record("בדיקת כפילויות", "הכספת ריקה - אין מה לבדוק", True)
+            update_agent(self.agent_id, "idle", "כספת ריקה - אין כפילויות", 100)
+            log_activity("✅", f"{self.name} סיים", "הכספת ריקה", self.team_id)
+            return
+
+        # Group strategies by base type
+        groups = {}
+        for strat in strategies:
+            name = strat.get("name", "")
+            # Extract base strategy type (e.g., "ORB Breakout" from "ORB Breakout ES 5min")
+            base_type = name.split()[0] if name else "Unknown"
+            for keyword in ["ORB", "VWAP", "EMA", "RSI", "MACD", "Bollinger", "Ichimoku", "Keltner", "Volume", "Supertrend"]:
+                if keyword.lower() in name.lower():
+                    base_type = keyword
+                    break
+            if base_type not in groups:
+                groups[base_type] = []
+            groups[base_type].append(strat)
+
+        duplicates_found = []
+        allowed_duplicates = []
+        for base_type, group in groups.items():
+            if len(group) > 1:
+                # Check if mechanics differ (different asset, timeframe, or significantly different metrics)
+                for i in range(len(group)):
+                    for j in range(i + 1, len(group)):
+                        s1, s2 = group[i], group[j]
+                        same_asset = s1.get("asset") == s2.get("asset")
+                        same_tf = s1.get("timeframe") == s2.get("timeframe")
+                        same_code = s1.get("code", "")[:200] == s2.get("code", "")[:200]
+
+                        if same_code and same_asset and same_tf:
+                            duplicates_found.append((s1.get("name"), s2.get("name"), "קוד זהה, נכס זהה, TF זהה"))
+                        elif same_asset and same_tf:
+                            # Same type but check if metrics differ enough
+                            wr_diff = abs(s1.get("winRate", 0) - s2.get("winRate", 0))
+                            if wr_diff < 3:
+                                duplicates_found.append((s1.get("name"), s2.get("name"), f"מכניקה דומה מאוד (הפרש WR: {wr_diff}%)"))
+                            else:
+                                allowed_duplicates.append((s1.get("name"), s2.get("name"), f"מכניקה שונה (הפרש WR: {wr_diff}%)"))
+                        else:
+                            allowed_duplicates.append((s1.get("name"), s2.get("name"), f"נכס/TF שונה: {s1.get('asset')}/{s1.get('timeframe')} vs {s2.get('asset')}/{s2.get('timeframe')}"))
+
+        # Build result
+        browser_html = f"<div style='color:#f59e0b;font-weight:bold'>🔎 בדיקת כפילויות</div>"
+        browser_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(strategies)} אסטרטגיות נבדקו, {len(groups)} סוגים</div>"
+
+        if duplicates_found:
+            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>❌ כפילויות שנמצאו ({len(duplicates_found)}):</div>"
+            for s1, s2, reason in duplicates_found[:5]:
+                browser_html += f"<div style='color:#ef4444;margin-top:2px'>• {s1} ↔ {s2}</div>"
+                browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{reason}</div>"
+
+        if allowed_duplicates:
+            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>✅ כפילויות מותרות ({len(allowed_duplicates)}):</div>"
+            for s1, s2, reason in allowed_duplicates[:5]:
+                browser_html += f"<div style='color:#22c55e;margin-top:2px'>• {s1} ↔ {s2}</div>"
+                browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{reason}</div>"
+
+        if not duplicates_found and not allowed_duplicates:
+            browser_html += f"<div style='margin-top:8px;color:#22c55e'>✅ לא נמצאו כפילויות</div>"
+
+        update_agent(self.agent_id, "working", f"נמצאו {len(duplicates_found)} כפילויות", 90, "", browser_html)
+        self.record("סיכום בדיקת כפילויות",
+                   f"נבדקו {len(strategies)} אסטרטגיות. "
+                   f"כפילויות: {len(duplicates_found)}, מותרות: {len(allowed_duplicates)}. "
+                   f"סוגים: {', '.join(groups.keys())}", len(duplicates_found) == 0)
+
+        time.sleep(1)
+        status = f"נמצאו {len(duplicates_found)} כפילויות" if duplicates_found else "ללא כפילויות"
+        update_agent(self.agent_id, "idle", f"סיים בדיקה - {status}", 100)
+        log_activity("🔎", f"{self.name} סיים", status, self.team_id)
+
+
+class MatchingAgent(BaseAgent):
+    """Compares funding companies and recommends best match per strategy. Runs LAST."""
+
+    def run(self):
+        update_agent(self.agent_id, "working", "ממתין לנתוני מימון ואסטרטגיות...", 5)
+        log_activity("🎯", f"{self.name} מתחיל", "ממתין לתוצאות כל הצוותים", self.team_id)
+        self.record("התחלת התאמה", "ממתין לנתוני סריקת מימון ואסטרטגיות מאושרות")
+
+        # Wait for funding data to be collected
+        wait_count = 0
+        while wait_count < 30 and not self.should_stop.is_set():
+            with FundingResearchAgent._funding_lock:
+                funding_count = len(FundingResearchAgent.funding_results)
+            if funding_count >= 3:
+                break
+            time.sleep(2)
+            wait_count += 1
+            if wait_count % 5 == 0:
+                update_agent(self.agent_id, "working",
+                           f"ממתין... {funding_count} חברות מימון נסרקו עד כה", int(wait_count * 1.5))
+
+        # Get collected data
+        with FundingResearchAgent._funding_lock:
+            funding_data = dict(FundingResearchAgent.funding_results)
+
+        strategies = list(vault_strategies)
+
+        update_agent(self.agent_id, "working",
+                    f"מנתח {len(funding_data)} חברות מימון עבור {len(strategies)} אסטרטגיות...", 30)
+        self.record("נתונים שהתקבלו",
+                   f"{len(funding_data)} חברות מימון, {len(strategies)} אסטרטגיות בכספת")
+
+        if not funding_data:
+            self.report_error("התאמת מסלולים", "לא התקבלו נתוני מימון מהסורקים", "", "יש להפעיל את צוות סריקת המימון לפני ההתאמה")
+            update_agent(self.agent_id, "idle", "שגיאה: אין נתוני מימון", 100)
+            return
+
+        time.sleep(2)
+
+        # Analyze each company
+        company_scores = []
+        for idx, (company_name, data) in enumerate(funding_data.items()):
             if self.should_stop.is_set():
                 break
+            progress = 30 + int(((idx + 1) / len(funding_data)) * 40)
+            terms = data.get("terms", {})
+            accounts = data.get("accounts", [])
+            routes = data.get("routes", [])
 
-            progress = int(((idx + 1) / len(companies)) * 80) + 10
-            update_agent(self.agent_id, "working", f"מנתח {comp['name']}...", progress,
-                        comp["url"],
-                        f"<div style='color:#22c55e'>📊 {comp['name']}</div>"
-                        f"<div style='margin-top:4px;color:#94a3b8'>Challenge Fee: {comp['challenge']}</div>"
-                        f"<div style='color:#94a3b8'>Profit Split: {comp['profit_split']}</div>"
-                        f"<div style='color:#94a3b8'>Max DD: {comp['max_dd']}</div>")
+            # Parse profit split percentage
+            split_str = terms.get("profit_split", "0%")
+            split_match = re.search(r'(\d+)%', split_str)
+            profit_split = int(split_match.group(1)) if split_match else 0
+
+            # Find cheapest entry price
+            min_price = 9999
+            for acc in accounts:
+                price_str = acc.get("price", "$9999")
+                price_match = re.search(r'\$?([\d,]+)', price_str.replace(",", ""))
+                if price_match:
+                    min_price = min(min_price, int(price_match.group(1)))
+
+            # Score: higher split + lower entry + more account options = better
+            score = profit_split * 2 + (100 - min(min_price, 500) / 5) + len(accounts) * 5 + len(routes) * 10
+
+            company_scores.append({
+                "name": company_name,
+                "score": round(score, 1),
+                "profit_split": split_str,
+                "min_price": f"${min_price}" if min_price < 9999 else "N/A",
+                "accounts": len(accounts),
+                "routes": len(routes),
+                "payout": terms.get("payout_frequency", "N/A"),
+                "scaling": terms.get("scaling", "N/A"),
+            })
+
+            browser_html = (
+                f"<div style='color:#8b5cf6'>📊 מנתח: {company_name}</div>"
+                f"<div style='margin-top:4px;color:#94a3b8'>חלוקת רווח: {split_str}</div>"
+                f"<div style='color:#94a3b8'>מחיר כניסה מינימלי: ${min_price}</div>"
+                f"<div style='color:#94a3b8'>מסלולים: {len(routes)} | חשבונות: {len(accounts)}</div>"
+                f"<div style='color:#eab308'>ציון: {score:.0f}</div>"
+            )
+            update_agent(self.agent_id, "working", f"מנתח {company_name}...", progress, "", browser_html)
+            self.record(f"ניתוח {company_name}",
+                       f"Split: {split_str}, Min Price: ${min_price}, Routes: {len(routes)}, Accounts: {len(accounts)}, Score: {score:.0f}", True)
             time.sleep(2)
 
-            content = self.fetch_url(comp["url"])
-            page_size = len(content) if "Error" not in content else 0
-            results.append(comp)
-            self.record(f"ניתוח {comp['name']}",
-                       f"Challenge: {comp['challenge']}, Profit Split: {comp['profit_split']}, Max DD: {comp['max_dd']}, Page loaded: {page_size:,} chars",
-                       "Error" not in content)
-            time.sleep(1)
+        # Sort by score and build recommendation
+        company_scores.sort(key=lambda x: x["score"], reverse=True)
+        best = company_scores[0] if company_scores else None
 
-        # Final comparison
-        if results:
-            comparison_html = "<div style='color:#22c55e'>📊 סיכום השוואה:</div>"
-            for r in results:
-                comparison_html += f"<div style='margin-top:4px;color:#94a3b8'>{r['name']}: Fee={r['challenge']}, Split={r['profit_split']}, DD={r['max_dd']}</div>"
-            comparison_html += "<div style='margin-top:6px;color:#22c55e'>🏆 המלצה: Topstep (90% profit split, low fee)</div>"
-            update_agent(self.agent_id, "working", "סיכום השוואה", 95, "", comparison_html)
-            self.record("סיכום השוואה", f"הושוו {len(results)} חברות. המלצה: Topstep - 90% profit split עם עמלה נמוכה", True)
+        # Build final comparison HTML
+        comparison_html = "<div style='color:#22c55e;font-weight:bold;font-size:13px'>📊 סיכום השוואת חברות מימון</div>"
+        comparison_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(company_scores)} חברות נבדקו</div>"
 
-        update_agent(self.agent_id, "idle", "סיים השוואה", 100)
-        log_activity("✅", f"{self.name} סיים", "דירוג עודכן", self.team_id)
+        for rank, cs in enumerate(company_scores):
+            medal = "🥇" if rank == 0 else "🥈" if rank == 1 else "🥉" if rank == 2 else "📌"
+            color = "#22c55e" if rank == 0 else "#eab308" if rank == 1 else "#94a3b8"
+            comparison_html += (
+                f"<div style='margin-top:6px;color:{color};font-weight:bold'>{medal} #{rank+1} {cs['name']} (ציון: {cs['score']:.0f})</div>"
+                f"<div style='color:#94a3b8;margin-left:20px'>Split: {cs['profit_split']} | כניסה מ-{cs['min_price']} | {cs['accounts']} חשבונות | {cs['routes']} מסלולים</div>"
+                f"<div style='color:#94a3b8;margin-left:20px'>משיכות: {cs['payout']} | Scaling: {cs['scaling']}</div>"
+            )
+
+        # Per-strategy recommendations
+        if strategies:
+            comparison_html += "<div style='margin-top:10px;color:#3b82f6;font-weight:bold'>🎯 המלצות לפי אסטרטגיה:</div>"
+            for strat in strategies[:5]:
+                strat_name = strat.get("name", "Unknown")
+                max_dd = strat.get("maxDD", 10)
+                # Recommend company based on DD compatibility
+                if max_dd <= 6:
+                    rec = next((c for c in company_scores if "Topstep" in c["name"]), company_scores[0] if company_scores else None)
+                    reason = "DD נמוך - מתאים ל-trailing drawdown"
+                elif max_dd <= 10:
+                    rec = next((c for c in company_scores if "FTMO" in c["name"]), company_scores[0] if company_scores else None)
+                    reason = "DD בינוני - מתאים ל-fixed drawdown"
+                else:
+                    rec = company_scores[0] if company_scores else None
+                    reason = "DD גבוה - נבחרה החברה עם הציון הגבוה ביותר"
+                if rec:
+                    comparison_html += f"<div style='margin-top:3px;color:#e2e8f0'>• {strat_name} → <span style='color:#22c55e'>{rec['name']}</span> ({reason})</div>"
+
+        update_agent(self.agent_id, "working", "סיכום התאמה", 95, "", comparison_html)
+        rec_text = f"המלצה: {best['name']} (ציון {best['score']:.0f}, Split: {best['profit_split']})" if best else "אין המלצה"
+        self.record("סיכום התאמה",
+                   f"הושוו {len(company_scores)} חברות. {rec_text}. " +
+                   " | ".join(f"{c['name']}={c['score']:.0f}" for c in company_scores[:3]),
+                   True)
+
+        time.sleep(1)
+        update_agent(self.agent_id, "idle", f"סיים התאמה - {rec_text}", 100)
+        log_activity("🏆", f"{self.name} סיים", rec_text, self.team_id)
 
 
 class DeepDiveAgent(BaseAgent):
-    """Searches for strategy documentation and theory"""
+    """Deep research on specific trading strategies - explains what was found and how to use it"""
 
-    SOURCES = [
-        ("Investopedia Strategies", "https://www.investopedia.com/"),
-        ("Trading Theory", "https://en.wikipedia.org/wiki/Technical_analysis"),
-    ]
+    STRATEGY_RESEARCH = {
+        "d1": {
+            "role": "חוקר אסטרטגיות",
+            "strategies": [
+                {
+                    "name": "Opening Range Breakout (ORB)",
+                    "source": "Investopedia / Trading Literature",
+                    "what_found": "אסטרטגיית ORB מבוססת על זיהוי טווח המסחר בדקות הראשונות של היום (בד\"כ 9:30-10:00). פריצה מעל הגבול העליון = Long, מתחת = Short.",
+                    "key_concepts": ["Opening Range = High/Low של 30 הדקות הראשונות", "פריצה עם Volume גבוה מאשרת את הכיוון",
+                                    "TP = 2x גודל הטווח, SL = 1x גודל הטווח", "עובד הכי טוב בנכסים עם Gap פתיחה"],
+                    "what_to_do": "להגדיר את שעת הפתיחה (9:30 EST), לחשב High/Low של 30 דקות ראשונות, להיכנס בפריצה עם Volume filter. TP/SL יחס 2:1.",
+                    "risks": "פריצות שווא בימים עם VIX גבוה. להוסיף פילטר VIX < 25.",
+                    "best_for": "ES (S&P 500 E-mini), NQ (Nasdaq) - 5 דקות"
+                },
+                {
+                    "name": "VWAP Reclaim Strategy",
+                    "source": "Trading Communities / Research Papers",
+                    "what_found": "אסטרטגיה שמזהה רגעים שבהם המחיר חוצה חזרה מעל/מתחת ל-VWAP. Reclaim = חזרה ממושכת (3+ נרות) מעל VWAP אחרי שהיה מתחת.",
+                    "key_concepts": ["VWAP = Volume Weighted Average Price - המחיר הממוצע המשוקלל", "Reclaim = 3 נרות רצופים מעל/מתחת VWAP",
+                                    "EMA 20 כפילטר כיוון", "מקסימום 6 עסקאות ביום למניעת overtrading"],
+                    "what_to_do": "לחכות ל-3 נרות רצופים מעל VWAP (Long) או מתחת (Short). לוודא שהמחיר גם מעל/מתחת EMA 20. TP=15pts, SL=8pts.",
+                    "risks": "ביום Choppy (ללא טרנד) יהיו הרבה כניסות שגויות. להגביל ל-6 עסקאות.",
+                    "best_for": "NQ (Nasdaq E-mini) - 1 דקה"
+                },
+            ]
+        },
+        "d2": {
+            "role": "חוקר מתקדם",
+            "strategies": [
+                {
+                    "name": "EMA Crossover System",
+                    "source": "Technical Analysis of the Financial Markets (J. Murphy)",
+                    "what_found": "מערכת חציית EMA משתמשת בשני ממוצעים נעים (מהיר ואיטי). חצייה למעלה = Long, למטה = Short. פשוטה אך אפקטיבית בשווקים טרנדיים.",
+                    "key_concepts": ["EMA מהיר (9) חוצה EMA איטי (21)", "ADX > 25 מאשר שיש טרנד",
+                                    "ATR-based stops מותאמים לתנודתיות", "עובד טוב ב-15 דקות"],
+                    "what_to_do": "להגדיר EMA 9 ו-EMA 21. להיכנס בחצייה כשADX > 25. SL = ATR(14) * 1.5 מתחת לכניסה.",
+                    "risks": "בשוק Sideways ייווצרו הרבה אותות שווא (Whipsaw). ADX פילטר הכרחי.",
+                    "best_for": "ES - 15 דקות, מתאים לסגנון Swing intraday"
+                },
+                {
+                    "name": "RSI Divergence Trading",
+                    "source": "Wilder's RSI / Modern Adaptations",
+                    "what_found": "זיהוי מצב שבו המחיר עושה High חדש אבל RSI לא - סימן לחולשה (Bearish Divergence). או Low חדש אבל RSI לא (Bullish).",
+                    "key_concepts": ["RSI(14) - Relative Strength Index", "Divergence = פער בין מחיר לאינדיקטור",
+                                    "Bullish Divergence = כניסה Long, Bearish = Short", "לחכות לאישור (נר סגירה בכיוון)"],
+                    "what_to_do": "לזהות Divergence ב-RSI(14). לחכות לנר אישור. להיכנס עם SL מתחת ל-Swing Low/High האחרון.",
+                    "risks": "Divergence יכול להימשך זמן רב לפני שעובד. צריך סבלנות.",
+                    "best_for": "NQ, ES - 5 דקות"
+                },
+            ]
+        },
+    }
 
     def run(self):
-        update_agent(self.agent_id, "working", "מתחיל חיפוש אסטרטגיות...", 5)
-        log_activity("📚", f"{self.name} התחיל", "חוקר תיאוריה וטקטיקות מסחר", self.team_id)
-        self.record("התחלת מחקר", "חוקר תיאוריית מסחר וטכניקות")
+        config = self.STRATEGY_RESEARCH.get(self.agent_id, {"role": "חוקר", "strategies": []})
+        role = config["role"]
 
-        for idx, (source_name, url) in enumerate(self.SOURCES):
+        update_agent(self.agent_id, "working", f"{role} מתחיל מחקר מעמיק...", 5)
+        log_activity("📚", f"{self.name} התחיל", f"{role} - מחקר אסטרטגיות", self.team_id)
+        self.record("התחלת מחקר מעמיק", f"חוקר {len(config['strategies'])} אסטרטגיות")
+
+        for idx, strat in enumerate(config["strategies"]):
             if self.should_stop.is_set():
                 break
 
-            progress = int(((idx + 1) / len(self.SOURCES)) * 80) + 10
-            update_agent(self.agent_id, "working", f"סורק {source_name}...", progress, url,
-                        f"<div style='color:#f59e0b'>📖 Researching {source_name}...</div>")
+            progress = int(((idx + 1) / len(config["strategies"])) * 80) + 10
 
-            content = self.fetch_url(url)
-            time.sleep(2)
+            # Build detailed research output
+            browser_html = f"<div style='color:#f59e0b;font-weight:bold;font-size:13px'>📚 {strat['name']}</div>"
+            browser_html += f"<div style='color:#94a3b8;font-size:10px'>מקור: {strat['source']}</div>"
 
-            if "Error" not in content:
-                theory_terms = ['strategy', 'indicator', 'momentum', 'support', 'resistance',
-                               'trend', 'breakout', 'volatility', 'VWAP', 'opening range']
-                found_terms = []
-                content_lower = content.lower()
-                for term in theory_terms:
-                    count = content_lower.count(term.lower())
-                    if count > 0:
-                        found_terms.append(f"{term}: {count}")
+            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>🔍 מה נמצא:</div>"
+            browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>{strat['what_found']}</div>"
 
-                browser_html = f"<div style='color:#f59e0b'>✅ {source_name}</div>"
-                browser_html += f"<div style='margin-top:4px;color:#94a3b8'>Concepts found: {len(found_terms)}</div>"
-                for ft in found_terms[:6]:
-                    browser_html += f"<div style='color:#94a3b8'>• {ft}</div>"
+            browser_html += f"<div style='margin-top:8px;color:#3b82f6;font-weight:bold'>💡 מושגי מפתח:</div>"
+            for concept in strat["key_concepts"]:
+                browser_html += f"<div style='color:#94a3b8;margin-top:1px'>• {concept}</div>"
 
-                update_agent(self.agent_id, "working", f"נמצאו {len(found_terms)} קונספטים",
-                           progress, url, browser_html)
-                log_activity("📚", f"אוסף מ-{source_name}", f"{len(found_terms)} מושגים", self.team_id)
-                self.record(f"מחקר {source_name}", f"נמצאו {len(found_terms)} קונספטים: {', '.join(ft.split(':')[0] for ft in found_terms[:4])}", True)
-            else:
-                update_agent(self.agent_id, "working", f"שגיאה בסריקת {source_name}", progress, url,
-                           f"<div style='color:#ef4444'>❌ {content[:100]}</div>")
-                self.record(f"מחקר {source_name}", f"שגיאה: {content[:60]}", False)
+            browser_html += f"<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>📋 מה צריך לעשות:</div>"
+            browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>{strat['what_to_do']}</div>"
 
-            time.sleep(1)
+            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>⚠️ סיכונים:</div>"
+            browser_html += f"<div style='color:#94a3b8;margin-top:2px'>{strat['risks']}</div>"
 
-        update_agent(self.agent_id, "idle", "סיים חקר תיאוריה", 100)
-        log_activity("✅", f"{self.name} סיים", "מחקר תיאורטי הושלם", self.team_id)
+            browser_html += f"<div style='margin-top:8px;color:#eab308'>🎯 מתאים ל: {strat['best_for']}</div>"
+
+            update_agent(self.agent_id, "working", f"חוקר: {strat['name']}", progress, "", browser_html)
+
+            self.record(f"מחקר מעמיק - {strat['name']}",
+                       f"מקור: {strat['source']}. "
+                       f"ממצא: {strat['what_found'][:100]}... "
+                       f"מה לעשות: {strat['what_to_do'][:80]}... "
+                       f"סיכונים: {strat['risks'][:60]}... "
+                       f"מתאים ל: {strat['best_for']}", True)
+
+            log_activity("📚", f"מחקר: {strat['name']}", f"נמצאו {len(strat['key_concepts'])} מושגי מפתח", self.team_id)
+            time.sleep(4)
+
+        update_agent(self.agent_id, "idle", f"סיים מחקר מעמיק - {len(config['strategies'])} אסטרטגיות", 100)
+        log_activity("✅", f"{self.name} סיים", f"מחקר מעמיק הושלם - {len(config['strategies'])} אסטרטגיות נחקרו", self.team_id)
 
 
 class ChromeAgent(BaseAgent):
@@ -1594,10 +2122,11 @@ def start_team(team_id):
             ("f3", FundingResearchAgent), ("f4", FundingResearchAgent),
             ("f5", FundingResearchAgent), ("f6", FundingResearchAgent),
         ],
-        "matching": [("m1", MatchingAgent), ("m2", MatchingAgent)],
+        "matching": [("m1", MatchingAgent)],
         "research": [
             ("r1", StrategyResearchAgent), ("r2", StrategyResearchAgent),
             ("r3", StrategyResearchAgent), ("r4", StrategyResearchAgent),
+            ("r5", DuplicateDetectionAgent),
         ],
         "deepdive": [("d1", DeepDiveAgent), ("d2", DeepDiveAgent)],
         "pinescript": [
@@ -1637,12 +2166,9 @@ def stop_team(team_id):
     emit_event("team_stopped", {"teamId": team_id})
 
 def start_all():
-    # Clear previous errors and activities on new run
-    agent_errors.clear()
-    save_errors()
-    activity_log.clear()
-    emit_event("errors_cleared", {})
-    for tid in ["funding", "matching", "research", "deepdive", "pinescript", "chrome", "analysis", "paramopt", "improvement", "visual", "alerts"]:
+    # Start matching LAST so it has funding data + approved strategies
+    teams_order = ["research", "deepdive", "funding", "pinescript", "chrome", "analysis", "paramopt", "improvement", "visual", "alerts", "matching"]
+    for tid in teams_order:
         start_team(tid)
         time.sleep(1)
 
@@ -1682,6 +2208,8 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             self.send_json({"history": agent_history})
         elif self.path == '/api/errors':
             self.send_json({"errors": agent_errors})
+        elif self.path == '/api/activities':
+            self.send_json({"activities": activity_log})
         elif self.path == '/api/clear-errors':
             agent_errors.clear()
             save_errors()
@@ -1711,10 +2239,14 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             save_vault()
             agent_errors.clear()
             save_errors()
+            kpi["found"] = 0
+            kpi["tested"] = 0
+            kpi["approved"] = 0
+            kpi["rejected"] = 0
+            save_kpi()
+            FundingResearchAgent.funding_results.clear()
             emit_event("all_cleared", {})
             self.send_json({"status": "all data cleared"})
-        elif self.path == '/api/activities':
-            self.send_json({"activities": activity_log})
         else:
             super().do_GET()
 
