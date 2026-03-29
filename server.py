@@ -1687,6 +1687,32 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             save_errors()
             emit_event("errors_cleared", {})
             self.send_json({"status": "errors cleared"})
+        elif self.path == '/api/clear-history':
+            agent_history.clear()
+            save_history()
+            emit_event("history_cleared", {})
+            self.send_json({"status": "history cleared"})
+        elif self.path == '/api/clear-activities':
+            activity_log.clear()
+            save_activities()
+            emit_event("activities_cleared", {})
+            self.send_json({"status": "activities cleared"})
+        elif self.path == '/api/clear-vault':
+            vault_strategies.clear()
+            save_vault()
+            emit_event("vault_cleared", {})
+            self.send_json({"status": "vault cleared"})
+        elif self.path == '/api/clear-all':
+            agent_history.clear()
+            save_history()
+            activity_log.clear()
+            save_activities()
+            vault_strategies.clear()
+            save_vault()
+            agent_errors.clear()
+            save_errors()
+            emit_event("all_cleared", {})
+            self.send_json({"status": "all data cleared"})
         elif self.path == '/api/activities':
             self.send_json({"activities": activity_log})
         else:
