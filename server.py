@@ -2222,6 +2222,20 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             self.send_json({"errors": agent_errors})
         elif self.path == '/api/activities':
             self.send_json({"activities": activity_log})
+        elif self.path.startswith('/api/file-b64/'):
+            import base64 as b64mod
+            fname = self.path.split('/')[-1]
+            fpath = Path(__file__).parent / fname
+            if fpath.exists() and fname in ('index.html', 'server.py'):
+                raw = fpath.read_bytes()
+                encoded = b64mod.b64encode(raw).decode('ascii')
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(encoded.encode('ascii'))
+            else:
+                self.send_error(404)
         elif self.path == '/api/clear-errors':
             agent_errors.clear()
             save_errors()
