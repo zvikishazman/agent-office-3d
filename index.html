@@ -1030,8 +1030,9 @@ function updateHover(e){
       tip.querySelector('.t-task').textContent=ad.task;
       tip.querySelector('.t-status').innerHTML=st;
       tip.querySelector('.t-status').style.cssText=`background:${sc}22;color:${sc}`;
-      tip.querySelector('.t-bar .fill').style.cssText=`width:${ad.taskProg}%;background:${sc}`;
-      document.getElementById('t-prog-text').textContent=ad.taskProg>0?ad.taskProg+'%':'אין משימה';
+      const tProg=ad.status==='idle'?0:ad.taskProg;
+      tip.querySelector('.t-bar .fill').style.cssText=`width:${tProg}%;background:${sc}`;
+      document.getElementById('t-prog-text').textContent=ad.status==='idle'?'ממתין':tProg>0?tProg+'%':'אין משימה';
       tip.style.display='block';
       const wr=document.getElementById('cWrap').getBoundingClientRect();
       tip.style.left=(e.clientX-wr.left+15)+'px';
@@ -1345,8 +1346,8 @@ function selectAgent(tid,aid){
     <h3>${ag.name}</h3><p>${team.name} | ${ag.spec}</p>
     <div style="margin-top:6px"><span class="st ${ag.status}" style="font-size:12px">${st}</span></div></div>
     <div class="ainfo"><div class="lbl">משימה נוכחית</div><div class="val">${ag.task}</div>
-      <div class="aprog"><div class="pbar"><div class="pfill" style="width:${ag.taskProg}%;background:${sc}"></div></div>
-      <div class="plbl"><span>${ag.taskProg>0?ag.taskProg+'%':'אין משימה'}</span></div></div>
+      <div class="aprog"><div class="pbar"><div class="pfill" style="width:${ag.status==='idle'?0:ag.taskProg}%;background:${sc}"></div></div>
+      <div class="plbl"><span>${ag.status==='idle'?'ממתין':ag.taskProg>0?ag.taskProg+'%':'אין משימה'}</span></div></div>
     </div>
     <div class="ainfo"><div class="lbl">התמחות</div><div class="val">${ag.spec}</div></div>
     ${lastActionHtml}
