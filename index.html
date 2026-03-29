@@ -204,7 +204,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
       <div class="tab on" data-t="log" onclick="swTab(this)">📋 פעילות</div>
       <div class="tab" data-t="detail" onclick="swTab(this)">👤 פרטים</div>
       <div class="tab" data-t="errors" onclick="swTab(this)">⚠️ שגיאות</div>
-      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כסשת</div>
+      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כספת</div>
     </div>
     <div id="tp-log" class="tpanel on"><div id="actLog"></div></div>
     <div id="tp-detail" class="tpanel"><div id="agDetail" style="text-align:center;color:var(--dim);padding:20px">בחר סוכן לצפייה בפרטים</div></div>
@@ -219,8 +219,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
       <div id="vaultLocked" style="text-align:center;padding:30px">
         <div style="font-size:40px;margin-bottom:10px">🔐</div>
         <div style="font-size:14px;font-weight:600;margin-bottom:6px">כספת אסטרטגיות</div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הוןסיסמה לפתיחה באסטרטגיות שאושרו</div>
-        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',s-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הזן סיסמה לצפייה באסטרטגיות שאושרו</div>
+        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
         <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כספת</button>
         <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">סיסמה שגויה</div>
       </div>
@@ -229,19 +229,26 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
           <span style="font-size:13px;font-weight:600">🏆 אסטרטגיות שאושרו</span>
           <span id="vaultCount" style="font-size:10px;color:var(--dim)">0 אסטרטגיות</span>
         </div>
-        <div id="vaultList"></div>
+        <input type="text" id="vaultSearch" placeholder="🔍 חיפוש לפי שם, נכס, תוצאה..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:11px;margin-bottom:8px;direction:rtl" oninput="renderVault()">
+        <div id="vaultList" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
   </div>
   <div style="grid-column:1/-1;background:var(--panel);border-top:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">
-    <div style="font-size:11px;font-weight:600;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px">⏱ ציר הזמן</div>
+    <div style="font-size:11px;font-weight:600;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center">
+      <span>⏱ ציר הזמן</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn" onclick="timelineView='cards';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">🃏 כרטיסים</button>
+        <button class="btn" onclick="timelineView='flow';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">📊 זרימה</button>
+      </div>
+    </div>
     <div id="timeline" style="flex:1"></div>
   </div>
 </div>
 <div class="notif" id="notif"><div id="nIco"></div><div id="nTxt"></div></div>
 <div class="history-panel" id="historyPanel">
   <div class="hp-header">
-    <div class="hp-title" id="histTitle">📜 היסטורייt סוכן</div>
+    <div class="hp-title" id="histTitle">📜 היסטוריית סוכן</div>
     <div class="hp-close" onclick="closeHistory()">✕</div>
   </div>
   <div id="histContent"></div>
@@ -250,8 +257,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <script>
 // ============ DATA ============
 const TEAMS = [
-  {id:'funding', name:'מחקר חברות מיצון', icon:'💰', color:'#ec4899',
-   desc:'סריקה ומחקר של חברות מיצון וכלכלי מסחר',
+  {id:'funding', name:'מחקר חברות מימון', icon:'💰', color:'#ec4899',
+   desc:'סריקה ומחקר של חברות מימון וכללי מסחר',
    agents:[
      {id:'f1',name:'סוכן FTMO',emoji:'🏦',status:'idle',task:'ממתין',taskProg:0,spec:'FTMO Research',browserUrl:'',browserContent:''},
      {id:'f2',name:'סוכן MyFunded',emoji:'💳',status:'idle',task:'ממתין',taskProg:0,spec:'MyFunded Research',browserUrl:'',browserContent:''},
@@ -292,7 +299,7 @@ const TEAMS = [
   {id:'chrome', name:'ניהול Chrome/TradingView', icon:'🌐', color:'#f97316',
    desc:'הפעלת גרפים, הרצת קוד והורדת דוחות',
    agents:[
-     {id:'c1',name:'מאדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
+     {id:'c1',name:'מגדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
      {id:'c2',name:'מנקה סביבה',emoji:'🧹',status:'idle',task:'ממתין',taskProg:0,spec:'Cleanup',browserUrl:'',browserContent:''},
      {id:'c3',name:'מריץ קוד',emoji:'▶️',status:'idle',task:'ממתין',taskProg:0,spec:'Code Runner',browserUrl:'',browserContent:''},
      {id:'c4',name:'מוריד דוחות',emoji:'📥',status:'idle',task:'ממתין',taskProg:0,spec:'Report Download',browserUrl:'',browserContent:''},
@@ -319,7 +326,7 @@ const TEAMS = [
      {id:'i3',name:'שומר כספת',emoji:'🔐',status:'idle',task:'ממתין',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
    ]},
   {id:'visual', name:'עיצוב ויזואלי', icon:'🎨', color:'#f472b6',
-   desc:'עיצוג גרפים וסמנים על המסך',
+   desc:'עיצוב גרפים וסמנים על המסך',
    agents:[
      {id:'v1',name:'מעצב גרפים',emoji:'🖌️',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
      {id:'v2',name:'סמני מסחר',emoji:'🏷️',status:'idle',task:'ממתין',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
@@ -329,7 +336,7 @@ const TEAMS = [
    agents:[
      {id:'al1',name:'מגדיר Webhooks',emoji:'🪝',status:'idle',task:'ממתין',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
      {id:'al2',name:'סוכן AutoView',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
-     {id:'al3',name:'מתצמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
+     {id:'al3',name:'מתזמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
    ]},
 ];
 
@@ -1349,6 +1356,11 @@ function selectAgent(tid,aid){
 
   const mesh=agentMeshes.find(m=>m.userData.agentId===aid);
   if(mesh){targetCenter.set(mesh.position.x,1,mesh.position.z);targetDist=10;targetPhi=Math.PI/3.5}
+
+  // Auto-open history panel on the right
+  if(hist.length>0){
+    openHistory(aid, ag.name);
+  }
 }
 
 function swTab(el){
@@ -1404,18 +1416,75 @@ function addTimeline(title,team,status,decision,success){
   renderTimeline();
 }
 
+let timelineView='cards'; // 'cards' or 'flow'
+
 function renderTimeline(){
   const el=document.getElementById('timeline');
   if(!timelineItems.length){el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px;font-size:11px">אין אירועים עדיין - הפעל את הסוכנים</p>';return}
-  let html='';
-  timelineItems.forEach((item,i)=>{
+
+  if(timelineView==='cards'){
+    renderTimelineCards(el);
+  }else{
+    renderTimelineFlow(el);
+  }
+}
+
+function renderTimelineCards(el){
+  // Group events by team for stable card view
+  const teamGroups={};
+  timelineItems.forEach(item=>{
+    const team=item.team||'Unknown';
+    if(!teamGroups[team]) teamGroups[team]={items:[],wip:0,done:0,fail:0};
+    teamGroups[team].items.push(item);
+    if(item.status==='wip') teamGroups[team].wip++;
+    else if(item.status==='done'&&item.success!==false) teamGroups[team].done++;
+    else if(item.status==='done'&&item.success===false) teamGroups[team].fail++;
+  });
+
+  let html='<div style="display:flex;gap:8px;padding:8px;overflow-x:auto;align-items:flex-start;height:100%">';
+  Object.entries(teamGroups).forEach(([team,data])=>{
+    const tc=getTeamColor(team);
+    const total=data.items.length;
+    const latestItem=data.items[data.items.length-1];
+    const isActive=data.wip>0;
+    const pct=total>0?Math.round((data.done/total)*100):0;
+
+    html+=`<div style="min-width:180px;max-width:200px;background:var(--bg);border:1px solid ${isActive?tc:'var(--border)'};border-radius:8px;padding:8px;flex-shrink:0;${isActive?'box-shadow:0 0 8px '+tc+'40':''}" onclick="selectTeam('${team}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:600;color:${tc}">${team}</span>
+        <span style="font-size:9px;color:var(--dim)">${total} פעולות</span>
+      </div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:6px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${tc};border-radius:2px;transition:width 0.5s"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;font-size:9px">
+        ${data.wip>0?`<span style="color:var(--accent)">⚡ ${data.wip}</span>`:''}
+        ${data.done>0?`<span style="color:var(--green)">✅ ${data.done}</span>`:''}
+        ${data.fail>0?`<span style="color:var(--red)">❌ ${data.fail}</span>`:''}
+      </div>
+      ${latestItem?`<div style="font-size:9px;color:var(--text);padding:4px;background:rgba(255,255,255,0.03);border-radius:4px;line-height:1.3">
+        <div style="font-weight:500">${latestItem.title.substring(0,40)}${latestItem.title.length>40?'...':''}</div>
+        <div style="color:var(--dim);margin-top:2px">${latestItem.time}${latestItem.endTime?' → '+latestItem.endTime:''}</div>
+        ${latestItem.decision?`<div style="color:var(--cyan);margin-top:2px;font-size:8px">${latestItem.decision.substring(0,60)}${latestItem.decision.length>60?'...':''}</div>`:''}
+      </div>`:''}
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function renderTimelineFlow(el){
+  // Original flow view (non-jumping - grouped)
+  let html='<div style="display:flex;gap:4px;padding:8px;overflow-x:auto;align-items:flex-start;height:100%">';
+  const recent=timelineItems.slice(-30);
+  recent.forEach((item,i)=>{
     const tc=item.teamColor||getTeamColor(item.team);
     const isDone=item.status==='done';
     const isWip=item.status==='wip';
     const resultIcon=isDone?(item.success!==false?'✅':'❌'):isWip?'⚡':'⏳';
     const resultText=isDone?(item.success!==false?'הצליח':'נכשל'):isWip?'בתהליך':'ממתין';
     if(i>0) html+='<div class="tline-connector"></div>';
-    html+=`<div class="titem expandable" style="border-top-color:${tc}" onclick="this.classList.toggle('expanded')">
+    html+=`<div class="titem expandable" style="border-top-color:${tc};flex-shrink:0" onclick="this.classList.toggle('expanded')">
       <div class="tt">${item.time}${item.endTime?' → '+item.endTime:''}</div>
       <div class="tn">${item.title}</div>
       <div class="tteam" style="color:${tc}">${item.team}</div>
@@ -1423,6 +1492,7 @@ function renderTimeline(){
       ${item.decision?`<div class="t-expand"><div style="color:var(--text);margin-bottom:4px;font-weight:500">סיכום:</div><div>${item.decision}</div></div>`:''}
     </div>`;
   });
+  html+='</div>';
   el.innerHTML=html;
   el.scrollLeft=el.scrollWidth;
 }
@@ -1504,27 +1574,52 @@ function renderVault(){
     document.getElementById('vaultList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">עדיין אין אסטרטגיות בכספת.<br>הפעל את הסוכנים כדי למצוא ולאשר אסטרטגיות.</p>';
     return;
   }
-  document.getElementById('vaultList').innerHTML=vaultStrategies.map((s,i)=>{
+  // Filter by search query
+  const searchEl=document.getElementById('vaultSearch');
+  const query=(searchEl?searchEl.value:'').toLowerCase().trim();
+  const filtered=vaultStrategies.map((s,i)=>({...s,_idx:i})).filter(s=>{
+    if(!query) return true;
+    return (s.name||'').toLowerCase().includes(query)||
+           (s.asset||'').toLowerCase().includes(query)||
+           (s.timeframe||'').toLowerCase().includes(query)||
+           (s.decision||'').toLowerCase().includes(query)||
+           (s.source||'').toLowerCase().includes(query)||
+           String(s.winRate).includes(query)||
+           String(s.maxDD).includes(query);
+  });
+
+  if(!filtered.length){
+    document.getElementById('vaultList').innerHTML=`<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">לא נמצאו אסטרטגיות עבור "${query}"</p>`;
+    return;
+  }
+
+  document.getElementById('vaultList').innerHTML=filtered.map(s=>{
+    const i=s._idx;
     const wrClass=s.winRate>65?'good':'warn';
     const pfClass=parseFloat(s.profitFactor)>2?'good':'warn';
     const ddClass=s.maxDD<12?'good':'warn';
     const statusIcon=s.status==='approved'?'✅':'⏳';
-    return `<div class="vault-card">
-      <div class="vc-hdr"><span class="vc-name">${statusIcon} ${s.name}</span><span class="vc-date">${s.date}</span></div>
-      <div class="vc-source">מקור: ${s.source}</div>
-      ${s.asset?`<div style="font-size:9px;color:var(--cyan);margin-bottom:4px">📊 ${s.asset} | ⏱ ${s.timeframe||'N/A'} | 📅 ${s.testRange||'N/A'}${s.sharpe?' | Sharpe: '+s.sharpe:''}</div>`:''}
-      <div class="vc-metrics">
-        <span class="vc-m ${wrClass}">WR: ${s.winRate}%</span>
-        <span class="vc-m ${pfClass}">PF: ${s.profitFactor}</span>
-        <span class="vc-m ${ddClass}">DD: ${s.maxDD}%</span>
-        <span class="vc-m">עסקאות: ${s.trades.toLocaleString()}</span>
+    return `<div class="vault-card" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin:0">
+      <div class="vc-hdr" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="vc-name" style="font-weight:600;font-size:12px">${statusIcon} ${s.name}</span>
+        <span class="vc-date" style="font-size:9px;color:var(--dim)">${s.date}</span>
       </div>
-      ${s.decision?'<div style="font-size:10px;color:var(--cyan);margin-top:4px">החלטה: '+s.decision+'</div>':''}
-      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
-      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
-        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">📋 העתק V5</button>
-        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">📋 העתק V6</button>
-        <button class="btn" onclick="event.stopPropagation();downloadReport(${i})" style="padding:3px 8px;font-size:10px">📊 הורד Excel</button>
+      <div class="vc-source" style="font-size:10px;color:var(--dim);margin-bottom:4px">מקור: ${s.source}</div>
+      ${s.asset?`<div style="font-size:10px;color:var(--cyan);margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap">
+        <span>📊 ${s.asset}</span><span>⏱ ${s.timeframe||'N/A'}</span><span>📅 ${s.testRange||'N/A'}</span>${s.sharpe?`<span>📈 Sharpe: ${s.sharpe}</span>`:''}
+      </div>`:''}
+      <div class="vc-metrics" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <span class="vc-m ${wrClass}" style="background:${s.winRate>65?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">WR: ${s.winRate}%</span>
+        <span class="vc-m ${pfClass}" style="background:${parseFloat(s.profitFactor)>2?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">PF: ${s.profitFactor}</span>
+        <span class="vc-m ${ddClass}" style="background:${s.maxDD<12?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">DD: ${s.maxDD}%</span>
+        <span class="vc-m" style="background:rgba(99,102,241,0.15);padding:2px 6px;border-radius:4px;font-size:10px">עסקאות: ${s.trades?s.trades.toLocaleString():'N/A'}</span>
+      </div>
+      ${s.avgWin?`<div style="font-size:9px;color:var(--dim);margin-bottom:4px">ממוצע רווח: $${s.avgWin} | ממוצע הפסד: $${s.avgLoss||'N/A'} | Sortino: ${s.sortino||'N/A'}</div>`:''}
+      ${s.decision?`<div style="font-size:10px;color:var(--cyan);margin-bottom:4px;padding:4px 6px;background:rgba(6,182,212,0.08);border-radius:4px">🎯 ${s.decision}</div>`:''}
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">📋 V5</button>
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">📋 V6</button>
+        <button class="btn" onclick="event.stopPropagation();downloadReport(${i})" style="padding:3px 8px;font-size:10px">📊 Excel</button>
       </div>
     </div>`;
   }).join('')+'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="downloadAllReports()" style="padding:6px 16px;font-size:11px;background:var(--accent)">📊 הורד דוח Excel מלא (כל האסטרטגיות)</button></div>';
@@ -1589,12 +1684,47 @@ function downloadReport(idx){
     ['טיימפריים',s.timeframe||'N/A'],
     ['תקופת בדיקה',s.testRange||'N/A'],
     ['Sharpe Ratio',s.sharpe||'N/A'],
+    ['Sortino Ratio',s.sortino||'N/A'],
+    ['Calmar Ratio',s.calmar||'N/A'],
+    ['ממוצע רווח','$'+(s.avgWin||'N/A')],
+    ['ממוצע הפסד','$'+(s.avgLoss||'N/A')],
     ['',''],
     ['החלטה',s.decision||''],
   ];
   const ws=XLSX.utils.aoa_to_sheet(summaryData);
   ws['!cols']=[{wch:18},{wch:45}];
   XLSX.utils.book_append_sheet(wb,ws,'סיכום');
+
+  // TradingView Report sheet (simulated backtest report)
+  const tvData=[
+    ['דוח TradingView Strategy Tester',''],
+    ['',''],
+    ['אסטרטגיה',s.name],
+    ['נכס',s.asset||'N/A'],
+    ['טיימפריים',s.timeframe||'N/A'],
+    ['תקופת בדיקה',s.testRange||'N/A'],
+    ['',''],
+    ['תוצאות בדיקה',''],
+    ['Net Profit','$'+Math.round((s.avgWin||20)*(s.winRate||60)/100*(s.trades||100)-(s.avgLoss||10)*((100-(s.winRate||60))/100)*(s.trades||100)).toLocaleString()],
+    ['Gross Profit','$'+Math.round((s.avgWin||20)*(s.winRate||60)/100*(s.trades||100)).toLocaleString()],
+    ['Gross Loss','$'+Math.round((s.avgLoss||10)*((100-(s.winRate||60))/100)*(s.trades||100)).toLocaleString()],
+    ['Total Trades',s.trades||'N/A'],
+    ['Win Rate',s.winRate+'%'],
+    ['Loss Rate',(100-s.winRate)+'%'],
+    ['Profit Factor',s.profitFactor],
+    ['Max Drawdown',s.maxDD+'%'],
+    ['Sharpe Ratio',s.sharpe||'N/A'],
+    ['Sortino Ratio',s.sortino||'N/A'],
+    ['Avg Win','$'+(s.avgWin||'N/A')],
+    ['Avg Loss','$'+(s.avgLoss||'N/A')],
+    ['Win/Loss Ratio',s.avgWin&&s.avgLoss?Math.round(s.avgWin/s.avgLoss*100)/100:'N/A'],
+    ['',''],
+    ['הערות','דוח זה נוצר אוטומטית על ידי Agent Office'],
+  ];
+  const wsTv=XLSX.utils.aoa_to_sheet(tvData);
+  wsTv['!cols']=[{wch:18},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,wsTv,'TradingView Report');
+
   // Pine V6 sheet
   const v6Lines=(s.code_v6||s.code||'N/A').split('\n').map(l=>[l]);
   v6Lines.unshift(['Pine Script V6']);
@@ -1608,7 +1738,7 @@ function downloadReport(idx){
   wsV5['!cols']=[{wch:80}];
   XLSX.utils.book_append_sheet(wb,wsV5,'Pine V5');
   XLSX.writeFile(wb,(s.name||'strategy').replace(/\s+/g,'_')+'_report.xlsx');
-  notify('📥','דוח Excel הורד בהצלחה!');
+  notify('📥','דוח Excel + TradingView Report הורד בהצלחה!');
 }
 
 function downloadAllReports(){
