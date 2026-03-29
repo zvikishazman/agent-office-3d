@@ -33,6 +33,50 @@ kpi = {"found": 0, "tested": 0, "approved": 0, "rejected": 0}
 vault_strategies = []
 running = True
 
+# ============ PIPELINE STATE ============
+# Shared state that flows between teams: research → filter → pinescript → analysis
+pipeline_lock = threading.Lock()
+pipeline_state = {
+    "research_found": [],     # strategy names found by research agents
+    "filter_picks": [],       # strategy names selected by filter (2-3 best)
+    "pine_coded": [],         # strategies with Pine Script code ready
+}
+
+def pipeline_add_found(strategy_names):
+    """Research agents add found strategy names"""
+    with pipeline_lock:
+        for name in strategy_names:
+            if name not in pipeline_state["research_found"]:
+                pipeline_state["research_found"].append(name)
+
+def pipeline_set_picks(picks):
+    """Filter agent sets the selected strategies"""
+    with pipeline_lock:
+        pipeline_state["filter_picks"] = picks
+
+def pipeline_add_coded(strategy_name):
+    """Pine Script agents mark a strategy as coded"""
+    with pipeline_lock:
+        if strategy_name not in pipeline_state["pine_coded"]:
+            pipeline_state["pine_coded"].append(strategy_name)
+
+def pipeline_get_picks():
+    """Get current filter picks (thread-safe)"""
+    with pipeline_lock:
+        return list(pipeline_state["filter_picks"])
+
+def pipeline_get_found():
+    """Get all research findings (thread-safe)"""
+    with pipeline_lock:
+        return list(pipeline_state["research_found"])
+
+def pipeline_reset():
+    """Reset pipeline state for a new run"""
+    with pipeline_lock:
+        pipeline_state["research_found"] = []
+        pipeline_state["filter_picks"] = []
+        pipeline_state["pine_coded"] = []
+
 VAULT_FILE = Path(__file__).parent / "vault.json"
 HISTORY_FILE = Path(__file__).parent / "history.json"
 ERRORS_FILE = Path(__file__).parent / "errors.json"
@@ -401,20 +445,60 @@ class StrategyResearchAgent(BaseAgent):
     def run(self):
         sources = self.AGENT_SOURCES.get(self.agent_id, [])
 
-        if self.agent_id == "r4":
-            # Filter agent: wait for others, then summarize
+                if self.agent_id == "r4":
+            # Filter agent: wait for research agents, then pick from their actual results
             update_agent(self.agent_id, "working", "ממתין לתוצאות מהסורקים...", 10)
             self.record("התחלת סינון", "ממתין לתוצאות מסורקים אחרים")
             time.sleep(8)
             found = kpi.get("found", 0)
-            summary = f"סונן {found} אסטרטגיות - נבחרו המבטיחות ביותר"
+
+            # Get actual strategies found by research agents
+            all_found = pipeline_get_found()
+
+            # Strategy keyword mapping - match research results to known strategy types
+            STRATEGY_KEYWORDS = {
+                "ORB Breakout": ["ORB", "Opening Range", "Range Breakout"],
+                "ICT Smart Money": ["ICT", "Smart Money", "Liquidity Sweep", "Fair Value Gap", "FVG", "Order Block"],
+                "VWAP Reclaim": ["VWAP", "Volume Weighted"],
+                "EMA Cross": ["EMA Cross", "EMA Crossover", "Moving Average Cross"],
+                "RSI Reversal": ["RSI", "Relative Strength", "RSI Divergence"],
+                "MACD Momentum": ["MACD", "MACD Histogram", "MACD Divergence"],
+                "Bollinger Squeeze": ["Bollinger", "BB Squeeze", "Bollinger Band"],
+                "Supply Demand": ["Supply Demand", "Supply.*Zone", "Demand Zone"],
+                "Supertrend": ["Supertrend", "Super Trend", "Trend Follow"],
+            }
+
+            # Score each strategy type by how many research results match it
+            scores = {}
+            for strat_name, keywords in STRATEGY_KEYWORDS.items():
+                score = 0
+                for found_name in all_found:
+                    for kw in keywords:
+                        if kw.lower() in found_name.lower():
+                            score += 1
+                            break
+                if score > 0:
+                    scores[strat_name] = score
+
+            # Pick top 2-3 strategies by score, or fallback to random if no matches
+            if scores:
+                sorted_strats = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)
+                picks = sorted_strats[:random.randint(2, min(3, len(sorted_strats)))]
+            else:
+                picks = random.sample(list(STRATEGY_KEYWORDS.keys()), 2)
+
+            # Store in pipeline for downstream teams
+            pipeline_set_picks(picks)
+            picks_str = ", ".join(picks)
+
+            summary = f"סונן {found} אסטרטגיות - נבחרו {len(picks)} מבטיחות"
             update_agent(self.agent_id, "working", "מסנן תוצאות...", 60, "",
                         f"<div style='color:#a855f7'>🔍 סינון {found} תוצאות</div>"
                         f"<div style='margin-top:4px;color:#94a3b8'>מחפש: Win Rate > 60%, Profit Factor > 1.5</div>"
                         f"<div style='margin-top:2px;color:#94a3b8'>מסנן: Max Drawdown < 15%</div>"
-                        f"<div style='margin-top:4px;color:#22c55e'>✅ נבחרו: ORB Breakout, VWAP Reclaim</div>")
+                        f"<div style='margin-top:4px;color:#22c55e'>✅ נבחרו: {picks_str}</div>")
             time.sleep(3)
-            self.record("סינון אסטרטגיות", f"מתוך {found} אסטרטגיות, נבחרו 2 מבטיחות: ORB Breakout, VWAP Reclaim", True)
+            self.record("סינון אסטרטגיות", f"מתוך {found} אסטרטגיות, נבחרו {len(picks)} מבטיחות: {picks_str}", True)
             update_agent(self.agent_id, "idle", summary, 100)
             log_activity("✅", f"{self.name} סיים", summary, self.team_id)
             return
@@ -476,6 +560,8 @@ class StrategyResearchAgent(BaseAgent):
                 # Cap scripts per source to avoid KPI inflation
                 unique_scripts = list(set(s.strip() for s in scripts))[:6]
                 total_found += len(unique_scripts)
+                # Feed into pipeline so filter can use actual results
+                pipeline_add_found(unique_scripts)
 
                 source_label = "מקור חי" if not fetch_failed else "מאגר מקומי"
                 browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
@@ -825,6 +911,254 @@ plot(orbDone ? orbHigh : na, "ORB High", color.green, 2)
 plot(orbDone ? orbLow : na, "ORB Low", color.red, 2)
 """
         },
+        "ICT": {
+            "name": "ICT Smart Money",
+            "asset": "ES (S&P 500 E-mini)",
+            "timeframe": "5 דקות",
+            "test_range": "01/01/2024 - 31/12/2024",
+            "code": """//@version=6
+strategy("ICT Smart Money Concept", overlay=true, margin_long=100, margin_short=100)
+
+// Inputs
+lookback    = input.int(20, "Structure Lookback")
+fvgMinSize  = input.float(0.5, "FVG Min Size (points)", step=0.1)
+tpMult      = input.float(2.5, "TP Multiplier (R:R)", step=0.1)
+slMult      = input.float(1.0, "SL Multiplier", step=0.1)
+sessionStart = input.int(9, "Session Start Hour")
+sessionEnd   = input.int(16, "Session End Hour")
+useOBFilter  = input.bool(true, "Use Order Block Filter")
+
+// Session filter
+inSession = hour >= sessionStart and hour < sessionEnd
+
+// Structure: Swing High/Low
+swingHigh = ta.pivothigh(high, lookback, lookback)
+swingLow  = ta.pivotlow(low, lookback, lookback)
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+
+if not na(swingHigh)
+    lastSwingHigh := swingHigh
+if not na(swingLow)
+    lastSwingLow := swingLow
+
+// Fair Value Gap (FVG) detection
+bullFVG = low[0] > high[2] and (low[0] - high[2]) >= fvgMinSize
+bearFVG = high[0] < low[2] and (low[2] - high[0]) >= fvgMinSize
+
+// Order Block detection (last down candle before up move, and vice versa)
+bullOB = close[1] < open[1] and close > open and close > high[1]
+bearOB = close[1] > open[1] and close < open and close < low[1]
+
+// Liquidity sweep: price goes below swing low then closes above
+bullSweep = low < lastSwingLow and close > lastSwingLow
+bearSweep = high > lastSwingHigh and close < lastSwingHigh
+
+// Entry signals combining ICT concepts
+longCond = bullSweep and inSession and (not useOBFilter or bullOB or bullFVG)
+shortCond = bearSweep and inSession and (not useOBFilter or bearOB or bearFVG)
+
+slSize = ta.atr(14) * slMult
+tpSize = slSize * tpMult
+
+if longCond and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=tpSize / syminfo.mintick, loss=slSize / syminfo.mintick)
+
+if shortCond and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("TP/SL", "Short", profit=tpSize / syminfo.mintick, loss=slSize / syminfo.mintick)
+
+// Plot
+plot(lastSwingHigh, "Swing High", color.red, 1, plot.style_stepline)
+plot(lastSwingLow, "Swing Low", color.green, 1, plot.style_stepline)
+bgcolor(bullFVG ? color.new(color.green, 90) : bearFVG ? color.new(color.red, 90) : na)
+"""
+        },
+        "EMA": {
+            "name": "EMA Cross",
+            "asset": "NQ (Nasdaq E-mini)",
+            "timeframe": "15 דקות",
+            "test_range": "03/2023 - 12/2024",
+            "code": """//@version=6
+strategy("EMA Cross Trend", overlay=true)
+
+fastLen = input.int(9, "Fast EMA")
+slowLen = input.int(21, "Slow EMA")
+tpPoints = input.float(30, "TP Points")
+slPoints = input.float(15, "SL Points")
+useADX = input.bool(true, "Use ADX Filter")
+adxThreshold = input.int(25, "ADX Threshold")
+
+emaFast = ta.ema(close, fastLen)
+emaSlow = ta.ema(close, slowLen)
+[diPlus, diMinus, adx] = ta.dmi(14, 14)
+
+crossUp = ta.crossover(emaFast, emaSlow)
+crossDown = ta.crossunder(emaFast, emaSlow)
+longSignal = crossUp and (not useADX or adx > adxThreshold)
+shortSignal = crossDown and (not useADX or adx > adxThreshold)
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(emaFast, "Fast EMA", color.green, 2)
+plot(emaSlow, "Slow EMA", color.red, 2)
+"""
+        },
+        "MACD": {
+            "name": "MACD Momentum",
+            "asset": "CL (Crude Oil)",
+            "timeframe": "5 דקות",
+            "test_range": "01/2024 - 12/2024",
+            "code": """//@version=6
+strategy("MACD Momentum", overlay=false)
+
+fastLen = input.int(12, "Fast Length")
+slowLen = input.int(26, "Slow Length")
+signalLen = input.int(9, "Signal Length")
+tpPoints = input.float(18.7, "TP Points")
+slPoints = input.float(8.9, "SL Points")
+
+[macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, signalLen)
+
+crossUp = ta.crossover(macdLine, signalLine)
+crossDown = ta.crossunder(macdLine, signalLine)
+longSignal = crossUp and histLine > 0
+shortSignal = crossDown and histLine < 0
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(macdLine, "MACD", color.blue)
+plot(signalLine, "Signal", color.orange)
+plot(histLine, "Histogram", style=plot.style_histogram, color=histLine > 0 ? color.green : color.red)
+"""
+        },
+        "RSI": {
+            "name": "RSI Reversal",
+            "asset": "NQ (Nasdaq E-mini)",
+            "timeframe": "5 דקות",
+            "test_range": "01/2024 - 12/2024",
+            "code": """//@version=6
+strategy("RSI Reversal", overlay=false)
+
+rsiLen = input.int(14, "RSI Length")
+overbought = input.int(70, "Overbought")
+oversold = input.int(30, "Oversold")
+tpPoints = input.float(28.3, "TP Points")
+slPoints = input.float(14.7, "SL Points")
+
+rsiVal = ta.rsi(close, rsiLen)
+crossUp = ta.crossover(rsiVal, oversold)
+crossDown = ta.crossunder(rsiVal, overbought)
+longSignal = crossUp
+shortSignal = crossDown
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(rsiVal, "RSI", color.blue)
+hline(overbought, "Overbought", color.red)
+hline(oversold, "Oversold", color.green)
+"""
+        },
+        "Bollinger": {
+            "name": "Bollinger Squeeze",
+            "asset": "YM (Dow E-mini)",
+            "timeframe": "3 דקות",
+            "test_range": "06/2023 - 06/2024",
+            "code": """//@version=6
+strategy("Bollinger Squeeze", overlay=true)
+
+bbLen = input.int(20, "BB Length")
+bbMult = input.float(2.0, "BB Multiplier")
+sqzLen = input.int(6, "Squeeze Bars")
+tpPoints = input.float(22.1, "TP Points")
+slPoints = input.float(13.4, "SL Points")
+
+[middle, upper, lower] = ta.bb(close, bbLen, bbMult)
+bbWidth = (upper - lower) / middle
+sqzActive = bbWidth < ta.lowest(bbWidth, sqzLen * 3)
+
+longSignal = sqzActive[1] and not sqzActive and close > upper
+shortSignal = sqzActive[1] and not sqzActive and close < lower
+
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit", "Short", profit=tpPoints/syminfo.mintick, loss=slPoints/syminfo.mintick)
+
+plot(middle, "BB Mid", color.gray)
+plot(upper, "BB Upper", color.blue)
+plot(lower, "BB Lower", color.blue)
+bgcolor(sqzActive ? color.new(color.yellow, 90) : na)
+"""
+        },
+        "Supply": {
+            "name": "Supply Demand Zones",
+            "asset": "ES (S&P 500 E-mini)",
+            "timeframe": "15 דקות",
+            "test_range": "01/2024 - 12/2024",
+            "code": """//@version=6
+strategy("Supply Demand Zones", overlay=true)
+
+lookback = input.int(20, "Zone Lookback")
+zoneWidth = input.float(0.5, "Zone Width %", step=0.1)
+tpMult = input.float(2.0, "TP Multiplier")
+slMult = input.float(1.0, "SL Multiplier")
+
+// Detect supply/demand zones via pivot points
+pvtHigh = ta.pivothigh(high, lookback, lookback)
+pvtLow  = ta.pivotlow(low, lookback, lookback)
+
+var float demandZone = na
+var float supplyZone = na
+
+if not na(pvtLow)
+    demandZone := pvtLow
+if not na(pvtHigh)
+    supplyZone := pvtHigh
+
+zoneSize = ta.atr(14) * zoneWidth
+
+longCond = not na(demandZone) and low <= demandZone + zoneSize and close > demandZone
+shortCond = not na(supplyZone) and high >= supplyZone - zoneSize and close < supplyZone
+
+slDist = ta.atr(14) * slMult
+tpDist = slDist * tpMult
+
+if longCond and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=tpDist/syminfo.mintick, loss=slDist/syminfo.mintick)
+
+if shortCond and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("TP/SL", "Short", profit=tpDist/syminfo.mintick, loss=slDist/syminfo.mintick)
+
+plot(demandZone, "Demand", color.green, 2, plot.style_stepline)
+plot(supplyZone, "Supply", color.red, 2, plot.style_stepline)
+"""
+        },
         "VWAP": {
             "name": "VWAP Reclaim",
             "asset": "NQ (Nasdaq E-mini)",
@@ -878,22 +1212,60 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         }
     }
 
-    # Different roles per agent
-    AGENT_ROLES = {
-        "p1": {"role": "Pine V5 Expert", "templates": ["VWAP"], "task": "כתיבת קוד Pine Script V5"},
-        "p2": {"role": "Pine V6 Expert", "templates": ["ORB"], "task": "כתיבת קוד Pine Script V6"},
-        "p3": {"role": "Debugger", "templates": ["ORB", "VWAP"], "task": "בדיקת באגים וניקוי קוד"},
-        "p4": {"role": "QA Tester", "templates": ["ORB", "VWAP"], "task": "בדיקת קומפילציה ולוגיקה"},
-        "p5": {"role": "Code Optimizer", "templates": ["ORB", "VWAP"], "task": "ייעול ביצועים ושיפור קוד"},
+
+    # Strategy name -> template key mapping
+    STRATEGY_TO_KEY = {
+        "ORB Breakout": "ORB",
+        "ICT Smart Money": "ICT",
+        "VWAP Reclaim": "VWAP",
+        "EMA Cross": "EMA",
+        "RSI Reversal": "RSI",
+        "MACD Momentum": "MACD",
+        "Bollinger Squeeze": "Bollinger",
+        "Supply Demand": "Supply",
+        "Supertrend": "ORB",  # fallback
     }
 
-    def run(self):
-        role_info = self.AGENT_ROLES.get(self.agent_id, {"role": "Coder", "templates": ["ORB"], "task": "כתיבת קוד"})
-        update_agent(self.agent_id, "working", f"מתחיל: {role_info['task']}...", 5)
-        log_activity("💻", f"{self.name} מתחיל", role_info['task'], self.team_id)
-        self.record(f"התחלת {role_info['task']}", f"תפקיד: {role_info['role']}")
+    # Different roles per agent - templates now come from pipeline
+    AGENT_ROLES = {
+        "p1": {"role": "Pine V5 Expert", "task": "כתיבת קוד Pine Script V5"},
+        "p2": {"role": "Pine V6 Expert", "task": "כתיבת קוד Pine Script V6"},
+        "p3": {"role": "Debugger", "task": "בדיקת באגים וניקוי קוד"},
+        "p4": {"role": "QA Tester", "task": "בדיקת קומפילציה ולוגיקה"},
+        "p5": {"role": "Code Optimizer", "task": "ייעול ביצועים ושיפור קוד"},
+    }
 
-        for idx, key in enumerate(role_info["templates"]):
+    def _get_template_keys_from_pipeline(self):
+        """Get template keys based on pipeline filter picks"""
+        picks = pipeline_get_picks()
+        if not picks:
+            # Fallback if pipeline has no picks yet
+            return ["ORB", "VWAP"]
+        keys = []
+        for pick in picks:
+            key = self.STRATEGY_TO_KEY.get(pick)
+            if key and key in self.TEMPLATES:
+                keys.append(key)
+        return keys if keys else ["ORB", "VWAP"]
+
+
+
+    def run(self):
+        role_info = self.AGENT_ROLES.get(self.agent_id, {"role": "Coder", "task": "כתיבת קוד"})
+
+        # Wait briefly for filter results to arrive
+        update_agent(self.agent_id, "working", f"ממתין לתוצאות סינון...", 5)
+        time.sleep(3)
+
+        # Get templates from pipeline
+        template_keys = self._get_template_keys_from_pipeline()
+        picks_str = ", ".join(pipeline_get_picks()) if pipeline_get_picks() else "ברירת מחדל"
+
+        update_agent(self.agent_id, "working", f"מתחיל: {role_info['task']}...", 5)
+        log_activity("💻", f"{self.name} מתחיל", f"{role_info['task']} - אסטרטגיות: {picks_str}", self.team_id)
+        self.record(f"התחלת {role_info['task']}", f"תפקיד: {role_info['role']}, אסטרטגיות מהסינון: {picks_str}")
+
+        for idx, key in enumerate(template_keys):
             if self.should_stop.is_set():
                 break
 
@@ -960,6 +1332,7 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
 
                 if valid:
                     log_activity("✅", f"קוד {strategy_name} מוכן", f"{len(code.splitlines())} שורות, compilation OK", self.team_id)
+                    pipeline_add_coded(strategy_name)
                     kpi["tested"] = kpi.get("tested", 0) + 1
                     update_kpi("tested", kpi["tested"])
                     self.record(f"כתיבת קוד - {strategy_name}",
@@ -974,6 +1347,7 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         log_activity("✅", f"{self.name} סיים", role_info['task'], self.team_id)
 
 
+
 class AnalysisAgent(BaseAgent):
     """Analyzes backtest results with detailed per-agent breakdowns"""
 
@@ -983,63 +1357,66 @@ class AnalysisAgent(BaseAgent):
         "a3": "decision",      # Decision maker
     }
 
-    STRATEGY_TEMPLATES = [
-        {"name": "ORB Breakout", "asset": "ES", "tf": "5min", "range": "01/2023-12/2024",
-         "winRate": 68, "pf": 2.4, "maxDD": 12, "trades": 3847, "avgWin": 42.5, "avgLoss": 18.3,
-         "sharpe": 1.85, "sortino": 2.41, "calmar": 3.2, "consecutiveLosses": 7},
-        {"name": "VWAP Reclaim", "asset": "NQ", "tf": "1min", "range": "06/2023-12/2024",
-         "winRate": 72, "pf": 2.8, "maxDD": 8, "trades": 12543, "avgWin": 15.2, "avgLoss": 7.1,
-         "sharpe": 2.15, "sortino": 3.02, "calmar": 4.1, "consecutiveLosses": 5},
-        {"name": "EMA Cross", "asset": "ES", "tf": "15min", "range": "03/2023-12/2024",
-         "winRate": 61, "pf": 1.9, "maxDD": 14, "trades": 2156, "avgWin": 38.0, "avgLoss": 20.5,
-         "sharpe": 1.52, "sortino": 1.98, "calmar": 2.1, "consecutiveLosses": 9},
-        {"name": "RSI Reversal", "asset": "NQ", "tf": "5min", "range": "01/2024-12/2024",
-         "winRate": 65, "pf": 2.1, "maxDD": 10, "trades": 4230, "avgWin": 28.3, "avgLoss": 14.7,
-         "sharpe": 1.73, "sortino": 2.25, "calmar": 2.8, "consecutiveLosses": 6},
-        {"name": "Bollinger Squeeze", "asset": "YM", "tf": "3min", "range": "06/2023-06/2024",
-         "winRate": 59, "pf": 1.7, "maxDD": 15, "trades": 5678, "avgWin": 22.1, "avgLoss": 13.4,
-         "sharpe": 1.41, "sortino": 1.82, "calmar": 1.9, "consecutiveLosses": 11},
-        {"name": "MACD Momentum", "asset": "ES", "tf": "1min", "range": "01/2024-12/2024",
-         "winRate": 70, "pf": 2.5, "maxDD": 9, "trades": 8920, "avgWin": 18.7, "avgLoss": 8.9,
-         "sharpe": 1.95, "sortino": 2.67, "calmar": 3.5, "consecutiveLosses": 4},
-        {"name": "Ichimoku Cloud", "asset": "NQ", "tf": "15min", "range": "01/2023-06/2024",
-         "winRate": 63, "pf": 2.0, "maxDD": 11, "trades": 1890, "avgWin": 45.2, "avgLoss": 22.8,
-         "sharpe": 1.68, "sortino": 2.15, "calmar": 2.6, "consecutiveLosses": 8},
-        {"name": "Keltner Channel", "asset": "RTY", "tf": "5min", "range": "03/2024-12/2024",
-         "winRate": 66, "pf": 2.2, "maxDD": 13, "trades": 3120, "avgWin": 31.5, "avgLoss": 15.2,
-         "sharpe": 1.78, "sortino": 2.32, "calmar": 2.9, "consecutiveLosses": 7},
-        {"name": "Volume Profile", "asset": "ES", "tf": "3min", "range": "06/2024-12/2024",
-         "winRate": 74, "pf": 3.1, "maxDD": 7, "trades": 2450, "avgWin": 25.8, "avgLoss": 9.3,
-         "sharpe": 2.35, "sortino": 3.18, "calmar": 4.5, "consecutiveLosses": 3},
-        {"name": "Supertrend Follow", "asset": "NQ", "tf": "5min", "range": "01/2023-12/2024",
-         "winRate": 58, "pf": 1.6, "maxDD": 16, "trades": 6780, "avgWin": 35.0, "avgLoss": 22.0,
-         "sharpe": 1.35, "sortino": 1.72, "calmar": 1.7, "consecutiveLosses": 12},
-    ]
+    # Base metrics for each strategy type - used to generate realistic random stats
+    STRATEGY_BASE_METRICS = {
+        "ORB Breakout": {"winRate": 68, "pf": 2.4, "maxDD": 12, "trades": 3847, "avgWin": 42.5, "avgLoss": 18.3,
+                         "sharpe": 1.85, "sortino": 2.41, "calmar": 3.2, "consecutiveLosses": 7},
+        "ICT Smart Money": {"winRate": 71, "pf": 2.7, "maxDD": 9, "trades": 2890, "avgWin": 38.5, "avgLoss": 15.2,
+                            "sharpe": 2.05, "sortino": 2.85, "calmar": 3.8, "consecutiveLosses": 5},
+        "VWAP Reclaim": {"winRate": 72, "pf": 2.8, "maxDD": 8, "trades": 12543, "avgWin": 15.2, "avgLoss": 7.1,
+                         "sharpe": 2.15, "sortino": 3.02, "calmar": 4.1, "consecutiveLosses": 5},
+        "EMA Cross": {"winRate": 61, "pf": 1.9, "maxDD": 14, "trades": 2156, "avgWin": 38.0, "avgLoss": 20.5,
+                      "sharpe": 1.52, "sortino": 1.98, "calmar": 2.1, "consecutiveLosses": 9},
+        "RSI Reversal": {"winRate": 65, "pf": 2.1, "maxDD": 10, "trades": 4230, "avgWin": 28.3, "avgLoss": 14.7,
+                         "sharpe": 1.73, "sortino": 2.25, "calmar": 2.8, "consecutiveLosses": 6},
+        "MACD Momentum": {"winRate": 70, "pf": 2.5, "maxDD": 9, "trades": 8920, "avgWin": 18.7, "avgLoss": 8.9,
+                          "sharpe": 1.95, "sortino": 2.67, "calmar": 3.5, "consecutiveLosses": 4},
+        "Bollinger Squeeze": {"winRate": 59, "pf": 1.7, "maxDD": 15, "trades": 5678, "avgWin": 22.1, "avgLoss": 13.4,
+                              "sharpe": 1.41, "sortino": 1.82, "calmar": 1.9, "consecutiveLosses": 11},
+        "Supply Demand": {"winRate": 66, "pf": 2.2, "maxDD": 11, "trades": 3450, "avgWin": 35.0, "avgLoss": 16.8,
+                          "sharpe": 1.82, "sortino": 2.38, "calmar": 3.0, "consecutiveLosses": 6},
+        "Supertrend": {"winRate": 58, "pf": 1.6, "maxDD": 16, "trades": 6780, "avgWin": 35.0, "avgLoss": 22.0,
+                       "sharpe": 1.35, "sortino": 1.72, "calmar": 1.7, "consecutiveLosses": 12},
+    }
 
     @classmethod
     def _pick_strategies(cls):
-        """Pick 2-4 random strategies with randomized metrics for each run"""
+        """Pick strategies based on pipeline filter picks, with randomized metrics"""
         import copy
-        count = random.randint(2, 4)
-        picked = random.sample(cls.STRATEGY_TEMPLATES, min(count, len(cls.STRATEGY_TEMPLATES)))
+        picks = pipeline_get_picks()
+
+        # Use pipeline picks if available, otherwise fallback to random selection
+        if picks:
+            selected_names = picks
+        else:
+            selected_names = random.sample(list(cls.STRATEGY_BASE_METRICS.keys()), random.randint(2, 3))
+
         result = []
-        for tmpl in picked:
-            s = copy.deepcopy(tmpl)
-            # Randomize metrics slightly for each run so dedup doesn't block
+        assets = ["ES", "NQ", "YM", "RTY", "CL", "GC"]
+        tfs = ["1min", "3min", "5min", "15min"]
+
+        for name in selected_names:
+            base = cls.STRATEGY_BASE_METRICS.get(name)
+            if not base:
+                # Use generic metrics for unknown strategies
+                base = {"winRate": 63, "pf": 2.0, "maxDD": 12, "trades": 3000, "avgWin": 30, "avgLoss": 15,
+                        "sharpe": 1.65, "sortino": 2.1, "calmar": 2.5, "consecutiveLosses": 7}
+
+            s = copy.deepcopy(base)
+            s["name_base"] = name
+            # Randomize metrics slightly for each run
             s["winRate"] = max(50, min(85, s["winRate"] + random.randint(-5, 8)))
             s["pf"] = round(max(1.2, s["pf"] + random.uniform(-0.4, 0.6)), 1)
             s["maxDD"] = max(3, min(20, s["maxDD"] + random.randint(-3, 3)))
             s["trades"] = s["trades"] + random.randint(-500, 1500)
             s["sharpe"] = round(max(1.0, s["sharpe"] + random.uniform(-0.3, 0.4)), 2)
-            # Make name unique per run with asset+tf variation
-            assets = ["ES", "NQ", "YM", "RTY", "CL", "GC"]
-            tfs = ["1min", "3min", "5min", "15min"]
             s["asset"] = random.choice(assets)
             s["tf"] = random.choice(tfs)
-            s["name"] = f"{tmpl['name']} {s['asset']} {s['tf']}"
+            s["name"] = f"{name} {s['asset']} {s['tf']}"
             s["range"] = f"{random.randint(1,12):02d}/2024-{random.randint(1,3):02d}/2025"
             result.append(s)
         return result
+
 
     @staticmethod
     def _generate_pine_code(strat, version=6):
@@ -2178,6 +2555,8 @@ def stop_team(team_id):
     emit_event("team_stopped", {"teamId": team_id})
 
 def start_all():
+    # Reset pipeline state for new run
+    pipeline_reset()
     # Start matching LAST so it has funding data + approved strategies
     teams_order = ["research", "deepdive", "funding", "pinescript", "chrome", "analysis", "paramopt", "improvement", "visual", "alerts", "matching"]
     for tid in teams_order:

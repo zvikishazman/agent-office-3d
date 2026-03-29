@@ -1662,10 +1662,20 @@ function addToVault(agentName, task, teamName){
 }
 
 function generateSampleCode(task){
-  if(task.includes('ORB')||task.includes('Breakout'))
+    if(task.includes('ICT')||task.includes('Smart Money')||task.includes('Liquidity'))
+    return '//@version=6\nstrategy("ICT Smart Money", overlay=true)\nlookback = input.int(20, "Lookback")\nfvgMin = input.float(0.5, "FVG Min")\n\nswHi = ta.pivothigh(high, lookback, lookback)\nswLo = ta.pivotlow(low, lookback, lookback)\nvar float lastHi = na\nvar float lastLo = na\nif not na(swHi)\n    lastHi := swHi\nif not na(swLo)\n    lastLo := swLo\n\nbullFVG = low > high[2] and (low - high[2]) >= fvgMin\nbearFVG = high < low[2] and (low[2] - high) >= fvgMin\nbullSweep = low < lastLo and close > lastLo\nbearSweep = high > lastHi and close < lastHi\n\nslSize = ta.atr(14)\ntpSize = slSize * 2.5\n\nif bullSweep and (bullFVG or close > open[1])\n    strategy.entry("Long", strategy.long)\n    strategy.exit("TP/SL", "Long", profit=tpSize/syminfo.mintick, loss=slSize/syminfo.mintick)\n\nif bearSweep and (bearFVG or close < open[1])\n    strategy.entry("Short", strategy.short)\n    strategy.exit("TP/SL", "Short", profit=tpSize/syminfo.mintick, loss=slSize/syminfo.mintick)';
+
+if(task.includes('ORB')||task.includes('Breakout'))
     return '//@version=6\nstrategy("ORB Breakout", overlay=true)\norbHigh = ta.highest(high, 6)\norbLow = ta.lowest(low, 6)\n\n// Assign crossover/crossunder to global vars for consistent calculation\nbLong = ta.crossover(close, orbHigh)\nbShort = ta.crossunder(close, orbLow)\n\nif bLong\n    strategy.entry("Long", strategy.long)\nif bShort\n    strategy.entry("Short", strategy.short)';
   if(task.includes('VWAP'))
     return '//@version=6\nstrategy("VWAP Reclaim", overlay=true)\nvwapVal = ta.vwap(hlc3)\n\nbLong = ta.crossover(close, vwapVal)\n\nif bLong\n    strategy.entry("Long", strategy.long)\nstrategy.exit("TP", profit=15, loss=8)';
+  if(task.includes('MACD'))
+    return '//@version=6\nstrategy("MACD Momentum", overlay=false)\n[macdLine, signalLine, hist] = ta.macd(close, 12, 26, 9)\nbUp = ta.crossover(macdLine, signalLine)\nbDown = ta.crossunder(macdLine, signalLine)\n\nif bUp and hist > 0\n    strategy.entry("Long", strategy.long)\nif bDown and hist < 0\n    strategy.entry("Short", strategy.short)';
+  if(task.includes('RSI'))
+    return '//@version=6\nstrategy("RSI Reversal", overlay=false)\nrsiVal = ta.rsi(close, 14)\nbUp = ta.crossover(rsiVal, 30)\nbDown = ta.crossunder(rsiVal, 70)\n\nif bUp\n    strategy.entry("Long", strategy.long)\nif bDown\n    strategy.entry("Short", strategy.short)';
+  if(task.includes('Supply')||task.includes('Demand'))
+    return '//@version=6\nstrategy("Supply Demand", overlay=true)\npvtHi = ta.pivothigh(high, 20, 20)\npvtLo = ta.pivotlow(low, 20, 20)\nvar float demand = na\nvar float supply = na\nif not na(pvtLo)\n    demand := pvtLo\nif not na(pvtHi)\n    supply := pvtHi\n\nif low <= demand and close > demand\n    strategy.entry("Long", strategy.long)\nif high >= supply and close < supply\n    strategy.entry("Short", strategy.short)';
+
   return '//@version=6\nstrategy("Auto Strategy", overlay=true)\nfast = ta.ema(close, 9)\nslow = ta.ema(close, 21)\n\n// Assign crossover/crossunder results to global variables\nbLong = ta.crossover(fast, slow)\nbShort = ta.crossunder(fast, slow)\n\nif bLong\n    strategy.entry("Long", strategy.long)\nif bShort\n    strategy.entry("Short", strategy.short)';
 }
 
