@@ -40,7 +40,7 @@ vault_strategies = []
 running = True
 
 # ============ PIPELINE STATE ============
-# Shared state that flows between teams: research â filter â pinescript â analysis
+# Shared state that flows between teams: research Ã¢ÂÂ filter Ã¢ÂÂ pinescript Ã¢ÂÂ analysis
 pipeline_lock = threading.Lock()
 pipeline_state = {
     "research_found": [],     # strategy names found by research agents
@@ -132,7 +132,7 @@ def _upstash_request(method, path, body=None):
         with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
             return json.loads(resp.read().decode())
     except Exception as e:
-        print(f"â ï¸ Upstash error: {e}")
+        print(f"Ã¢ÂÂ Ã¯Â¸Â Upstash error: {e}")
         return None
 
 def _upstash_set(key, value):
@@ -160,14 +160,14 @@ def load_vault():
             data = _upstash_get("agent_office_vault")
             if data:
                 vault_strategies = data
-                print(f"âï¸ Loaded {len(vault_strategies)} strategies from Upstash")
+                print(f"Ã¢ÂÂÃ¯Â¸Â Loaded {len(vault_strategies)} strategies from Upstash")
                 return
         if VAULT_FILE.exists():
             with open(VAULT_FILE, 'r', encoding='utf-8') as f:
                 vault_strategies = json.load(f)
-            print(f"ð Loaded {len(vault_strategies)} strategies from vault.json")
+            print(f"Ã°ÂÂÂ Loaded {len(vault_strategies)} strategies from vault.json")
     except Exception as e:
-        print(f"â ï¸ Could not load vault: {e}")
+        print(f"Ã¢ÂÂ Ã¯Â¸Â Could not load vault: {e}")
         vault_strategies = []
 
 def save_vault():
@@ -178,7 +178,7 @@ def save_vault():
             with open(VAULT_FILE, 'w', encoding='utf-8') as f:
                 json.dump(vault_strategies, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"â ï¸ Could not save vault: {e}")
+            print(f"Ã¢ÂÂ Ã¯Â¸Â Could not save vault: {e}")
 
 def load_history():
     global agent_history
@@ -187,12 +187,12 @@ def load_history():
             data = _upstash_get("agent_office_history")
             if data:
                 agent_history = data
-                print(f"âï¸ Loaded history for {len(agent_history)} agents from Upstash")
+                print(f"Ã¢ÂÂÃ¯Â¸Â Loaded history for {len(agent_history)} agents from Upstash")
                 return
         if HISTORY_FILE.exists():
             with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
                 agent_history = json.load(f)
-            print(f"ð Loaded history for {len(agent_history)} agents")
+            print(f"Ã°ÂÂÂ Loaded history for {len(agent_history)} agents")
     except:
         agent_history = {}
 
@@ -213,7 +213,7 @@ def load_errors():
             data = _upstash_get("agent_office_errors")
             if data:
                 agent_errors = data
-                print(f"âï¸ Loaded {len(agent_errors)} errors from Upstash")
+                print(f"Ã¢ÂÂÃ¯Â¸Â Loaded {len(agent_errors)} errors from Upstash")
                 return
         if ERRORS_FILE.exists():
             with open(ERRORS_FILE, 'r', encoding='utf-8') as f:
@@ -238,7 +238,7 @@ def load_activities():
             data = _upstash_get("agent_office_activities")
             if data:
                 activity_log = data
-                print(f"âï¸ Loaded {len(activity_log)} activities from Upstash")
+                print(f"Ã¢ÂÂÃ¯Â¸Â Loaded {len(activity_log)} activities from Upstash")
                 return
         if ACTIVITIES_FILE.exists():
             with open(ACTIVITIES_FILE, 'r', encoding='utf-8') as f:
@@ -263,7 +263,7 @@ def load_kpi():
             data = _upstash_get("agent_office_kpi")
             if data:
                 kpi = data
-                print(f"âï¸ Loaded KPI from Upstash")
+                print(f"Ã¢ÂÂÃ¯Â¸Â Loaded KPI from Upstash")
                 return
     except:
         pass
@@ -392,26 +392,26 @@ class BaseAgent(threading.Thread):
                 if e.code == 429:
                     # Rate limited - longer backoff
                     wait = (attempt + 1) * 5
-                    log_activity("â³", f"{self.name} rate limited",
-                               f"429 Too Many Requests - ×××ª×× {wait}s", self.team_id)
+                    log_activity("Ã¢ÂÂ³", f"{self.name} rate limited",
+                               f"429 Too Many Requests - ÃÂÃÂÃÂªÃÂÃÂ {wait}s", self.team_id)
                     time.sleep(wait)
                 elif e.code == 403:
                     # Forbidden - try different UA next time
                     wait = (attempt + 1) * 2
-                    log_activity("ð", f"{self.name} retry {attempt+1}",
-                               f"403 Forbidden - ×× ×¡× ×¢× User-Agent ×××¨", self.team_id)
+                    log_activity("Ã°ÂÂÂ", f"{self.name} retry {attempt+1}",
+                               f"403 Forbidden - ÃÂÃÂ ÃÂ¡ÃÂ ÃÂ¢ÃÂ User-Agent ÃÂÃÂÃÂ¨", self.team_id)
                     time.sleep(wait)
                 elif attempt < retries - 1:
                     wait = (attempt + 1) * 2
-                    log_activity("ð", f"{self.name} retry {attempt+1}",
-                               f"HTTP {e.code} - ×× ×¡× ×©××", self.team_id)
+                    log_activity("Ã°ÂÂÂ", f"{self.name} retry {attempt+1}",
+                               f"HTTP {e.code} - ÃÂÃÂ ÃÂ¡ÃÂ ÃÂ©ÃÂÃÂ", self.team_id)
                     time.sleep(wait)
             except Exception as e:
                 last_error = e
                 if attempt < retries - 1:
                     wait = (attempt + 1) * 2
-                    log_activity("ð", f"{self.name} retry {attempt+1}",
-                               f"×©××××: {str(e)[:60]}... ×× ×¡× ×©××", self.team_id)
+                    log_activity("Ã°ÂÂÂ", f"{self.name} retry {attempt+1}",
+                               f"ÃÂ©ÃÂÃÂÃÂÃÂ: {str(e)[:60]}... ÃÂÃÂ ÃÂ¡ÃÂ ÃÂ©ÃÂÃÂ", self.team_id)
                     time.sleep(wait)
         return f"Error (after {retries} attempts): {str(last_error)}"
 
@@ -421,18 +421,18 @@ class BaseAgent(threading.Thread):
 
     def report_error(self, action, error_msg, url="", suggestion=""):
         """Report a detailed error with reason and suggestion"""
-        detail = f"×©××××: {error_msg}"
+        detail = f"ÃÂ©ÃÂÃÂÃÂÃÂ: {error_msg}"
         if suggestion:
-            detail += f"\n×¤×ª×¨×× ××¤×©×¨×: {suggestion}"
+            detail += f"\nÃÂ¤ÃÂªÃÂ¨ÃÂÃÂ ÃÂÃÂ¤ÃÂ©ÃÂ¨ÃÂ: {suggestion}"
         self.record(action, detail, False)
-        log_activity("â", f"{self.name} ×©××××", f"{action}: {error_msg[:60]}", self.team_id)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ©ÃÂÃÂÃÂÃÂ", f"{action}: {error_msg[:60]}", self.team_id)
 
         browser_html = (
-            f"<div style='color:#ef4444'>â ×©××××: {action}</div>"
+            f"<div style='color:#ef4444'>Ã¢ÂÂ ÃÂ©ÃÂÃÂÃÂÃÂ: {action}</div>"
             f"<div style='margin-top:4px;color:#94a3b8'>{html_module.escape(error_msg[:200])}</div>"
         )
         if suggestion:
-            browser_html += f"<div style='margin-top:4px;color:#eab308'>ð¡ {html_module.escape(suggestion)}</div>"
+            browser_html += f"<div style='margin-top:4px;color:#eab308'>Ã°ÂÂÂ¡ {html_module.escape(suggestion)}</div>"
         if url:
             browser_html += f"<div style='margin-top:4px;color:#94a3b8;font-size:9px'>URL: {url}</div>"
 
@@ -454,7 +454,7 @@ class BaseAgent(threading.Thread):
         emit_event("agent_error", error_entry)
 
         update_agent(self.agent_id, "working",
-                    f"×©××××: {action} - {error_msg[:40]}...",
+                    f"ÃÂ©ÃÂÃÂÃÂÃÂ: {action} - {error_msg[:40]}...",
                     getattr(self, '_progress', 50), url, browser_html)
 
 
@@ -485,8 +485,8 @@ class StrategyResearchAgent(BaseAgent):
 
         if self.agent_id == "r4":
             # Filter agent: wait for research agents, then pick from their actual results
-            update_agent(self.agent_id, "working", "×××ª×× ××ª××¦×××ª ×××¡××¨×§××...", 10)
-            self.record("××ª×××ª ×¡×× ××", "×××ª×× ××ª××¦×××ª ××¡××¨×§×× ×××¨××")
+            update_agent(self.agent_id, "working", "ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂ§ÃÂÃÂ...", 10)
+            self.record("ÃÂÃÂªÃÂÃÂÃÂª ÃÂ¡ÃÂÃÂ ÃÂÃÂ", "ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂÃÂ¡ÃÂÃÂ¨ÃÂ§ÃÂÃÂ ÃÂÃÂÃÂ¨ÃÂÃÂ")
             time.sleep(8)
             found = kpi.get("found", 0)
 
@@ -529,21 +529,21 @@ class StrategyResearchAgent(BaseAgent):
             pipeline_set_picks(picks)
             picks_str = ", ".join(picks)
 
-            summary = f"×¡×× × {found} ××¡××¨×××××ª - × ×××¨× {len(picks)} ×××××××ª"
-            update_agent(self.agent_id, "working", "××¡× × ×ª××¦×××ª...", 60, "",
-                        f"<div style='color:#a855f7'>ð ×¡×× ×× {found} ×ª××¦×××ª</div>"
-                        f"<div style='margin-top:4px;color:#94a3b8'>×××¤×©: Win Rate > 60%, Profit Factor > 1.5</div>"
-                        f"<div style='margin-top:2px;color:#94a3b8'>××¡× ×: Max Drawdown < 15%</div>"
-                        f"<div style='margin-top:4px;color:#22c55e'>â × ×××¨×: {picks_str}</div>")
+            summary = f"ÃÂ¡ÃÂÃÂ ÃÂ {found} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª - ÃÂ ÃÂÃÂÃÂ¨ÃÂ {len(picks)} ÃÂÃÂÃÂÃÂÃÂÃÂÃÂª"
+            update_agent(self.agent_id, "working", "ÃÂÃÂ¡ÃÂ ÃÂ ÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª...", 60, "",
+                        f"<div style='color:#a855f7'>Ã°ÂÂÂ ÃÂ¡ÃÂÃÂ ÃÂÃÂ {found} ÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª</div>"
+                        f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂ¤ÃÂ©: Win Rate > 60%, Profit Factor > 1.5</div>"
+                        f"<div style='margin-top:2px;color:#94a3b8'>ÃÂÃÂ¡ÃÂ ÃÂ: Max Drawdown < 15%</div>"
+                        f"<div style='margin-top:4px;color:#22c55e'>Ã¢ÂÂ ÃÂ ÃÂÃÂÃÂ¨ÃÂ: {picks_str}</div>")
             time.sleep(3)
-            self.record("×¡×× ×× ××¡××¨×××××ª", f"××ª×× {found} ××¡××¨×××××ª, × ×××¨× {len(picks)} ×××××××ª: {picks_str}", True)
+            self.record("ÃÂ¡ÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª", f"ÃÂÃÂªÃÂÃÂ {found} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª, ÃÂ ÃÂÃÂÃÂ¨ÃÂ {len(picks)} ÃÂÃÂÃÂÃÂÃÂÃÂÃÂª: {picks_str}", True)
             update_agent(self.agent_id, "idle", summary, 100)
-            log_activity("â", f"{self.name} ×¡×××", summary, self.team_id)
+            log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", summary, self.team_id)
             return
 
-        update_agent(self.agent_id, "working", "××ª××× ×¡×¨××§×ª ××¡××¨×××××ª...", 5)
-        log_activity("ð", f"{self.name} ××ª×××", "×¡××¨×§ ××§××¨××ª ×××¡××¨×××××ª ×××©××ª", self.team_id)
-        self.record("××ª×××ª ×¡×¨××§×", f"×¡××¨×§ {len(sources)} ××§××¨××ª")
+        update_agent(self.agent_id, "working", "ÃÂÃÂªÃÂÃÂÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª...", 5)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", "ÃÂ¡ÃÂÃÂ¨ÃÂ§ ÃÂÃÂ§ÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ©ÃÂÃÂª", self.team_id)
+        self.record("ÃÂÃÂªÃÂÃÂÃÂª ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂ", f"ÃÂ¡ÃÂÃÂ¨ÃÂ§ {len(sources)} ÃÂÃÂ§ÃÂÃÂ¨ÃÂÃÂª")
 
         total_found = 0
         for idx, (source_name, url) in enumerate(sources):
@@ -551,8 +551,8 @@ class StrategyResearchAgent(BaseAgent):
                 break
 
             progress = int(((idx + 1) / max(len(sources), 1)) * 80) + 10
-            update_agent(self.agent_id, "working", f"×¡××¨×§ {source_name}...", progress, url,
-                        f"<div style='color:#a855f7'>ð Scanning {source_name}...</div>")
+            update_agent(self.agent_id, "working", f"ÃÂ¡ÃÂÃÂ¨ÃÂ§ {source_name}...", progress, url,
+                        f"<div style='color:#a855f7'>Ã°ÂÂÂ Scanning {source_name}...</div>")
 
             content = self.fetch_url(url)
             time.sleep(2)
@@ -633,26 +633,27 @@ class StrategyResearchAgent(BaseAgent):
                 pipeline_add_found(unique_scripts)
                 # Extract video IDs for YouTube deep content extraction
                 if "youtube" in url.lower():
-                    video_ids = re.findall(r'"videoId":"([a-zA-Z0-9_-]{11})"', content)
-                    for vid_title, vid_id in zip(unique_scripts, video_ids[:len(unique_scripts)]):
-                        pipeline_add_video_url(vid_title, vid_id)
+                    all_vids = re.findall(r'"videoId":"([a-zA-Z0-9_-]{11})"', content)
+                    unique_vids = list(dict.fromkeys(all_vids))[:10]  # dedup, keep order
+                    for vid_id in unique_vids:
+                        pipeline_add_video_url(f"YouTube video {vid_id}", vid_id)
 
-                browser_html = f"<div style='color:#a855f7'>ð {source_name}</div>"
+                browser_html = f"<div style='color:#a855f7'>Ã°ÂÂÂ {source_name}</div>"
                 for s in unique_scripts[:10]:
                     clean = html_module.escape(s.strip()[:60])
-                    browser_html += f"<div style='margin-top:2px'>â¢ {clean}</div>"
+                    browser_html += f"<div style='margin-top:2px'>Ã¢ÂÂ¢ {clean}</div>"
 
-                update_agent(self.agent_id, "working", f"× ××¦×× {len(unique_scripts)} ×-{source_name} (××§××¨ ×× â)", progress, url, browser_html)
-                log_activity("ð", f"× ××¦×× ×ª××¦×××ª ×-{source_name}", f"{len(unique_scripts)} ××¡××¨×××××ª (××§××¨ ×× â)", self.team_id)
-                self.record(f"×¡×¨××§×ª {source_name}", f"× ××¦×× {len(unique_scripts)} ××¡××¨×××××ª (××§××¨ ×× â)", True)
+                update_agent(self.agent_id, "working", f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ {len(unique_scripts)} ÃÂ-{source_name} (ÃÂÃÂ§ÃÂÃÂ¨ ÃÂÃÂ Ã¢ÂÂ)", progress, url, browser_html)
+                log_activity("Ã°ÂÂÂ", f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂ-{source_name}", f"{len(unique_scripts)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª (ÃÂÃÂ§ÃÂÃÂ¨ ÃÂÃÂ Ã¢ÂÂ)", self.team_id)
+                self.record(f"ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª {source_name}", f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ {len(unique_scripts)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª (ÃÂÃÂ§ÃÂÃÂ¨ ÃÂÃÂ Ã¢ÂÂ)", True)
                 kpi["found"] = kpi.get("found", 0) + len(unique_scripts)
                 update_kpi("found", kpi["found"])
 
             time.sleep(1)
 
-        result_msg = f"×¡××× ×¡×¨××§× - × ××¦×× {total_found} ×ª××¦×××ª" if total_found > 0 else "×¡××× ×¡×¨××§× - ×× × ××¦×× ×ª××¦×××ª ×××©××ª"
+        result_msg = f"ÃÂ¡ÃÂÃÂÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂ - ÃÂ ÃÂÃÂ¦ÃÂÃÂ {total_found} ÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª" if total_found > 0 else "ÃÂ¡ÃÂÃÂÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂ - ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂÃÂÃÂ©ÃÂÃÂª"
         update_agent(self.agent_id, "idle", result_msg, 100)
-        log_activity("â" if total_found > 0 else "â ï¸", f"{self.name} ×¡××× ×¡×¨××§×", f"×¡×\"× {total_found} ××¡××¨×××××ª", self.team_id)
+        log_activity("Ã¢ÂÂ" if total_found > 0 else "Ã¢ÂÂ Ã¯Â¸Â", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂ", f"ÃÂ¡ÃÂ\"ÃÂ {total_found} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª", self.team_id)
 
 
 class FundingResearchAgent(BaseAgent):
@@ -672,8 +673,8 @@ class FundingResearchAgent(BaseAgent):
         "FTMO": {
             "url": "https://ftmo.com/en/",
             "routes": [
-                {"name": "FTMO Challenge", "type": "2-Phase Evaluation", "description": "×©×× 1: ××¢× 10% ×ª×× 30 ×××. ×©×× 2: ××¢× 5% ×ª×× 60 ×××"},
-                {"name": "FTMO Aggressive", "type": "2-Phase Evaluation", "description": "×©×× 1: ××¢× 20% ×ª×× 30 ×××. ×©×× 2: ××¢× 10% ×ª×× 60 ×××. DD ×××¨××"},
+                {"name": "FTMO Challenge", "type": "2-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ 1: ÃÂÃÂ¢ÃÂ 10% ÃÂªÃÂÃÂ 30 ÃÂÃÂÃÂ. ÃÂ©ÃÂÃÂ 2: ÃÂÃÂ¢ÃÂ 5% ÃÂªÃÂÃÂ 60 ÃÂÃÂÃÂ"},
+                {"name": "FTMO Aggressive", "type": "2-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ 1: ÃÂÃÂ¢ÃÂ 20% ÃÂªÃÂÃÂ 30 ÃÂÃÂÃÂ. ÃÂ©ÃÂÃÂ 2: ÃÂÃÂ¢ÃÂ 10% ÃÂªÃÂÃÂ 60 ÃÂÃÂÃÂ. DD ÃÂÃÂÃÂ¨ÃÂÃÂ"},
             ],
             "accounts": [
                 {"size": "$10,000", "price": "$155", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
@@ -683,42 +684,42 @@ class FundingResearchAgent(BaseAgent):
                 {"size": "$200,000", "price": "$1,080", "profit_target_1": "10%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "10%"},
             ],
             "terms": {
-                "profit_split": "80% (×¢× 90% ×¢× scaling)",
-                "payout_frequency": "×× 14 ×××",
+                "profit_split": "80% (ÃÂ¢ÃÂ 90% ÃÂ¢ÃÂ scaling)",
+                "payout_frequency": "ÃÂÃÂ 14 ÃÂÃÂÃÂ",
                 "max_daily_loss": "5%",
                 "max_total_loss": "10%",
                 "leverage": "1:100",
                 "instruments": "Forex, Indices, Commodities, Crypto",
-                "scaling": "×¢× $2,000,000 - ×× 4 ××××©×× +25% ×× ×¨××× 10%+",
-                "refund": "××××¨ ××× ××¨×©×× ×¢× ×¨××× ×¨××©××",
+                "scaling": "ÃÂ¢ÃÂ $2,000,000 - ÃÂÃÂ 4 ÃÂÃÂÃÂÃÂ©ÃÂÃÂ +25% ÃÂÃÂ ÃÂ¨ÃÂÃÂÃÂ 10%+",
+                "refund": "ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ©ÃÂÃÂ ÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂ¨ÃÂÃÂ©ÃÂÃÂ",
             },
         },
         "Topstep": {
             "url": "https://www.topstep.com/",
             "routes": [
-                {"name": "Trading Combine", "type": "1-Phase Evaluation", "description": "×©×× ×××: ×××¢× ×××¢× ×¨××× ×ª×× ×©×××¨× ×¢× ×××× DD"},
+                {"name": "Trading Combine", "type": "1-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ: ÃÂÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂªÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ¨ÃÂ ÃÂ¢ÃÂ ÃÂÃÂÃÂÃÂ DD"},
             ],
             "accounts": [
-                {"size": "$50,000", "price": "$49/××××©", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "$1,000", "max_total_loss": "$2,000"},
-                {"size": "$100,000", "price": "$99/××××©", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "$2,000", "max_total_loss": "$3,000"},
-                {"size": "$150,000", "price": "$149/××××©", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "$3,000", "max_total_loss": "$4,500"},
+                {"size": "$50,000", "price": "$49/ÃÂÃÂÃÂÃÂ©", "profit_target_1": "$3,000", "profit_target_2": "-", "max_daily_loss": "$1,000", "max_total_loss": "$2,000"},
+                {"size": "$100,000", "price": "$99/ÃÂÃÂÃÂÃÂ©", "profit_target_1": "$6,000", "profit_target_2": "-", "max_daily_loss": "$2,000", "max_total_loss": "$3,000"},
+                {"size": "$150,000", "price": "$149/ÃÂÃÂÃÂÃÂ©", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "$3,000", "max_total_loss": "$4,500"},
             ],
             "terms": {
-                "profit_split": "90% (100% ×¢× $10,000 ×¨××©×× ××)",
-                "payout_frequency": "××××× ××¨× Rise",
+                "profit_split": "90% (100% ÃÂ¢ÃÂ $10,000 ÃÂ¨ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂ)",
+                "payout_frequency": "ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ Rise",
                 "max_daily_loss": "Trailing drawdown",
                 "max_total_loss": "Trailing from max balance",
                 "leverage": "Full futures contracts",
                 "instruments": "Futures (ES, NQ, YM, RTY, CL, GC, etc.)",
-                "scaling": "××× ××××× - ××¡××¨ ×¢× ×××× ××©××× ×××",
-                "refund": "××× ××××¨ - ×× ×× ××××©×",
+                "scaling": "ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ - ÃÂÃÂ¡ÃÂÃÂ¨ ÃÂ¢ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂÃÂ",
+                "refund": "ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ - ÃÂÃÂ ÃÂÃÂ ÃÂÃÂÃÂÃÂ©ÃÂ",
             },
         },
         "Take Profit Trader": {
             "url": "https://takeprofittrader.com/",
             "routes": [
-                {"name": "Pro Account", "type": "1-Phase Evaluation", "description": "×©×× ×××: ×××¢× ×××¢× ×¨×××. EOD trailing drawdown"},
-                {"name": "Pro+ Account", "type": "Instant Funding", "description": "××©××× ××××× ××××× ××× evaluation"},
+                {"name": "Pro Account", "type": "1-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ: ÃÂÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ. EOD trailing drawdown"},
+                {"name": "Pro+ Account", "type": "Instant Funding", "description": "ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ evaluation"},
             ],
             "accounts": [
                 {"size": "$25,000", "price": "$80", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$1,500 (EOD trailing)"},
@@ -727,21 +728,21 @@ class FundingResearchAgent(BaseAgent):
                 {"size": "$150,000", "price": "$360", "profit_target_1": "$9,000", "profit_target_2": "-", "max_daily_loss": "-", "max_total_loss": "$5,000 (EOD trailing)"},
             ],
             "terms": {
-                "profit_split": "80% (×¢× 90% ×¢× scaling)",
-                "payout_frequency": "×× ××× - ××× ×××××",
-                "max_daily_loss": "××× ××××× ×××××ª",
+                "profit_split": "80% (ÃÂ¢ÃÂ 90% ÃÂ¢ÃÂ scaling)",
+                "payout_frequency": "ÃÂÃÂ ÃÂÃÂÃÂ - ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ",
+                "max_daily_loss": "ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂª",
                 "max_total_loss": "EOD trailing drawdown",
                 "leverage": "Full futures contracts",
                 "instruments": "Futures (ES, NQ, YM, RTY, CL, GC, etc.)",
-                "scaling": "×¢× $1,500,000",
-                "refund": "××××¨ ××× ××¨×©×× ×¢× ×¨××× ×¨××©××",
+                "scaling": "ÃÂ¢ÃÂ $1,500,000",
+                "refund": "ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ©ÃÂÃÂ ÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂ¨ÃÂÃÂ©ÃÂÃÂ",
             },
         },
         "MyForexFunds": {
             "url": "https://myforexfunds.com/",
             "routes": [
-                {"name": "Evaluation", "type": "2-Phase Evaluation", "description": "×©×× 1: ××¢× 8% ×ª×× 30 ×××. ×©×× 2: ××¢× 5% ×ª×× 60 ×××"},
-                {"name": "Rapid", "type": "1-Phase Evaluation", "description": "×©×× ×××: ××¢× 8% ×ª×× 30 ×××. DD ×××¨××"},
+                {"name": "Evaluation", "type": "2-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ 1: ÃÂÃÂ¢ÃÂ 8% ÃÂªÃÂÃÂ 30 ÃÂÃÂÃÂ. ÃÂ©ÃÂÃÂ 2: ÃÂÃÂ¢ÃÂ 5% ÃÂªÃÂÃÂ 60 ÃÂÃÂÃÂ"},
+                {"name": "Rapid", "type": "1-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ: ÃÂÃÂ¢ÃÂ 8% ÃÂªÃÂÃÂ 30 ÃÂÃÂÃÂ. DD ÃÂÃÂÃÂ¨ÃÂÃÂ"},
             ],
             "accounts": [
                 {"size": "$5,000", "price": "$49", "profit_target_1": "8%", "profit_target_2": "5%", "max_daily_loss": "5%", "max_total_loss": "12%"},
@@ -751,19 +752,19 @@ class FundingResearchAgent(BaseAgent):
             ],
             "terms": {
                 "profit_split": "80%",
-                "payout_frequency": "×× 14 ×××",
+                "payout_frequency": "ÃÂÃÂ 14 ÃÂÃÂÃÂ",
                 "max_daily_loss": "5%",
                 "max_total_loss": "12%",
                 "leverage": "1:100",
                 "instruments": "Forex, Indices, Commodities",
-                "scaling": "×¢× $600,000",
-                "refund": "××××¨ ××× ××¨×©×× ×¢× ×¨××× ×¨××©××",
+                "scaling": "ÃÂ¢ÃÂ $600,000",
+                "refund": "ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ©ÃÂÃÂ ÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂ¨ÃÂÃÂ©ÃÂÃÂ",
             },
         },
         "Lucid Trading": {
             "url": "https://www.lucidtrading.co/",
             "routes": [
-                {"name": "Challenge", "type": "1-Phase Evaluation", "description": "×©×× ×××: ×××¢× ×××¢× ×¨××× ×ª×× ×©×××¨× ×¢× DD"},
+                {"name": "Challenge", "type": "1-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ: ÃÂÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂªÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ¨ÃÂ ÃÂ¢ÃÂ DD"},
             ],
             "accounts": [
                 {"size": "$25,000", "price": "$99", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "$500", "max_total_loss": "$1,500"},
@@ -772,20 +773,20 @@ class FundingResearchAgent(BaseAgent):
             ],
             "terms": {
                 "profit_split": "80%",
-                "payout_frequency": "×× 14 ×××",
-                "max_daily_loss": "××©×ª× × ××¤× ×××× ××©×××",
+                "payout_frequency": "ÃÂÃÂ 14 ÃÂÃÂÃÂ",
+                "max_daily_loss": "ÃÂÃÂ©ÃÂªÃÂ ÃÂ ÃÂÃÂ¤ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ©ÃÂÃÂÃÂ",
                 "max_total_loss": "Trailing drawdown",
                 "leverage": "Futures contracts",
                 "instruments": "Futures (ES, NQ, YM, RTY)",
-                "scaling": "×¢× $500,000",
-                "refund": "××× ××××¨",
+                "scaling": "ÃÂ¢ÃÂ $500,000",
+                "refund": "ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨",
             },
         },
         "Alpha Futures": {
             "url": "https://alpha-futures.com/",
             "routes": [
-                {"name": "Alpha Challenge", "type": "1-Phase Evaluation", "description": "×©×× ×××: ×××¢× ×××¢× ×¨××× ×ª×× ×©×××¨× ×¢× DD"},
-                {"name": "Alpha Express", "type": "Fast Track", "description": "××¡××× ××××¨ ×¢× ××¢× ×××¤××ª"},
+                {"name": "Alpha Challenge", "type": "1-Phase Evaluation", "description": "ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ: ÃÂÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂ¢ÃÂ ÃÂ¨ÃÂÃÂÃÂ ÃÂªÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ¨ÃÂ ÃÂ¢ÃÂ DD"},
+                {"name": "Alpha Express", "type": "Fast Track", "description": "ÃÂÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ ÃÂ¢ÃÂ ÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂ¤ÃÂÃÂª"},
             ],
             "accounts": [
                 {"size": "$25,000", "price": "$97", "profit_target_1": "$1,500", "profit_target_2": "-", "max_daily_loss": "$500", "max_total_loss": "$1,500"},
@@ -795,13 +796,13 @@ class FundingResearchAgent(BaseAgent):
             ],
             "terms": {
                 "profit_split": "90%",
-                "payout_frequency": "×× 7 ××××",
-                "max_daily_loss": "××©×ª× × ××¤× ×××× ××©×××",
+                "payout_frequency": "ÃÂÃÂ 7 ÃÂÃÂÃÂÃÂ",
+                "max_daily_loss": "ÃÂÃÂ©ÃÂªÃÂ ÃÂ ÃÂÃÂ¤ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ©ÃÂÃÂÃÂ",
                 "max_total_loss": "Trailing drawdown",
                 "leverage": "Full futures contracts",
                 "instruments": "Futures (ES, NQ, YM, RTY, CL, GC)",
-                "scaling": "×¢× $1,000,000",
-                "refund": "××××¨ ××× ××¨×©×× ××¨××× ×¨××©××",
+                "scaling": "ÃÂ¢ÃÂ $1,000,000",
+                "refund": "ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ©ÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂÃÂ ÃÂ¨ÃÂÃÂ©ÃÂÃÂ",
             },
         },
     }
@@ -816,16 +817,16 @@ class FundingResearchAgent(BaseAgent):
             return
 
         company_data = self.COMPANY_DATA.get(company_name, {})
-        update_agent(self.agent_id, "working", f"×¡××¨×§ ××ª {company_name}...", 10, url,
-                    f"<div style='color:#06b6d4'>ð Connecting to {company_name}...</div>")
-        log_activity("ðµï¸", f"{self.name} ××ª×××", f"×¡××¨×§ {company_name}", self.team_id)
-        self.record(f"××ª×××ª ×¡×¨××§×ª {company_name}", f"×××©× ×-{url}")
+        update_agent(self.agent_id, "working", f"ÃÂ¡ÃÂÃÂ¨ÃÂ§ ÃÂÃÂª {company_name}...", 10, url,
+                    f"<div style='color:#06b6d4'>Ã°ÂÂÂ Connecting to {company_name}...</div>")
+        log_activity("Ã°ÂÂÂµÃ¯Â¸Â", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", f"ÃÂ¡ÃÂÃÂ¨ÃÂ§ {company_name}", self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª {company_name}", f"ÃÂÃÂÃÂ©ÃÂ ÃÂ-{url}")
 
         time.sleep(1)
         content = self.fetch_url(url)
         time.sleep(1)
 
-        update_agent(self.agent_id, "working", f"×× ×ª× ×ª××× ×-{company_name}...", 50, url)
+        update_agent(self.agent_id, "working", f"ÃÂÃÂ ÃÂªÃÂ ÃÂªÃÂÃÂÃÂ ÃÂ-{company_name}...", 50, url)
 
         # Try to extract structured data from live page
         live_data_found = False
@@ -840,21 +841,21 @@ class FundingResearchAgent(BaseAgent):
             result_data = company_data
 
             # Build structured output
-            browser_html = f"<div style='color:#06b6d4;font-weight:bold'>ð {company_name}</div>"
-            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>××§××¨: live</div>"
+            browser_html = f"<div style='color:#06b6d4;font-weight:bold'>Ã°ÂÂÂ {company_name}</div>"
+            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>ÃÂÃÂ§ÃÂÃÂ¨: live</div>"
 
             # Routes
-            browser_html += "<div style='margin-top:8px;color:#22c55e;font-weight:bold'>××¡×××××:</div>"
+            browser_html += "<div style='margin-top:8px;color:#22c55e;font-weight:bold'>ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ:</div>"
             for route in result_data.get("routes", []):
-                browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>â¢ {route['name']} ({route['type']})</div>"
+                browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>Ã¢ÂÂ¢ {route['name']} ({route['type']})</div>"
                 browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{route['description']}</div>"
 
             # Account sizes & pricing table
-            browser_html += "<div style='margin-top:8px;color:#eab308;font-weight:bold'>××©××× ××ª ×××××¨××:</div>"
+            browser_html += "<div style='margin-top:8px;color:#eab308;font-weight:bold'>ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂ:</div>"
             for acc in result_data.get("accounts", []):
                 browser_html += (
                     f"<div style='color:#e2e8f0;margin-top:3px'>"
-                    f"ð° {acc['size']} - <span style='color:#22c55e'>{acc['price']}</span>"
+                    f"Ã°ÂÂÂ° {acc['size']} - <span style='color:#22c55e'>{acc['price']}</span>"
                     f" | Target: {acc['profit_target_1']}"
                     f" | Max DD: {acc['max_total_loss']}"
                     f"</div>"
@@ -862,42 +863,42 @@ class FundingResearchAgent(BaseAgent):
 
             # Key terms
             terms = result_data.get("terms", {})
-            browser_html += "<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>×ª× ×××:</div>"
-            browser_html += f"<div style='color:#94a3b8'>××××§×ª ×¨×××: {terms.get('profit_split', 'N/A')}</div>"
-            browser_html += f"<div style='color:#94a3b8'>×ª×××¨××ª ××©×××: {terms.get('payout_frequency', 'N/A')}</div>"
+            browser_html += "<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>ÃÂªÃÂ ÃÂÃÂÃÂ:</div>"
+            browser_html += f"<div style='color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ: {terms.get('profit_split', 'N/A')}</div>"
+            browser_html += f"<div style='color:#94a3b8'>ÃÂªÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂ©ÃÂÃÂÃÂ: {terms.get('payout_frequency', 'N/A')}</div>"
             browser_html += f"<div style='color:#94a3b8'>Scaling: {terms.get('scaling', 'N/A')}</div>"
-            browser_html += f"<div style='color:#94a3b8'>×××©××¨××: {terms.get('instruments', 'N/A')}</div>"
+            browser_html += f"<div style='color:#94a3b8'>ÃÂÃÂÃÂ©ÃÂÃÂ¨ÃÂÃÂ: {terms.get('instruments', 'N/A')}</div>"
 
             update_agent(self.agent_id, "working",
-                        f"{company_name}: {len(result_data.get('accounts',[]))} ××©××× ××ª, {len(result_data.get('routes',[]))} ××¡×××××",
+                        f"{company_name}: {len(result_data.get('accounts',[]))} ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª, {len(result_data.get('routes',[]))} ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ",
                         80, url, browser_html)
 
             # Record detailed info
             accounts_summary = ", ".join(f"{a['size']}={a['price']}" for a in result_data.get("accounts", []))
             routes_summary = ", ".join(r["name"] for r in result_data.get("routes", []))
-            self.record(f"×¡×¨××§×ª {company_name}",
-                       f"××¡×××××: {routes_summary}. "
-                       f"××©××× ××ª: {accounts_summary}. "
-                       f"××××§×ª ×¨×××: {terms.get('profit_split', 'N/A')}. "
+            self.record(f"ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª {company_name}",
+                       f"ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ: {routes_summary}. "
+                       f"ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª: {accounts_summary}. "
+                       f"ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ: {terms.get('profit_split', 'N/A')}. "
                        f"Scaling: {terms.get('scaling', 'N/A')}. "
-                       f"××§××¨: live", True)
+                       f"ÃÂÃÂ§ÃÂÃÂ¨: live", True)
 
-            log_activity("ð", f"{company_name} × ×¡×¨×§",
-                        f"{len(result_data.get('accounts',[]))} ××©××× ××ª, ××××§×ª ×¨××× {terms.get('profit_split','N/A')}", self.team_id)
+            log_activity("Ã°ÂÂÂ", f"{company_name} ÃÂ ÃÂ¡ÃÂ¨ÃÂ§",
+                        f"{len(result_data.get('accounts',[]))} ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª, ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ {terms.get('profit_split','N/A')}", self.team_id)
 
             # Store for MatchingAgent
             with FundingResearchAgent._funding_lock:
                 FundingResearchAgent.funding_results[company_name] = result_data
         else:
             # No data at all - report as error
-            self.report_error(f"×¡×¨××§×ª {company_name}",
-                            f"××× × ×ª×× ×× ×××× ×× ×¢×××¨ {company_name} - ×× × ××¦× ××××¢ ×¢× ××¡×××××, ××©××× ××ª ×× ××××¨××",
+            self.report_error(f"ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª {company_name}",
+                            f"ÃÂÃÂÃÂ ÃÂ ÃÂªÃÂÃÂ ÃÂÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ ÃÂ¢ÃÂÃÂÃÂ¨ {company_name} - ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂ ÃÂÃÂÃÂÃÂ¢ ÃÂ¢ÃÂ ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ, ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª ÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ",
                             url,
-                            f"×¦×¨×× ××××¡××£ × ×ª×× × {company_name} ×××××¨ ×× ×ª×× ×× ×× ×××××§ ××ª ××ª×××ª ×××ª×¨")
+                            f"ÃÂ¦ÃÂ¨ÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂ£ ÃÂ ÃÂªÃÂÃÂ ÃÂ {company_name} ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂ ÃÂªÃÂÃÂ ÃÂÃÂ ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ§ ÃÂÃÂª ÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂÃÂªÃÂ¨")
 
         time.sleep(1)
-        update_agent(self.agent_id, "idle", f"×¡××× ×¡×¨××§×ª {company_name}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{company_name} × ×¡×¨×§ ×××¦×××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª {company_name}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{company_name} ÃÂ ÃÂ¡ÃÂ¨ÃÂ§ ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ", self.team_id)
 
 
 class PineScriptAgent(BaseAgent):
@@ -907,7 +908,7 @@ class PineScriptAgent(BaseAgent):
         "ORB": {
             "name": "Opening Range Breakout",
             "asset": "ES (S&P 500 E-mini)",
-            "timeframe": "5 ××§××ª",
+            "timeframe": "5 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "01/01/2023 - 31/12/2024",
             "code": """//@version=6
 strategy("ORB Breakout", overlay=true, margin_long=100, margin_short=100)
@@ -968,7 +969,7 @@ plot(orbDone ? orbLow : na, "ORB Low", color.red, 2)
         "ICT": {
             "name": "ICT Smart Money",
             "asset": "ES (S&P 500 E-mini)",
-            "timeframe": "5 ××§××ª",
+            "timeframe": "5 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "01/01/2024 - 31/12/2024",
             "code": """//@version=6
 strategy("ICT Smart Money Concept", overlay=true, margin_long=100, margin_short=100)
@@ -1033,7 +1034,7 @@ bgcolor(bullFVG ? color.new(color.green, 90) : bearFVG ? color.new(color.red, 90
         "EMA": {
             "name": "EMA Cross",
             "asset": "NQ (Nasdaq E-mini)",
-            "timeframe": "15 ××§××ª",
+            "timeframe": "15 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "03/2023 - 12/2024",
             "code": """//@version=6
 strategy("EMA Cross Trend", overlay=true)
@@ -1069,7 +1070,7 @@ plot(emaSlow, "Slow EMA", color.red, 2)
         "MACD": {
             "name": "MACD Momentum",
             "asset": "CL (Crude Oil)",
-            "timeframe": "5 ××§××ª",
+            "timeframe": "5 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "01/2024 - 12/2024",
             "code": """//@version=6
 strategy("MACD Momentum", overlay=false)
@@ -1103,7 +1104,7 @@ plot(histLine, "Histogram", style=plot.style_histogram, color=histLine > 0 ? col
         "RSI": {
             "name": "RSI Reversal",
             "asset": "NQ (Nasdaq E-mini)",
-            "timeframe": "5 ××§××ª",
+            "timeframe": "5 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "01/2024 - 12/2024",
             "code": """//@version=6
 strategy("RSI Reversal", overlay=false)
@@ -1136,7 +1137,7 @@ hline(oversold, "Oversold", color.green)
         "Bollinger": {
             "name": "Bollinger Squeeze",
             "asset": "YM (Dow E-mini)",
-            "timeframe": "3 ××§××ª",
+            "timeframe": "3 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "06/2023 - 06/2024",
             "code": """//@version=6
 strategy("Bollinger Squeeze", overlay=true)
@@ -1171,7 +1172,7 @@ bgcolor(sqzActive ? color.new(color.yellow, 90) : na)
         "Supply": {
             "name": "Supply Demand Zones",
             "asset": "ES (S&P 500 E-mini)",
-            "timeframe": "15 ××§××ª",
+            "timeframe": "15 ÃÂÃÂ§ÃÂÃÂª",
             "test_range": "01/2024 - 12/2024",
             "code": """//@version=6
 strategy("Supply Demand Zones", overlay=true)
@@ -1216,7 +1217,7 @@ plot(supplyZone, "Supply", color.red, 2, plot.style_stepline)
         "VWAP": {
             "name": "VWAP Reclaim",
             "asset": "NQ (Nasdaq E-mini)",
-            "timeframe": "1 ××§×",
+            "timeframe": "1 ÃÂÃÂ§ÃÂ",
             "test_range": "01/06/2023 - 31/12/2024",
             "code": """//@version=5
 strategy("VWAP Reclaim Scalper", overlay=true)
@@ -1266,7 +1267,7 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         }
     }
 
-    # Strategy name â template key mapping
+    # Strategy name Ã¢ÂÂ template key mapping
     STRATEGY_TO_KEY = {
         "ORB Breakout": "ORB",
         "ICT Smart Money": "ICT",
@@ -1281,11 +1282,11 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
 
     # Different roles per agent - templates now come from pipeline
     AGENT_ROLES = {
-        "p1": {"role": "Pine V5 Expert", "task": "××ª×××ª ×§×× Pine Script V5"},
-        "p2": {"role": "Pine V6 Expert", "task": "××ª×××ª ×§×× Pine Script V6"},
-        "p3": {"role": "Debugger", "task": "××××§×ª ××××× ×× ××§×× ×§××"},
-        "p4": {"role": "QA Tester", "task": "××××§×ª ×§×××¤×××¦×× ××××××§×"},
-        "p5": {"role": "Code Optimizer", "task": "×××¢×× ×××¦××¢×× ××©××¤××¨ ×§××"},
+        "p1": {"role": "Pine V5 Expert", "task": "ÃÂÃÂªÃÂÃÂÃÂª ÃÂ§ÃÂÃÂ Pine Script V5"},
+        "p2": {"role": "Pine V6 Expert", "task": "ÃÂÃÂªÃÂÃÂÃÂª ÃÂ§ÃÂÃÂ Pine Script V6"},
+        "p3": {"role": "Debugger", "task": "ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂ ÃÂ§ÃÂÃÂ"},
+        "p4": {"role": "QA Tester", "task": "ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ§ÃÂÃÂÃÂ¤ÃÂÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂ§ÃÂ"},
+        "p5": {"role": "Code Optimizer", "task": "ÃÂÃÂÃÂ¢ÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ ÃÂÃÂ©ÃÂÃÂ¤ÃÂÃÂ¨ ÃÂ§ÃÂÃÂ"},
     }
 
     def _get_template_keys_from_pipeline(self):
@@ -1302,19 +1303,19 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         return keys if keys else ["ORB", "VWAP"]
 
     def run(self):
-        role_info = self.AGENT_ROLES.get(self.agent_id, {"role": "Coder", "task": "××ª×××ª ×§××"})
+        role_info = self.AGENT_ROLES.get(self.agent_id, {"role": "Coder", "task": "ÃÂÃÂªÃÂÃÂÃÂª ÃÂ§ÃÂÃÂ"})
 
         # Wait briefly for filter results to arrive
-        update_agent(self.agent_id, "working", f"×××ª×× ××ª××¦×××ª ×¡×× ××...", 5)
+        update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂ¡ÃÂÃÂ ÃÂÃÂ...", 5)
         time.sleep(3)
 
         # Get templates from pipeline
         template_keys = self._get_template_keys_from_pipeline()
-        picks_str = ", ".join(pipeline_get_picks()) if pipeline_get_picks() else "××¨××¨×ª ××××"
+        picks_str = ", ".join(pipeline_get_picks()) if pipeline_get_picks() else "ÃÂÃÂ¨ÃÂÃÂ¨ÃÂª ÃÂÃÂÃÂÃÂ"
 
-        update_agent(self.agent_id, "working", f"××ª×××: {role_info['task']}...", 5)
-        log_activity("ð»", f"{self.name} ××ª×××", f"{role_info['task']} - ××¡××¨×××××ª: {picks_str}", self.team_id)
-        self.record(f"××ª×××ª {role_info['task']}", f"×ª×¤×§××: {role_info['role']}, ××¡××¨×××××ª ×××¡×× ××: {picks_str}")
+        update_agent(self.agent_id, "working", f"ÃÂÃÂªÃÂÃÂÃÂ: {role_info['task']}...", 5)
+        log_activity("Ã°ÂÂÂ»", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", f"{role_info['task']} - ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª: {picks_str}", self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role_info['task']}", f"ÃÂªÃÂ¤ÃÂ§ÃÂÃÂ: {role_info['role']}, ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂÃÂ ÃÂÃÂ: {picks_str}")
 
         for idx, key in enumerate(template_keys):
             if self.should_stop.is_set():
@@ -1329,50 +1330,50 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
             progress = int(((idx + 1) / max(len(role_info["templates"]), 1)) * 80) + 10
 
             if self.agent_id == "p3":  # Debugger
-                update_agent(self.agent_id, "working", f"××××§ ××××× ×-{strategy_name}...", progress,
+                update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂ§ ÃÂÃÂÃÂÃÂÃÂ ÃÂ-{strategy_name}...", progress,
                             "https://www.tradingview.com/pine-script-docs/",
-                            f"<div style='color:#eab308'>ð Debugging {strategy_name}</div>"
-                            f"<div style='margin-top:4px;color:#94a3b8'>××××§×ª syntax errors...</div>"
-                            f"<div style='color:#94a3b8'>××××§×ª undefined variables...</div>"
-                            f"<div style='color:#94a3b8'>××××§×ª type mismatches...</div>"
-                            f"<div style='margin-top:4px;color:#22c55e'>â ×× × ××¦×× ××××× - ××§×× ×ª×§××</div>")
+                            f"<div style='color:#eab308'>Ã°ÂÂÂ Debugging {strategy_name}</div>"
+                            f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂª syntax errors...</div>"
+                            f"<div style='color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂª undefined variables...</div>"
+                            f"<div style='color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂª type mismatches...</div>"
+                            f"<div style='margin-top:4px;color:#22c55e'>Ã¢ÂÂ ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ - ÃÂÃÂ§ÃÂÃÂ ÃÂªÃÂ§ÃÂÃÂ</div>")
                 time.sleep(3)
-                self.record(f"××××§×ª ××××× - {strategy_name}",
-                           f"××××§×ª syntax, undefined vars, type checks - ×× × ××¦×× ×××××. {len(code.splitlines())} ×©××¨××ª × ×××§×", True)
+                self.record(f"ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂÃÂÃÂÃÂ - {strategy_name}",
+                           f"ÃÂÃÂÃÂÃÂ§ÃÂª syntax, undefined vars, type checks - ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ. {len(code.splitlines())} ÃÂ©ÃÂÃÂ¨ÃÂÃÂª ÃÂ ÃÂÃÂÃÂ§ÃÂ", True)
 
             elif self.agent_id == "p4":  # QA
-                update_agent(self.agent_id, "working", f"××××§×ª QA ×-{strategy_name}...", progress,
+                update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂ§ÃÂª QA ÃÂ-{strategy_name}...", progress,
                             "https://www.tradingview.com/pine-script-docs/",
-                            f"<div style='color:#22c55e'>â QA Testing {strategy_name}</div>"
-                            f"<div style='margin-top:4px;color:#94a3b8'>strategy() declaration: â</div>"
-                            f"<div style='color:#94a3b8'>strategy.entry() calls: â</div>"
-                            f"<div style='color:#94a3b8'>strategy.exit() calls: â</div>"
-                            f"<div style='color:#94a3b8'>Input validation: â</div>"
-                            f"<div style='color:#94a3b8'>Risk management: â (TP/SL defined)</div>")
+                            f"<div style='color:#22c55e'>Ã¢ÂÂ QA Testing {strategy_name}</div>"
+                            f"<div style='margin-top:4px;color:#94a3b8'>strategy() declaration: Ã¢ÂÂ</div>"
+                            f"<div style='color:#94a3b8'>strategy.entry() calls: Ã¢ÂÂ</div>"
+                            f"<div style='color:#94a3b8'>strategy.exit() calls: Ã¢ÂÂ</div>"
+                            f"<div style='color:#94a3b8'>Input validation: Ã¢ÂÂ</div>"
+                            f"<div style='color:#94a3b8'>Risk management: Ã¢ÂÂ (TP/SL defined)</div>")
                 time.sleep(3)
-                self.record(f"××××§×ª QA - {strategy_name}",
-                           f"×§×××¤×××¦××: OK, entry/exit: OK, inputs: OK, TP/SL: ×××××¨. ××¡××¨×××× ×¢××¨× QA ×××¦×××", True)
+                self.record(f"ÃÂÃÂÃÂÃÂ§ÃÂª QA - {strategy_name}",
+                           f"ÃÂ§ÃÂÃÂÃÂ¤ÃÂÃÂÃÂ¦ÃÂÃÂ: OK, entry/exit: OK, inputs: OK, TP/SL: ÃÂÃÂÃÂÃÂÃÂ¨. ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ ÃÂ¢ÃÂÃÂ¨ÃÂ QA ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ", True)
 
             elif self.agent_id == "p5":  # Optimizer
-                update_agent(self.agent_id, "working", f"××××¢× ×§×× {strategy_name}...", progress,
+                update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂ¢ÃÂ ÃÂ§ÃÂÃÂ {strategy_name}...", progress,
                             "https://www.tradingview.com/pine-script-docs/",
-                            f"<div style='color:#f59e0b'>â¡ Optimizing {strategy_name}</div>"
-                            f"<div style='margin-top:4px;color:#94a3b8'>×©××¤××¨×× ×©×××¦×¢×:</div>"
-                            f"<div style='color:#22c55e'>â¢ ×××¡×¤×ª cache ×-ta.highest/ta.lowest</div>"
-                            f"<div style='color:#22c55e'>â¢ ×¦××¦×× ×××©×××× ××××¨××</div>"
-                            f"<div style='color:#22c55e'>â¢ ×©××¤××¨ ×ª× ×× ×× ××¡× ×¢× volume filter</div>"
-                            f"<div style='margin-top:4px;color:#94a3b8'>×××¦××¢××: ~15% ××××¨ ×××ª×¨</div>")
+                            f"<div style='color:#f59e0b'>Ã¢ÂÂ¡ Optimizing {strategy_name}</div>"
+                            f"<div style='margin-top:4px;color:#94a3b8'>ÃÂ©ÃÂÃÂ¤ÃÂÃÂ¨ÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ¦ÃÂ¢ÃÂ:</div>"
+                            f"<div style='color:#22c55e'>Ã¢ÂÂ¢ ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª cache ÃÂ-ta.highest/ta.lowest</div>"
+                            f"<div style='color:#22c55e'>Ã¢ÂÂ¢ ÃÂ¦ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂ©ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ</div>"
+                            f"<div style='color:#22c55e'>Ã¢ÂÂ¢ ÃÂ©ÃÂÃÂ¤ÃÂÃÂ¨ ÃÂªÃÂ ÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂ ÃÂ¢ÃÂ volume filter</div>"
+                            f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ: ~15% ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂªÃÂ¨</div>")
                 time.sleep(3)
-                self.record(f"×××¢×× ×§×× - {strategy_name}",
-                           f"×××¡×¤×ª cache, ×¦××¦×× ×××©×××× ××××¨××, volume filter. ×××¦××¢×× ×©××¤×¨× ~15%", True)
+                self.record(f"ÃÂÃÂÃÂ¢ÃÂÃÂ ÃÂ§ÃÂÃÂ - {strategy_name}",
+                           f"ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª cache, ÃÂ¦ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂ©ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ, volume filter. ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ ÃÂ©ÃÂÃÂ¤ÃÂ¨ÃÂ ~15%", True)
 
             else:  # Coder (p1, p2)
-                update_agent(self.agent_id, "working", f"×××ª× {strategy_name}...", progress,
+                update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂªÃÂ {strategy_name}...", progress,
                             "https://www.tradingview.com/pine-script-docs/",
-                            f"<div style='color:#f59e0b'>ð» Writing {strategy_name}</div>"
-                            f"<div style='margin-top:4px;color:#94a3b8'>× ××¡: {template['asset']}</div>"
-                            f"<div style='color:#94a3b8'>×××××¤×¨×××: {template['timeframe']}</div>"
-                            f"<div style='color:#94a3b8'>×ª×§××¤×ª ××××§×: {template['test_range']}</div>"
+                            f"<div style='color:#f59e0b'>Ã°ÂÂÂ» Writing {strategy_name}</div>"
+                            f"<div style='margin-top:4px;color:#94a3b8'>ÃÂ ÃÂÃÂ¡: {template['asset']}</div>"
+                            f"<div style='color:#94a3b8'>ÃÂÃÂÃÂÃÂÃÂ¤ÃÂ¨ÃÂÃÂÃÂ: {template['timeframe']}</div>"
+                            f"<div style='color:#94a3b8'>ÃÂªÃÂ§ÃÂÃÂ¤ÃÂª ÃÂÃÂÃÂÃÂ§ÃÂ: {template['test_range']}</div>"
                             f"<div style='margin-top:6px'><pre style='color:#c9d1d9;font-size:9px'>{html_module.escape(code[:200])}...</pre></div>")
                 time.sleep(3)
 
@@ -1382,20 +1383,20 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
                 valid = has_strategy and has_entry and has_exit
 
                 if valid:
-                    log_activity("â", f"×§×× {strategy_name} ××××", f"{len(code.splitlines())} ×©××¨××ª, compilation OK", self.team_id)
+                    log_activity("Ã¢ÂÂ", f"ÃÂ§ÃÂÃÂ {strategy_name} ÃÂÃÂÃÂÃÂ", f"{len(code.splitlines())} ÃÂ©ÃÂÃÂ¨ÃÂÃÂª, compilation OK", self.team_id)
                     pipeline_add_coded(strategy_name)
                     kpi["tested"] = kpi.get("tested", 0) + 1
                     update_kpi("tested", kpi["tested"])
-                    self.record(f"××ª×××ª ×§×× - {strategy_name}",
-                               f"× ××ª× ×§×× ×¢× {len(code.splitlines())} ×©××¨××ª. × ××¡: {template['asset']}, TF: {template['timeframe']}. ×§×××¤×××¦××: OK", True)
+                    self.record(f"ÃÂÃÂªÃÂÃÂÃÂª ÃÂ§ÃÂÃÂ - {strategy_name}",
+                               f"ÃÂ ÃÂÃÂªÃÂ ÃÂ§ÃÂÃÂ ÃÂ¢ÃÂ {len(code.splitlines())} ÃÂ©ÃÂÃÂ¨ÃÂÃÂª. ÃÂ ÃÂÃÂ¡: {template['asset']}, TF: {template['timeframe']}. ÃÂ§ÃÂÃÂÃÂ¤ÃÂÃÂÃÂ¦ÃÂÃÂ: OK", True)
                 else:
-                    log_activity("â", f"×©×××× ×-{strategy_name}", "Missing strategy/entry/exit", self.team_id)
-                    self.record(f"××ª×××ª ×§×× - {strategy_name}", "×©××××: ××¡×¨ strategy/entry/exit", False)
+                    log_activity("Ã¢ÂÂ", f"ÃÂ©ÃÂÃÂÃÂÃÂ ÃÂ-{strategy_name}", "Missing strategy/entry/exit", self.team_id)
+                    self.record(f"ÃÂÃÂªÃÂÃÂÃÂª ÃÂ§ÃÂÃÂ - {strategy_name}", "ÃÂ©ÃÂÃÂÃÂÃÂ: ÃÂÃÂ¡ÃÂ¨ strategy/entry/exit", False)
 
             time.sleep(1)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role_info['task']}", 100)
-        log_activity("â", f"{self.name} ×¡×××", role_info['task'], self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role_info['task']}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", role_info['task'], self.team_id)
 
 
 class AnalysisAgent(BaseAgent):
@@ -1790,13 +1791,13 @@ plot(slow, "Slow", color.red)
 
     def run(self):
         role = self.AGENT_ROLES.get(self.agent_id, "performance")
-        role_names = {"performance": "×× ×ª× ×××¦××¢××", "risk": "×× ×ª× ×¡×××× ××", "decision": "×××××"}
-        role_name = role_names.get(role, "×× ×ª×")
+        role_names = {"performance": "ÃÂÃÂ ÃÂªÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ", "risk": "ÃÂÃÂ ÃÂªÃÂ ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ", "decision": "ÃÂÃÂÃÂÃÂÃÂ"}
+        role_name = role_names.get(role, "ÃÂÃÂ ÃÂªÃÂ")
 
         strategies = self._pick_strategies()
-        update_agent(self.agent_id, "working", f"{role_name} ××ª××× × ××ª××...", 10)
-        log_activity("ð", f"{self.name} ××ª×××", f"×ª×¤×§××: {role_name}", self.team_id)
-        self.record(f"××ª×××ª × ××ª×× ({role_name})", f"×× ×ª× {len(strategies)} ××¡××¨×××××ª")
+        update_agent(self.agent_id, "working", f"{role_name} ÃÂÃÂªÃÂÃÂÃÂ ÃÂ ÃÂÃÂªÃÂÃÂ...", 10)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", f"ÃÂªÃÂ¤ÃÂ§ÃÂÃÂ: {role_name}", self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª ÃÂ ÃÂÃÂªÃÂÃÂ ({role_name})", f"ÃÂÃÂ ÃÂªÃÂ {len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª")
 
         for idx, strat in enumerate(strategies):
             if self.should_stop.is_set():
@@ -1806,63 +1807,63 @@ plot(slow, "Slow", color.red)
 
             if role == "performance":
                 browser_html = (
-                    f"<div style='color:#3b82f6'>ð Performance Analysis: {strat['name']}</div>"
-                    f"<div style='margin-top:6px;color:#94a3b8'>× ××¡: {strat['asset']} | TF: {strat['tf']} | ×ª×§××¤×: {strat['range']}</div>"
+                    f"<div style='color:#3b82f6'>Ã°ÂÂÂ Performance Analysis: {strat['name']}</div>"
+                    f"<div style='margin-top:6px;color:#94a3b8'>ÃÂ ÃÂÃÂ¡: {strat['asset']} | TF: {strat['tf']} | ÃÂªÃÂ§ÃÂÃÂ¤ÃÂ: {strat['range']}</div>"
                     f"<div style='margin-top:4px'>Win Rate: <span style='color:#22c55e'>{strat['winRate']}%</span></div>"
                     f"<div>Profit Factor: <span style='color:#22c55e'>{strat['pf']}</span></div>"
                     f"<div>Avg Win: <span style='color:#22c55e'>${strat['avgWin']}</span> | Avg Loss: <span style='color:#ef4444'>${strat['avgLoss']}</span></div>"
                     f"<div>Total Trades: {strat['trades']:,}</div>"
                     f"<div>Sharpe Ratio: {strat['sharpe']}</div>"
                 )
-                update_agent(self.agent_id, "working", f"× ××ª×× ×××¦××¢×× - {strat['name']}", progress,
+                update_agent(self.agent_id, "working", f"ÃÂ ÃÂÃÂªÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ - {strat['name']}", progress,
                             "https://tradingview.com/strategy-tester/", browser_html)
-                self.record(f"× ××ª×× ×××¦××¢×× - {strat['name']}",
-                           f"× ××¡: {strat['asset']}, TF: {strat['tf']}, WR: {strat['winRate']}%, PF: {strat['pf']}, "
+                self.record(f"ÃÂ ÃÂÃÂªÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ - {strat['name']}",
+                           f"ÃÂ ÃÂÃÂ¡: {strat['asset']}, TF: {strat['tf']}, WR: {strat['winRate']}%, PF: {strat['pf']}, "
                            f"Trades: {strat['trades']:,}, Sharpe: {strat['sharpe']}", True)
 
             elif role == "risk":
-                risk_level = "× ×××" if strat['maxDD'] < 10 else "××× ×× ×" if strat['maxDD'] < 15 else "××××"
+                risk_level = "ÃÂ ÃÂÃÂÃÂ" if strat['maxDD'] < 10 else "ÃÂÃÂÃÂ ÃÂÃÂ ÃÂ" if strat['maxDD'] < 15 else "ÃÂÃÂÃÂÃÂ"
                 risk_color = "#22c55e" if strat['maxDD'] < 10 else "#eab308" if strat['maxDD'] < 15 else "#ef4444"
                 browser_html = (
-                    f"<div style='color:#ef4444'>â ï¸ Risk Analysis: {strat['name']}</div>"
-                    f"<div style='margin-top:6px;color:#94a3b8'>× ××¡: {strat['asset']} | TF: {strat['tf']}</div>"
+                    f"<div style='color:#ef4444'>Ã¢ÂÂ Ã¯Â¸Â Risk Analysis: {strat['name']}</div>"
+                    f"<div style='margin-top:6px;color:#94a3b8'>ÃÂ ÃÂÃÂ¡: {strat['asset']} | TF: {strat['tf']}</div>"
                     f"<div style='margin-top:4px'>Max Drawdown: <span style='color:{risk_color}'>{strat['maxDD']}%</span></div>"
-                    f"<div>×¨××ª ×¡××××: <span style='color:{risk_color}'>{risk_level}</span></div>"
+                    f"<div>ÃÂ¨ÃÂÃÂª ÃÂ¡ÃÂÃÂÃÂÃÂ: <span style='color:{risk_color}'>{risk_level}</span></div>"
                     f"<div>Sortino Ratio: {strat['sortino']}</div>"
                     f"<div>Calmar Ratio: {strat['calmar']}</div>"
                     f"<div>Max Consecutive Losses: {strat['consecutiveLosses']}</div>"
-                    f"<div style='margin-top:4px;color:#94a3b8'>×××ª×× ×-FTMO: {'â ××' if strat['maxDD'] < 10 else 'â ï¸ ×¦×¨×× ××ª×××'}</div>"
+                    f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂªÃÂÃÂ ÃÂ-FTMO: {'Ã¢ÂÂ ÃÂÃÂ' if strat['maxDD'] < 10 else 'Ã¢ÂÂ Ã¯Â¸Â ÃÂ¦ÃÂ¨ÃÂÃÂ ÃÂÃÂªÃÂÃÂÃÂ'}</div>"
                 )
-                update_agent(self.agent_id, "working", f"× ××ª×× ×¡×××× ×× - {strat['name']}", progress,
+                update_agent(self.agent_id, "working", f"ÃÂ ÃÂÃÂªÃÂÃÂ ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ - {strat['name']}", progress,
                             "https://tradingview.com/strategy-tester/", browser_html)
-                self.record(f"× ××ª×× ×¡×××× ×× - {strat['name']}",
-                           f"MaxDD: {strat['maxDD']}%, ×¡××××: {risk_level}, Sortino: {strat['sortino']}, "
-                           f"Consecutive Losses: {strat['consecutiveLosses']}, FTMO Compatible: {'××' if strat['maxDD'] < 10 else '×¦×¨×× ××ª×××'}", True)
+                self.record(f"ÃÂ ÃÂÃÂªÃÂÃÂ ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ - {strat['name']}",
+                           f"MaxDD: {strat['maxDD']}%, ÃÂ¡ÃÂÃÂÃÂÃÂ: {risk_level}, Sortino: {strat['sortino']}, "
+                           f"Consecutive Losses: {strat['consecutiveLosses']}, FTMO Compatible: {'ÃÂÃÂ' if strat['maxDD'] < 10 else 'ÃÂ¦ÃÂ¨ÃÂÃÂ ÃÂÃÂªÃÂÃÂÃÂ'}", True)
 
             elif role == "decision":
                 approved = strat['winRate'] > 55 and strat['pf'] > 1.5 and strat['maxDD'] < 20
-                decision = "â ××××©×¨" if approved else "â × ×××"
+                decision = "Ã¢ÂÂ ÃÂÃÂÃÂÃÂ©ÃÂ¨" if approved else "Ã¢ÂÂ ÃÂ ÃÂÃÂÃÂ"
                 reasons = []
-                if strat['winRate'] > 60: reasons.append(f"WR ×××× ({strat['winRate']}%)")
-                if strat['pf'] > 2: reasons.append(f"PF ××¦××× ({strat['pf']})")
-                if strat['maxDD'] < 10: reasons.append(f"DD × ××× ({strat['maxDD']}%)")
-                if strat['sharpe'] > 1.5: reasons.append(f"Sharpe ××× ({strat['sharpe']})")
-                reason_text = ", ".join(reasons) if reasons else "×× ×¢×× ××§×¨×××¨××× ××"
+                if strat['winRate'] > 60: reasons.append(f"WR ÃÂÃÂÃÂÃÂ ({strat['winRate']}%)")
+                if strat['pf'] > 2: reasons.append(f"PF ÃÂÃÂ¦ÃÂÃÂÃÂ ({strat['pf']})")
+                if strat['maxDD'] < 10: reasons.append(f"DD ÃÂ ÃÂÃÂÃÂ ({strat['maxDD']}%)")
+                if strat['sharpe'] > 1.5: reasons.append(f"Sharpe ÃÂÃÂÃÂ ({strat['sharpe']})")
+                reason_text = ", ".join(reasons) if reasons else "ÃÂÃÂ ÃÂ¢ÃÂÃÂ ÃÂÃÂ§ÃÂ¨ÃÂÃÂÃÂ¨ÃÂÃÂÃÂ ÃÂÃÂ"
 
                 browser_html = (
                     f"<div style='color:{'#22c55e' if approved else '#ef4444'}'>{decision}: {strat['name']}</div>"
-                    f"<div style='margin-top:6px;color:#94a3b8'>× ××¡: {strat['asset']} | TF: {strat['tf']} | ×ª×§××¤×: {strat['range']}</div>"
-                    f"<div style='margin-top:4px'>×¡××××ª: {reason_text}</div>"
+                    f"<div style='margin-top:6px;color:#94a3b8'>ÃÂ ÃÂÃÂ¡: {strat['asset']} | TF: {strat['tf']} | ÃÂªÃÂ§ÃÂÃÂ¤ÃÂ: {strat['range']}</div>"
+                    f"<div style='margin-top:4px'>ÃÂ¡ÃÂÃÂÃÂÃÂª: {reason_text}</div>"
                     f"<div style='margin-top:4px;color:#94a3b8'>WR: {strat['winRate']}% | PF: {strat['pf']} | DD: {strat['maxDD']}%</div>"
                     f"<div style='color:#94a3b8'>Trades: {strat['trades']:,} | Sharpe: {strat['sharpe']}</div>"
                 )
-                update_agent(self.agent_id, "working", f"××××× - {strat['name']}: {decision}", progress,
+                update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂÃÂ - {strat['name']}: {decision}", progress,
                             "https://tradingview.com/strategy-tester/", browser_html)
 
                 if approved:
                     kpi["approved"] = kpi.get("approved", 0) + 1
                     update_kpi("approved", kpi["approved"])
-                    log_activity("â", f"{strat['name']} ×××©×¨×!", f"WR:{strat['winRate']}% PF:{strat['pf']}", self.team_id)
+                    log_activity("Ã¢ÂÂ", f"{strat['name']} ÃÂÃÂÃÂ©ÃÂ¨ÃÂ!", f"WR:{strat['winRate']}% PF:{strat['pf']}", self.team_id)
                     # Generate unique Pine Script code per strategy
                     pine_code_v6 = self._generate_pine_code(strat, version=6)
                     pine_code_v5 = self._generate_pine_code(strat, version=5)
@@ -1886,42 +1887,42 @@ plot(slow, "Slow", color.red)
                         "avgLoss": strat.get("avgLoss", 0),
                         "sortino": strat.get("sortino", 0),
                         "calmar": strat.get("calmar", 0),
-                        "decision": f"×××©×¨: WR={strat['winRate']}%, PF={strat['pf']}, MaxDD={strat['maxDD']}%, Sharpe={strat['sharpe']}"
+                        "decision": f"ÃÂÃÂÃÂ©ÃÂ¨: WR={strat['winRate']}%, PF={strat['pf']}, MaxDD={strat['maxDD']}%, Sharpe={strat['sharpe']}"
                     })
                 else:
                     kpi["rejected"] = kpi.get("rejected", 0) + 1
                     update_kpi("rejected", kpi["rejected"])
-                    log_activity("â", f"{strat['name']} × ×××ª×", "×× ×¢××××ª ××§×¨×××¨××× ××", self.team_id)
+                    log_activity("Ã¢ÂÂ", f"{strat['name']} ÃÂ ÃÂÃÂÃÂªÃÂ", "ÃÂÃÂ ÃÂ¢ÃÂÃÂÃÂÃÂª ÃÂÃÂ§ÃÂ¨ÃÂÃÂÃÂ¨ÃÂÃÂÃÂ ÃÂÃÂ", self.team_id)
 
-                self.record(f"××××× - {strat['name']}",
-                           f"{decision}. × ××¡: {strat['asset']}, TF: {strat['tf']}, WR: {strat['winRate']}%, PF: {strat['pf']}, DD: {strat['maxDD']}%. "
-                           f"×¡××××ª: {reason_text}", approved)
+                self.record(f"ÃÂÃÂÃÂÃÂÃÂ - {strat['name']}",
+                           f"{decision}. ÃÂ ÃÂÃÂ¡: {strat['asset']}, TF: {strat['tf']}, WR: {strat['winRate']}%, PF: {strat['pf']}, DD: {strat['maxDD']}%. "
+                           f"ÃÂ¡ÃÂÃÂÃÂÃÂª: {reason_text}", approved)
 
             time.sleep(3)
 
-        update_agent(self.agent_id, "idle", f"×¡××× × ××ª×× ({role_name})", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"× ××ª×× {role_name} ×××©××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ ÃÂ ÃÂÃÂªÃÂÃÂ ({role_name})", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"ÃÂ ÃÂÃÂªÃÂÃÂ {role_name} ÃÂÃÂÃÂ©ÃÂÃÂ", self.team_id)
 
 
 class DuplicateDetectionAgent(BaseAgent):
     """Detects duplicate strategies in research results - allows similar strategies if mechanics differ"""
 
     def run(self):
-        update_agent(self.agent_id, "working", "××××§ ××¤××××××ª ×××¡××¨×××××ª...", 10)
-        log_activity("ð", f"{self.name} ××ª×××", "××××§×ª ××¤××××××ª ×××¡××¨×××××ª ×©× ××¦××", self.team_id)
-        self.record("××ª×××ª ××××§×ª ××¤××××××ª", "×¡××¨×§ ××¡××¨×××××ª ×©× ××¦×× ×××××× ××¤××××××ª")
+        update_agent(self.agent_id, "working", "ÃÂÃÂÃÂÃÂ§ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª...", 10)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", "ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂ©ÃÂ ÃÂÃÂ¦ÃÂÃÂ", self.team_id)
+        self.record("ÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª", "ÃÂ¡ÃÂÃÂ¨ÃÂ§ ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂ©ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª")
 
         # Wait a bit for research agents to find strategies
         time.sleep(10)
 
         # Check vault for duplicates
         strategies = list(vault_strategies)
-        update_agent(self.agent_id, "working", f"××××§ {len(strategies)} ××¡××¨×××××ª ×××¡×¤×ª...", 40)
+        update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂ§ {len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª...", 40)
 
         if not strategies:
-            self.record("××××§×ª ××¤××××××ª", "×××¡×¤×ª ×¨××§× - ××× ×× ×××××§", True)
-            update_agent(self.agent_id, "idle", "××¡×¤×ª ×¨××§× - ××× ××¤××××××ª", 100)
-            log_activity("â", f"{self.name} ×¡×××", "×××¡×¤×ª ×¨××§×", self.team_id)
+            self.record("ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª", "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª ÃÂ¨ÃÂÃÂ§ÃÂ - ÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ§", True)
+            update_agent(self.agent_id, "idle", "ÃÂÃÂ¡ÃÂ¤ÃÂª ÃÂ¨ÃÂÃÂ§ÃÂ - ÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª", 100)
+            log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª ÃÂ¨ÃÂÃÂ§ÃÂ", self.team_id)
             return
 
         # Group strategies by base type
@@ -1951,55 +1952,55 @@ class DuplicateDetectionAgent(BaseAgent):
                         same_code = s1.get("code", "")[:200] == s2.get("code", "")[:200]
 
                         if same_code and same_asset and same_tf:
-                            duplicates_found.append((s1.get("name"), s2.get("name"), "×§×× ×××, × ××¡ ×××, TF ×××"))
+                            duplicates_found.append((s1.get("name"), s2.get("name"), "ÃÂ§ÃÂÃÂ ÃÂÃÂÃÂ, ÃÂ ÃÂÃÂ¡ ÃÂÃÂÃÂ, TF ÃÂÃÂÃÂ"))
                         elif same_asset and same_tf:
                             # Same type but check if metrics differ enough
                             wr_diff = abs(s1.get("winRate", 0) - s2.get("winRate", 0))
                             if wr_diff < 3:
-                                duplicates_found.append((s1.get("name"), s2.get("name"), f"××× ××§× ×××× ×××× (××¤×¨×© WR: {wr_diff}%)"))
+                                duplicates_found.append((s1.get("name"), s2.get("name"), f"ÃÂÃÂÃÂ ÃÂÃÂ§ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ (ÃÂÃÂ¤ÃÂ¨ÃÂ© WR: {wr_diff}%)"))
                             else:
-                                allowed_duplicates.append((s1.get("name"), s2.get("name"), f"××× ××§× ×©×× × (××¤×¨×© WR: {wr_diff}%)"))
+                                allowed_duplicates.append((s1.get("name"), s2.get("name"), f"ÃÂÃÂÃÂ ÃÂÃÂ§ÃÂ ÃÂ©ÃÂÃÂ ÃÂ (ÃÂÃÂ¤ÃÂ¨ÃÂ© WR: {wr_diff}%)"))
                         else:
-                            allowed_duplicates.append((s1.get("name"), s2.get("name"), f"× ××¡/TF ×©×× ×: {s1.get('asset')}/{s1.get('timeframe')} vs {s2.get('asset')}/{s2.get('timeframe')}"))
+                            allowed_duplicates.append((s1.get("name"), s2.get("name"), f"ÃÂ ÃÂÃÂ¡/TF ÃÂ©ÃÂÃÂ ÃÂ: {s1.get('asset')}/{s1.get('timeframe')} vs {s2.get('asset')}/{s2.get('timeframe')}"))
 
         # Build result
-        browser_html = f"<div style='color:#f59e0b;font-weight:bold'>ð ××××§×ª ××¤××××××ª</div>"
-        browser_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(strategies)} ××¡××¨×××××ª × ×××§×, {len(groups)} ×¡××××</div>"
+        browser_html = f"<div style='color:#f59e0b;font-weight:bold'>Ã°ÂÂÂ ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª</div>"
+        browser_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂ ÃÂÃÂÃÂ§ÃÂ, {len(groups)} ÃÂ¡ÃÂÃÂÃÂÃÂ</div>"
 
         if duplicates_found:
-            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>â ××¤××××××ª ×©× ××¦×× ({len(duplicates_found)}):</div>"
+            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>Ã¢ÂÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª ÃÂ©ÃÂ ÃÂÃÂ¦ÃÂÃÂ ({len(duplicates_found)}):</div>"
             for s1, s2, reason in duplicates_found[:5]:
-                browser_html += f"<div style='color:#ef4444;margin-top:2px'>â¢ {s1} â {s2}</div>"
+                browser_html += f"<div style='color:#ef4444;margin-top:2px'>Ã¢ÂÂ¢ {s1} Ã¢ÂÂ {s2}</div>"
                 browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{reason}</div>"
 
         if allowed_duplicates:
-            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>â ××¤××××××ª ×××ª×¨××ª ({len(allowed_duplicates)}):</div>"
+            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>Ã¢ÂÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂªÃÂ¨ÃÂÃÂª ({len(allowed_duplicates)}):</div>"
             for s1, s2, reason in allowed_duplicates[:5]:
-                browser_html += f"<div style='color:#22c55e;margin-top:2px'>â¢ {s1} â {s2}</div>"
+                browser_html += f"<div style='color:#22c55e;margin-top:2px'>Ã¢ÂÂ¢ {s1} Ã¢ÂÂ {s2}</div>"
                 browser_html += f"<div style='color:#94a3b8;margin-left:12px;font-size:10px'>{reason}</div>"
 
         if not duplicates_found and not allowed_duplicates:
-            browser_html += f"<div style='margin-top:8px;color:#22c55e'>â ×× × ××¦×× ××¤××××××ª</div>"
+            browser_html += f"<div style='margin-top:8px;color:#22c55e'>Ã¢ÂÂ ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª</div>"
 
-        update_agent(self.agent_id, "working", f"× ××¦×× {len(duplicates_found)} ××¤××××××ª", 90, "", browser_html)
-        self.record("×¡×××× ××××§×ª ××¤××××××ª",
-                   f"× ×××§× {len(strategies)} ××¡××¨×××××ª. "
-                   f"××¤××××××ª: {len(duplicates_found)}, ×××ª×¨××ª: {len(allowed_duplicates)}. "
-                   f"×¡××××: {', '.join(groups.keys())}", len(duplicates_found) == 0)
+        update_agent(self.agent_id, "working", f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ {len(duplicates_found)} ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª", 90, "", browser_html)
+        self.record("ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª",
+                   f"ÃÂ ÃÂÃÂÃÂ§ÃÂ {len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª. "
+                   f"ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª: {len(duplicates_found)}, ÃÂÃÂÃÂªÃÂ¨ÃÂÃÂª: {len(allowed_duplicates)}. "
+                   f"ÃÂ¡ÃÂÃÂÃÂÃÂ: {', '.join(groups.keys())}", len(duplicates_found) == 0)
 
         time.sleep(1)
-        status = f"× ××¦×× {len(duplicates_found)} ××¤××××××ª" if duplicates_found else "××× ××¤××××××ª"
-        update_agent(self.agent_id, "idle", f"×¡××× ××××§× - {status}", 100)
-        log_activity("ð", f"{self.name} ×¡×××", status, self.team_id)
+        status = f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ {len(duplicates_found)} ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª" if duplicates_found else "ÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂª"
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ§ÃÂ - {status}", 100)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", status, self.team_id)
 
 
 class MatchingAgent(BaseAgent):
     """Compares funding companies and recommends best match per strategy. Runs LAST."""
 
     def run(self):
-        update_agent(self.agent_id, "working", "××Øª×× ×× ×ª×× × ××××× ×××¡××¨×××××ª...", 5)
-        log_activity("ð¯", f"{self.name} ××ª×××", "×××ª×× ××ª××¦×××ª ×× ××¦×××ª××", self.team_id)
-        self.record("××ª×××ª ××ª×××", "×××ª×× ×× ×ª×× × ×¡×¨××§×ª ××××× ×××¡××¨×××××ª ××××©×¨××ª")
+        update_agent(self.agent_id, "working", "ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂ ÃÂªÃÂÃÂ ÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª...", 5)
+        log_activity("Ã°ÂÂÂ¯", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", "ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂªÃÂÃÂ¦ÃÂÃÂÃÂª ÃÂÃÂ ÃÂÃÂ¦ÃÂÃÂÃÂªÃÂÃÂ", self.team_id)
+        self.record("ÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂªÃÂÃÂÃÂ", "ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂ ÃÂªÃÂÃÂ ÃÂ ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂÃÂ©ÃÂ¨ÃÂÃÂª")
 
         # Wait for funding data to be collected
         wait_count = 0
@@ -2012,7 +2013,7 @@ class MatchingAgent(BaseAgent):
             wait_count += 1
             if wait_count % 5 == 0:
                 update_agent(self.agent_id, "working",
-                           f"×××ª××... {funding_count} ×××¨××ª ××××× × ×¡×¨×§× ×¢× ××", int(wait_count * 1.5))
+                           f"ÃÂÃÂÃÂªÃÂÃÂ... {funding_count} ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂ ÃÂ ÃÂ¡ÃÂ¨ÃÂ§ÃÂ ÃÂ¢ÃÂ ÃÂÃÂ", int(wait_count * 1.5))
 
         # Get collected data
         with FundingResearchAgent._funding_lock:
@@ -2021,13 +2022,13 @@ class MatchingAgent(BaseAgent):
         strategies = list(vault_strategies)
 
         update_agent(self.agent_id, "working",
-                    f"×× ×ª× {len(funding_data)} ×××¨××ª ××××× ×¢×××¨ {len(strategies)} ××¡××¨×××××ª...", 30)
-        self.record("× ×ª×× ×× ×©××ª×§×××",
-                   f"{len(funding_data)} ×××¨××ª ×××××, {len(strategies)} ××¡××¨×××××ª ×××¡×¤×ª")
+                    f"ÃÂÃÂ ÃÂªÃÂ {len(funding_data)} ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂ ÃÂ¢ÃÂÃÂÃÂ¨ {len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª...", 30)
+        self.record("ÃÂ ÃÂªÃÂÃÂ ÃÂÃÂ ÃÂ©ÃÂÃÂªÃÂ§ÃÂÃÂÃÂ",
+                   f"{len(funding_data)} ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂ, {len(strategies)} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª")
 
         if not funding_data:
-            self.report_error("××ª×××ª ××¡×××××", "×× ××ª×§××× × ×ª×× × ××××× ×××¡××¨×§××", "", "××© ×××¤×¢×× ××ª ×¦×××ª ×¡×¨××§×ª ×××××× ××¤× × ×××ª×××")
-            update_agent(self.agent_id, "idle", "×©××××: ××× × ×ª×× × ×××××", 100)
+            self.report_error("ÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ", "ÃÂÃÂ ÃÂÃÂªÃÂ§ÃÂÃÂÃÂ ÃÂ ÃÂªÃÂÃÂ ÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂ§ÃÂÃÂ", "", "ÃÂÃÂ© ÃÂÃÂÃÂ¤ÃÂ¢ÃÂÃÂ ÃÂÃÂª ÃÂ¦ÃÂÃÂÃÂª ÃÂ¡ÃÂ¨ÃÂÃÂ§ÃÂª ÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂ ÃÂ ÃÂÃÂÃÂªÃÂÃÂÃÂ")
+            update_agent(self.agent_id, "idle", "ÃÂ©ÃÂÃÂÃÂÃÂ: ÃÂÃÂÃÂ ÃÂ ÃÂªÃÂÃÂ ÃÂ ÃÂÃÂÃÂÃÂÃÂ", 100)
             return
 
         time.sleep(2)
@@ -2070,14 +2071,14 @@ class MatchingAgent(BaseAgent):
             })
 
             browser_html = (
-                f"<div style='color:#8b5cf6'>ð ×× ×ª×: {company_name}</div>"
-                f"<div style='margin-top:4px;color:#94a3b8'>××××§×ª ×¨×××: {split_str}</div>"
-                f"<div style='color:#94a3b8'>××××¨ ×× ××¡× ××× ××××: ${min_price}</div>"
-                f"<div style='color:#94a3b8'>××¡×××××: {len(routes)} | ××©××× ××ª: {len(accounts)}</div>"
-                f"<div style='color:#eab308'>×¦×××: {score:.0f}</div>"
+                f"<div style='color:#8b5cf6'>Ã°ÂÂÂ ÃÂÃÂ ÃÂªÃÂ: {company_name}</div>"
+                f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ: {split_str}</div>"
+                f"<div style='color:#94a3b8'>ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂ ÃÂÃÂ¡ÃÂ ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ: ${min_price}</div>"
+                f"<div style='color:#94a3b8'>ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ: {len(routes)} | ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª: {len(accounts)}</div>"
+                f"<div style='color:#eab308'>ÃÂ¦ÃÂÃÂÃÂ: {score:.0f}</div>"
             )
-            update_agent(self.agent_id, "working", f"×× ×ª× {company_name}...", progress, "", browser_html)
-            self.record(f"× ××ª×× {company_name}",
+            update_agent(self.agent_id, "working", f"ÃÂÃÂ ÃÂªÃÂ {company_name}...", progress, "", browser_html)
+            self.record(f"ÃÂ ÃÂÃÂªÃÂÃÂ {company_name}",
                        f"Split: {split_str}, Min Price: ${min_price}, Routes: {len(routes)}, Accounts: {len(accounts)}, Score: {score:.0f}", True)
             time.sleep(2)
 
@@ -2086,47 +2087,47 @@ class MatchingAgent(BaseAgent):
         best = company_scores[0] if company_scores else None
 
         # Build final comparison HTML
-        comparison_html = "<div style='color:#22c55e;font-weight:bold;font-size:13px'>ð ×¡×××× ××©××××ª ×××¨××ª ×××××</div>"
-        comparison_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(company_scores)} ×××¨××ª × ×××§×</div>"
+        comparison_html = "<div style='color:#22c55e;font-weight:bold;font-size:13px'>Ã°ÂÂÂ ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ©ÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂ</div>"
+        comparison_html += f"<div style='margin-top:4px;color:#94a3b8'>{len(company_scores)} ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂ ÃÂÃÂÃÂ§ÃÂ</div>"
 
         for rank, cs in enumerate(company_scores):
-            medal = "ð¥" if rank == 0 else "ð¥" if rank == 1 else "ð¥" if rank == 2 else "ð"
+            medal = "Ã°ÂÂ¥Â" if rank == 0 else "Ã°ÂÂ¥Â" if rank == 1 else "Ã°ÂÂ¥Â" if rank == 2 else "Ã°ÂÂÂ"
             color = "#22c55e" if rank == 0 else "#eab308" if rank == 1 else "#94a3b8"
             comparison_html += (
-                f"<div style='margin-top:6px;color:{color};font-weight:bold'>{medal} #{rank+1} {cs['name']} (×¦×××: {cs['score']:.0f})</div>"
-                f"<div style='color:#94a3b8;margin-left:20px'>Split: {cs['profit_split']} | ×× ××¡× ×-{cs['min_price']} | {cs['accounts']} ××©××× ××ª | {cs['routes']} ××¡×××××</div>"
-                f"<div style='color:#94a3b8;margin-left:20px'>××©××××ª: {cs['payout']} | Scaling: {cs['scaling']}</div>"
+                f"<div style='margin-top:6px;color:{color};font-weight:bold'>{medal} #{rank+1} {cs['name']} (ÃÂ¦ÃÂÃÂÃÂ: {cs['score']:.0f})</div>"
+                f"<div style='color:#94a3b8;margin-left:20px'>Split: {cs['profit_split']} | ÃÂÃÂ ÃÂÃÂ¡ÃÂ ÃÂ-{cs['min_price']} | {cs['accounts']} ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂª | {cs['routes']} ÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂ</div>"
+                f"<div style='color:#94a3b8;margin-left:20px'>ÃÂÃÂ©ÃÂÃÂÃÂÃÂª: {cs['payout']} | Scaling: {cs['scaling']}</div>"
             )
 
         # Per-strategy recommendations
         if strategies:
-            comparison_html += "<div style='margin-top:10px;color:#3b82f6;font-weight:bold'>ð¯ ××××¦××ª ××¤× ××¡××¨××××:</div>"
+            comparison_html += "<div style='margin-top:10px;color:#3b82f6;font-weight:bold'>Ã°ÂÂÂ¯ ÃÂÃÂÃÂÃÂ¦ÃÂÃÂª ÃÂÃÂ¤ÃÂ ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ:</div>"
             for strat in strategies[:5]:
                 strat_name = strat.get("name", "Unknown")
                 max_dd = strat.get("maxDD", 10)
                 # Recommend company based on DD compatibility
                 if max_dd <= 6:
                     rec = next((c for c in company_scores if "Topstep" in c["name"]), company_scores[0] if company_scores else None)
-                    reason = "DD × ××× - ××ª××× ×-trailing drawdown"
+                    reason = "DD ÃÂ ÃÂÃÂÃÂ - ÃÂÃÂªÃÂÃÂÃÂ ÃÂ-trailing drawdown"
                 elif max_dd <= 10:
                     rec = next((c for c in company_scores if "FTMO" in c["name"]), company_scores[0] if company_scores else None)
-                    reason = "DD ××× ×× × - ××ª××× ×-fixed drawdown"
+                    reason = "DD ÃÂÃÂÃÂ ÃÂÃÂ ÃÂ - ÃÂÃÂªÃÂÃÂÃÂ ÃÂ-fixed drawdown"
                 else:
                     rec = company_scores[0] if company_scores else None
-                    reason = "DD ×××× - × ×××¨× ××××¨× ×¢× ××¦××× ××××× ××××ª×¨"
+                    reason = "DD ÃÂÃÂÃÂÃÂ - ÃÂ ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂ ÃÂ¢ÃÂ ÃÂÃÂ¦ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂªÃÂ¨"
                 if rec:
-                    comparison_html += f"<div style='margin-top:3px;color:#e2e8f0'>â¢ {strat_name} â <span style='color:#22c55e'>{rec['name']}</span> ({reason})</div>"
+                    comparison_html += f"<div style='margin-top:3px;color:#e2e8f0'>Ã¢ÂÂ¢ {strat_name} Ã¢ÂÂ <span style='color:#22c55e'>{rec['name']}</span> ({reason})</div>"
 
-        update_agent(self.agent_id, "working", "×¡×××× ××ª×××", 95, "", comparison_html)
-        rec_text = f"××××¦×: {best['name']} (×¦××× {best['score']:.0f}, Split: {best['profit_split']})" if best else "××× ××××¦×"
-        self.record("×¡×××× ××ª×××",
-                   f"×××©×× {len(company_scores)} ×××¨××ª. {rec_text}. " +
+        update_agent(self.agent_id, "working", "ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂªÃÂÃÂÃÂ", 95, "", comparison_html)
+        rec_text = f"ÃÂÃÂÃÂÃÂ¦ÃÂ: {best['name']} (ÃÂ¦ÃÂÃÂÃÂ {best['score']:.0f}, Split: {best['profit_split']})" if best else "ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¦ÃÂ"
+        self.record("ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂªÃÂÃÂÃÂ",
+                   f"ÃÂÃÂÃÂ©ÃÂÃÂ {len(company_scores)} ÃÂÃÂÃÂ¨ÃÂÃÂª. {rec_text}. " +
                    " | ".join(f"{c['name']}={c['score']:.0f}" for c in company_scores[:3]),
                    True)
 
         time.sleep(1)
-        update_agent(self.agent_id, "idle", f"×¡××× ××ª××× - {rec_text}", 100)
-        log_activity("ð", f"{self.name} ×¡×××", rec_text, self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂªÃÂÃÂÃÂ - {rec_text}", 100)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", rec_text, self.team_id)
 
 
 class DeepDiveAgent(BaseAgent):
@@ -2134,64 +2135,64 @@ class DeepDiveAgent(BaseAgent):
 
     STRATEGY_RESEARCH = {
         "d1": {
-            "role": "×××§×¨ ××¡××¨×××××ª",
+            "role": "ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª",
             "strategies": [
                 {
                     "name": "Opening Range Breakout (ORB)",
                     "source": "Investopedia / Trading Literature",
-                    "what_found": "××¡××¨×××××ª ORB ××××¡×¡×ª ×¢× ××××× ×××× ×××¡××¨ ×××§××ª ××¨××©×× ××ª ×©× ×××× (××\"× 9:30-10:00). ×¤×¨××¦× ××¢× ××××× ××¢×××× = Long, ××ª××ª = Short.",
-                    "key_concepts": ["Opening Range = High/Low ×©× 30 ×××§××ª ××¨××©×× ××ª", "×¤×¨××¦× ×¢× Volume ×××× ×××©×¨×ª ××ª ××××××",
-                                    "TP = 2x ×××× ×××××, SL = 1x ×××× ×××××", "×¢××× ××× ××× ×× ××¡×× ×¢× Gap ×¤×ª×××"],
-                    "what_to_do": "××××××¨ ××ª ×©×¢×ª ××¤×ª××× (9:30 EST), ×××©× High/Low ×©× 30 ××§××ª ×¨××©×× ××ª, ××××× ×¡ ××¤×¨××¦× ×¢× Volume filter. TP/SL ×××¡ 2:1.",
-                    "risks": "×¤×¨××¦××ª ×©××× ××××× ×¢× VIX ××××. ××××¡××£ ×¤××××¨ VIX < 25.",
-                    "best_for": "ES (S&P 500 E-mini), NY (Nasdaq) - 5 ××§××ª"
+                    "what_found": "ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ORB ÃÂÃÂÃÂÃÂ¡ÃÂ¡ÃÂª ÃÂ¢ÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ¡ÃÂÃÂ¨ ÃÂÃÂÃÂ§ÃÂÃÂª ÃÂÃÂ¨ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂª ÃÂ©ÃÂ ÃÂÃÂÃÂÃÂ (ÃÂÃÂ\"ÃÂ 9:30-10:00). ÃÂ¤ÃÂ¨ÃÂÃÂ¦ÃÂ ÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ = Long, ÃÂÃÂªÃÂÃÂª = Short.",
+                    "key_concepts": ["Opening Range = High/Low ÃÂ©ÃÂ 30 ÃÂÃÂÃÂ§ÃÂÃÂª ÃÂÃÂ¨ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂª", "ÃÂ¤ÃÂ¨ÃÂÃÂ¦ÃÂ ÃÂ¢ÃÂ Volume ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ©ÃÂ¨ÃÂª ÃÂÃÂª ÃÂÃÂÃÂÃÂÃÂÃÂ",
+                                    "TP = 2x ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ, SL = 1x ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ", "ÃÂ¢ÃÂÃÂÃÂ ÃÂÃÂÃÂ ÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂÃÂ ÃÂ¢ÃÂ Gap ÃÂ¤ÃÂªÃÂÃÂÃÂ"],
+                    "what_to_do": "ÃÂÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂª ÃÂ©ÃÂ¢ÃÂª ÃÂÃÂ¤ÃÂªÃÂÃÂÃÂ (9:30 EST), ÃÂÃÂÃÂ©ÃÂ High/Low ÃÂ©ÃÂ 30 ÃÂÃÂ§ÃÂÃÂª ÃÂ¨ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂª, ÃÂÃÂÃÂÃÂÃÂ ÃÂ¡ ÃÂÃÂ¤ÃÂ¨ÃÂÃÂ¦ÃÂ ÃÂ¢ÃÂ Volume filter. TP/SL ÃÂÃÂÃÂ¡ 2:1.",
+                    "risks": "ÃÂ¤ÃÂ¨ÃÂÃÂ¦ÃÂÃÂª ÃÂ©ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂ¢ÃÂ VIX ÃÂÃÂÃÂÃÂ. ÃÂÃÂÃÂÃÂ¡ÃÂÃÂ£ ÃÂ¤ÃÂÃÂÃÂÃÂ¨ VIX < 25.",
+                    "best_for": "ES (S&P 500 E-mini), NY (Nasdaq) - 5 ÃÂÃÂ§ÃÂÃÂª"
                 },
                 {
                     "name": "VWAP Reclaim Strategy",
                     "source": "Trading Communities / Research Papers",
-                    "what_found": "××¡××¨×××× ×©×××× ×¨××¢×× ×©××× ×××××¨ ×××¦× ×××¨× ××¢×/××ª××ª ×-VWAP. Reclaim = ×××¨× ××××©××ª (3+ × ×¨××ª) ××¢× VWAP ×××¨× ×©××× ××ª××ª.",
-                    "key_concepts": ["VWAP = Volume Weighted Average Price - ×××××¨ ×××××¦×¢ ×××©××§××", "Reclaim = 3 × ×¨××ª ×¨×¦××¤×× ××¢×/××ª××ª VWAP",
-                                    "EMA 20 ××¤××××¨ ×××××", "××§×¡×××× 6 ×¢×¡×§×××ª ×××× ××× ××¢×ª overtrading"],
-                    "what_to_do": "×××××ª ×-3 × ×¨××ª ×¨×¦××¤×× ××¢× VWAP (Long) ×× ××ª××ª (Short). ××××× ×©×××××¨ ×× ××¢×/××ª××ª EMA 20. TP=15pts, SL=8pts.",
-                    "risks": "×××× Choppy (××× ××¨× ×) ×××× ××¨×× ×× ××¡××ª ×©×××××ª. ×××××× ×-6 ×¢×¡×§×××ª.",
-                    "best_for": "NQ (Nasdaq E-mini) - 1 ××§×"
+                    "what_found": "ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ ÃÂ©ÃÂÃÂÃÂÃÂ ÃÂ¨ÃÂÃÂ¢ÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ¦ÃÂ ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂ¢ÃÂ/ÃÂÃÂªÃÂÃÂª ÃÂ-VWAP. Reclaim = ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂÃÂ©ÃÂÃÂª (3+ ÃÂ ÃÂ¨ÃÂÃÂª) ÃÂÃÂ¢ÃÂ VWAP ÃÂÃÂÃÂ¨ÃÂ ÃÂ©ÃÂÃÂÃÂ ÃÂÃÂªÃÂÃÂª.",
+                    "key_concepts": ["VWAP = Volume Weighted Average Price - ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂÃÂÃÂ¦ÃÂ¢ ÃÂÃÂÃÂ©ÃÂÃÂ§ÃÂÃÂ", "Reclaim = 3 ÃÂ ÃÂ¨ÃÂÃÂª ÃÂ¨ÃÂ¦ÃÂÃÂ¤ÃÂÃÂ ÃÂÃÂ¢ÃÂ/ÃÂÃÂªÃÂÃÂª VWAP",
+                                    "EMA 20 ÃÂÃÂ¤ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂÃÂÃÂ", "ÃÂÃÂ§ÃÂ¡ÃÂÃÂÃÂÃÂ 6 ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ ÃÂÃÂ¢ÃÂª overtrading"],
+                    "what_to_do": "ÃÂÃÂÃÂÃÂÃÂª ÃÂ-3 ÃÂ ÃÂ¨ÃÂÃÂª ÃÂ¨ÃÂ¦ÃÂÃÂ¤ÃÂÃÂ ÃÂÃÂ¢ÃÂ VWAP (Long) ÃÂÃÂ ÃÂÃÂªÃÂÃÂª (Short). ÃÂÃÂÃÂÃÂÃÂ ÃÂ©ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂ ÃÂÃÂ¢ÃÂ/ÃÂÃÂªÃÂÃÂª EMA 20. TP=15pts, SL=8pts.",
+                    "risks": "ÃÂÃÂÃÂÃÂ Choppy (ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ ÃÂ) ÃÂÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂÃÂª ÃÂ©ÃÂÃÂÃÂÃÂÃÂª. ÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂ-6 ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª.",
+                    "best_for": "NQ (Nasdaq E-mini) - 1 ÃÂÃÂ§ÃÂ"
                 },
             ]
         },
         "d2": {
-            "role": "×××§×¨ ××ª×§××",
+            "role": "ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂªÃÂ§ÃÂÃÂ",
             "strategies": [
                 {
                     "name": "EMA Crossover System",
                     "source": "Technical Analysis of the Financial Markets (J. Murphy)",
-                    "what_found": "××¢×¨××ª ××¦×××ª EMA ××©×ª××©×ª ××©× × ××××¦×¢×× × ×¢×× (××××¨ ×××××). ××¦××× ×××¢×× = Long, ×××× = Short. ×¤×©××× ×× ××¤×§×××××ª ××©×××§×× ××¨× ××××.",
-                    "key_concepts": ["EMA ××××¨ (9) ×××¦× EMA ×××× (21)", "ADX > 25 ×××©×¨ ×©××© ××¨× ×",
-                                    "ATR-based stops ×××ª×××× ××ª× ×××ª×××ª", "×¢××× ××× ×-15 ××§××ª"],
-                    "what_to_do": "××××××¨ EMA 9 ×-EMA 21. ××××× ×¡ ×××¦××× ××©ADX > 25. SL = ATR(14) * 1.5 ××ª××ª ××× ××¡×.",
-                    "risks": "××©××§ Sideways ×××××¦×¨× ××¨×× ×××ª××ª ×©××× (Whipsaw). ADX ×¤××××¨ ×××¨××.",
-                    "best_for": "ES - 15 ××§××ª, ××ª××× ××¡×× ×× Swing intraday"
+                    "what_found": "ÃÂÃÂ¢ÃÂ¨ÃÂÃÂª ÃÂÃÂ¦ÃÂÃÂÃÂª EMA ÃÂÃÂ©ÃÂªÃÂÃÂ©ÃÂª ÃÂÃÂ©ÃÂ ÃÂ ÃÂÃÂÃÂÃÂ¦ÃÂ¢ÃÂÃÂ ÃÂ ÃÂ¢ÃÂÃÂ (ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂÃÂÃÂ). ÃÂÃÂ¦ÃÂÃÂÃÂ ÃÂÃÂÃÂ¢ÃÂÃÂ = Long, ÃÂÃÂÃÂÃÂ = Short. ÃÂ¤ÃÂ©ÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¤ÃÂ§ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂ©ÃÂÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂÃÂ.",
+                    "key_concepts": ["EMA ÃÂÃÂÃÂÃÂ¨ (9) ÃÂÃÂÃÂ¦ÃÂ EMA ÃÂÃÂÃÂÃÂ (21)", "ADX > 25 ÃÂÃÂÃÂ©ÃÂ¨ ÃÂ©ÃÂÃÂ© ÃÂÃÂ¨ÃÂ ÃÂ",
+                                    "ATR-based stops ÃÂÃÂÃÂªÃÂÃÂÃÂÃÂ ÃÂÃÂªÃÂ ÃÂÃÂÃÂªÃÂÃÂÃÂª", "ÃÂ¢ÃÂÃÂÃÂ ÃÂÃÂÃÂ ÃÂ-15 ÃÂÃÂ§ÃÂÃÂª"],
+                    "what_to_do": "ÃÂÃÂÃÂÃÂÃÂÃÂ¨ EMA 9 ÃÂ-EMA 21. ÃÂÃÂÃÂÃÂÃÂ ÃÂ¡ ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ ÃÂÃÂ©ADX > 25. SL = ATR(14) * 1.5 ÃÂÃÂªÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂ¡ÃÂ.",
+                    "risks": "ÃÂÃÂ©ÃÂÃÂ§ Sideways ÃÂÃÂÃÂÃÂÃÂ¦ÃÂ¨ÃÂ ÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂÃÂªÃÂÃÂª ÃÂ©ÃÂÃÂÃÂ (Whipsaw). ADX ÃÂ¤ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂ¨ÃÂÃÂ.",
+                    "best_for": "ES - 15 ÃÂÃÂ§ÃÂÃÂª, ÃÂÃÂªÃÂÃÂÃÂ ÃÂÃÂ¡ÃÂÃÂ ÃÂÃÂ Swing intraday"
                 },
                 {
                     "name": "RSI Divergence Trading",
                     "source": "Wilder's RSI / Modern Adaptations",
-                    "what_found": "××××× ××¦× ×©×× ×××××¨ ×¢××©× High ×××© ××× RSI ×× - ×¡××× ×××××©× (Bearish Divergence). ×× Low ×××© ××× RSI ×× (Bullish).",
-                    "key_concepts": ["RSI(14) - Relative Strength Index", "Divergence = ×¤×¢×¨ ××× ××××¨ ×××× ×××§×××¨",
-                                    "Bullish Divergence = ×× ××¡× Long, Bearish = Short", "×××××ª ××××©××¨ (× ×¨ ×¡×××¨× ××××××)"],
-                    "what_to_do": "×××××ª Divergence ×-RSI(14). ×××××ª ×× ×¨ ×××©××¨. ××××× ×¡ ×¢× SL ××ª××ª ×-Swing Low/High ××××¨××.",
-                    "risks": "Divergence ×××× ×××××©× ××× ×¨× ××¤× × ×©×¢×××. ×¦×¨×× ×¡××× ××ª.",
-                    "best_for": "NQ, ES - 5 ××§××ª"
+                    "what_found": "ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¦ÃÂ ÃÂ©ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂ¢ÃÂÃÂ©ÃÂ High ÃÂÃÂÃÂ© ÃÂÃÂÃÂ RSI ÃÂÃÂ - ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ©ÃÂ (Bearish Divergence). ÃÂÃÂ Low ÃÂÃÂÃÂ© ÃÂÃÂÃÂ RSI ÃÂÃÂ (Bullish).",
+                    "key_concepts": ["RSI(14) - Relative Strength Index", "Divergence = ÃÂ¤ÃÂ¢ÃÂ¨ ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ§ÃÂÃÂÃÂ¨",
+                                    "Bullish Divergence = ÃÂÃÂ ÃÂÃÂ¡ÃÂ Long, Bearish = Short", "ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂÃÂ©ÃÂÃÂ¨ (ÃÂ ÃÂ¨ ÃÂ¡ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂ)"],
+                    "what_to_do": "ÃÂÃÂÃÂÃÂÃÂª Divergence ÃÂ-RSI(14). ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂ ÃÂ¨ ÃÂÃÂÃÂ©ÃÂÃÂ¨. ÃÂÃÂÃÂÃÂÃÂ ÃÂ¡ ÃÂ¢ÃÂ SL ÃÂÃÂªÃÂÃÂª ÃÂ-Swing Low/High ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ.",
+                    "risks": "Divergence ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ©ÃÂ ÃÂÃÂÃÂ ÃÂ¨ÃÂ ÃÂÃÂ¤ÃÂ ÃÂ ÃÂ©ÃÂ¢ÃÂÃÂÃÂ. ÃÂ¦ÃÂ¨ÃÂÃÂ ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂª.",
+                    "best_for": "NQ, ES - 5 ÃÂÃÂ§ÃÂÃÂª"
                 },
             ]
         },
     }
 
     def run(self):
-        config = self.STRATEGY_RESEARCH.get(self.agent_id, {"role": "×××§×¨", "strategies": []})
+        config = self.STRATEGY_RESEARCH.get(self.agent_id, {"role": "ÃÂÃÂÃÂ§ÃÂ¨", "strategies": []})
         role = config["role"]
 
-        update_agent(self.agent_id, "working", f"{role} ××ª××× ×××§×¨ ××¢×××§...", 5)
-        log_activity("ð", f"{self.name} ××ª×××", f"{role} - ×××§×¨ ××¡××¨×××××ª", self.team_id)
-        self.record("××ª×××ª ×××§×¨ ××¢×××§", f"×××§×¨ {len(config['strategies'])} ××¡××¨×××××ª")
+        update_agent(self.agent_id, "working", f"{role} ÃÂÃÂªÃÂÃÂÃÂ ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¢ÃÂÃÂÃÂ§...", 5)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", f"{role} - ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª", self.team_id)
+        self.record("ÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¢ÃÂÃÂÃÂ§", f"ÃÂÃÂÃÂ§ÃÂ¨ {len(config['strategies'])} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª")
 
         for idx, strat in enumerate(config["strategies"]):
             if self.should_stop.is_set():
@@ -2200,38 +2201,38 @@ class DeepDiveAgent(BaseAgent):
             progress = int(((idx + 1) / len(config["strategies"])) * 80) + 10
 
             # Build detailed research output
-            browser_html = f"<div style='color:#f59e0b;font-weight:bold;font-size:13px'>ð {strat['name']}</div>"
-            browser_html += f"<div style='color:#94a3b8;font-size:10px'>××§××¨: {strat['source']}</div>"
+            browser_html = f"<div style='color:#f59e0b;font-weight:bold;font-size:13px'>Ã°ÂÂÂ {strat['name']}</div>"
+            browser_html += f"<div style='color:#94a3b8;font-size:10px'>ÃÂÃÂ§ÃÂÃÂ¨: {strat['source']}</div>"
 
-            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>ð ×× × ××¦×:</div>"
+            browser_html += f"<div style='margin-top:8px;color:#22c55e;font-weight:bold'>Ã°ÂÂÂ ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂ:</div>"
             browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>{strat['what_found']}</div>"
 
-            browser_html += f"<div style='margin-top:8px;color:#3b82f6;font-weight:bold'>ð¡ ×××©×× ××¤×ª×:</div>"
+            browser_html += f"<div style='margin-top:8px;color:#3b82f6;font-weight:bold'>Ã°ÂÂÂ¡ ÃÂÃÂÃÂ©ÃÂÃÂ ÃÂÃÂ¤ÃÂªÃÂ:</div>"
             for concept in strat["key_concepts"]:
-                browser_html += f"<div style='color:#94a3b8;margin-top:1px'>â¢ {concept}</div>"
+                browser_html += f"<div style='color:#94a3b8;margin-top:1px'>Ã¢ÂÂ¢ {concept}</div>"
 
-            browser_html += f"<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>ð ×× ×¦×¨×× ××¢×©××ª:</div>"
+            browser_html += f"<div style='margin-top:8px;color:#8b5cf6;font-weight:bold'>Ã°ÂÂÂ ÃÂÃÂ ÃÂ¦ÃÂ¨ÃÂÃÂ ÃÂÃÂ¢ÃÂ©ÃÂÃÂª:</div>"
             browser_html += f"<div style='color:#e2e8f0;margin-top:2px'>{strat['what_to_do']}</div>"
 
-            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>â ï¸ ×¡×××× ××:</div>"
+            browser_html += f"<div style='margin-top:8px;color:#ef4444;font-weight:bold'>Ã¢ÂÂ Ã¯Â¸Â ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ:</div>"
             browser_html += f"<div style='color:#94a3b8;margin-top:2px'>{strat['risks']}</div>"
 
-            browser_html += f"<div style='margin-top:8px;color:#eab308'>ð¯ ××ª××× ×: {strat['best_for']}</div>"
+            browser_html += f"<div style='margin-top:8px;color:#eab308'>Ã°ÂÂÂ¯ ÃÂÃÂªÃÂÃÂÃÂ ÃÂ: {strat['best_for']}</div>"
 
-            update_agent(self.agent_id, "working", f"×××§×¨: {strat['name']}", progress, "", browser_html)
+            update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂ§ÃÂ¨: {strat['name']}", progress, "", browser_html)
 
-            self.record(f"×××§×¨ ××¢×××§ - {strat['name']}",
-                       f"××§××¨: {strat['source']}. "
-                       f"×××¦×: {strat['what_found'][:100]}... "
-                       f"×× ××¢×©××ª: {strat['what_to_do'][:80]}... "
-                       f"×¡×××× ××: {strat['risks'][:60]}... "
-                       f"××ª××× ×: {strat['best_for']}", True)
+            self.record(f"ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¢ÃÂÃÂÃÂ§ - {strat['name']}",
+                       f"ÃÂÃÂ§ÃÂÃÂ¨: {strat['source']}. "
+                       f"ÃÂÃÂÃÂ¦ÃÂ: {strat['what_found'][:100]}... "
+                       f"ÃÂÃÂ ÃÂÃÂ¢ÃÂ©ÃÂÃÂª: {strat['what_to_do'][:80]}... "
+                       f"ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂ: {strat['risks'][:60]}... "
+                       f"ÃÂÃÂªÃÂÃÂÃÂ ÃÂ: {strat['best_for']}", True)
 
-            log_activity("ð", f"×××§×¨: {strat['name']}", f"× ××¦×× {len(strat['key_concepts'])} ×××©×× ××¤×ª×", self.team_id)
+            log_activity("Ã°ÂÂÂ", f"ÃÂÃÂÃÂ§ÃÂ¨: {strat['name']}", f"ÃÂ ÃÂÃÂ¦ÃÂÃÂ {len(strat['key_concepts'])} ÃÂÃÂÃÂ©ÃÂÃÂ ÃÂÃÂ¤ÃÂªÃÂ", self.team_id)
             time.sleep(4)
 
-        update_agent(self.agent_id, "idle", f"×¡××× ×××§×¨ ××¢×××§ - {len(config['strategies'])} ××¡××¨×××××ª", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"×××§×¨ ××¢×××§ ×××©×× - {len(config['strategies'])} ××¡××¨×××××ª × ××§×¨×", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¢ÃÂÃÂÃÂ§ - {len(config['strategies'])} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"ÃÂÃÂÃÂ§ÃÂ¨ ÃÂÃÂ¢ÃÂÃÂÃÂ§ ÃÂÃÂÃÂ©ÃÂÃÂ - {len(config['strategies'])} ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂª ÃÂ ÃÂÃÂ§ÃÂ¨ÃÂ", self.team_id)
 
 
 class ChromeAgent(BaseAgent):
@@ -2239,30 +2240,30 @@ class ChromeAgent(BaseAgent):
 
     AGENT_TASKS = {
         "c1": [  # Chart Setup
-            {"name": "Setup ES Chart (5min)", "detail": "×¤×ª×××ª ××¨×£ ES E-mini ×-TradingView, timeframe 5 ××§××ª"},
-            {"name": "Setup NQ Chart (1min)", "detail": "×¤×ª×××ª ××¨×£ NQ E-mini, timeframe 1 ××§×"},
+            {"name": "Setup ES Chart (5min)", "detail": "ÃÂ¤ÃÂªÃÂÃÂÃÂª ÃÂÃÂ¨ÃÂ£ ES E-mini ÃÂ-TradingView, timeframe 5 ÃÂÃÂ§ÃÂÃÂª"},
+            {"name": "Setup NQ Chart (1min)", "detail": "ÃÂ¤ÃÂªÃÂÃÂÃÂª ÃÂÃÂ¨ÃÂ£ NQ E-mini, timeframe 1 ÃÂÃÂ§ÃÂ"},
         ],
         "c2": [  # Cleanup
-            {"name": "× ××§×× ××× ×××§×××¨×× ××©× ××", "detail": "××¡×¨×ª ×× ×××× ×××§×××¨×× ××§××××× ××××¨×£"},
-            {"name": "×××¤××¡ ×ª×§××¤×ª ××××§×", "detail": "××××¨×ª ×××× ×ª××¨××××: 01/2023 - 12/2024"},
+            {"name": "ÃÂ ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂÃÂ ÃÂÃÂÃÂ§ÃÂÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂ©ÃÂ ÃÂÃÂ", "detail": "ÃÂÃÂ¡ÃÂ¨ÃÂª ÃÂÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ§ÃÂÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂ£"},
+            {"name": "ÃÂÃÂÃÂ¤ÃÂÃÂ¡ ÃÂªÃÂ§ÃÂÃÂ¤ÃÂª ÃÂÃÂÃÂÃÂ§ÃÂ", "detail": "ÃÂÃÂÃÂÃÂ¨ÃÂª ÃÂÃÂÃÂÃÂ ÃÂªÃÂÃÂ¨ÃÂÃÂÃÂÃÂ: 01/2023 - 12/2024"},
         ],
         "c3": [  # Code Runner
-            {"name": "××¨×¦×ª ORB Breakout", "detail": "××¢×× ×ª ×§×× Pine Script ORB Breakout ×-Strategy Tester"},
-            {"name": "××¨×¦×ª VWAP Reclaim", "detail": "××¢×× ×ª ×§×× VWAP Reclaim Scalper"},
+            {"name": "ÃÂÃÂ¨ÃÂ¦ÃÂª ORB Breakout", "detail": "ÃÂÃÂ¢ÃÂÃÂ ÃÂª ÃÂ§ÃÂÃÂ Pine Script ORB Breakout ÃÂ-Strategy Tester"},
+            {"name": "ÃÂÃÂ¨ÃÂ¦ÃÂª VWAP Reclaim", "detail": "ÃÂÃÂ¢ÃÂÃÂ ÃÂª ÃÂ§ÃÂÃÂ VWAP Reclaim Scalper"},
         ],
         "c4": [  # Report Download
-            {"name": "×××¨××ª ××× ORB", "detail": "×××¨××ª ××× ×××¦××¢×× ××× ×©× ORB Breakout (CSV + ×¡××××)"},
-            {"name": "×××¨××ª ××× VWAP", "detail": "×××¨××ª ××× ×××¦××¢×× ××× ×©× VWAP Reclaim"},
+            {"name": "ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ ORB", "detail": "ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ ÃÂÃÂÃÂ ÃÂ©ÃÂ ORB Breakout (CSV + ÃÂ¡ÃÂÃÂÃÂÃÂ)"},
+            {"name": "ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ VWAP", "detail": "ÃÂÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂ¢ÃÂÃÂ ÃÂÃÂÃÂ ÃÂ©ÃÂ VWAP Reclaim"},
         ],
     }
 
     def run(self):
-        tasks = self.AGENT_TASKS.get(self.agent_id, [{"name": "General Task", "detail": "×××¦××¢ ××××"}])
-        role = {"c1": "×××××¨ ××¨×¤××", "c2": "×× ×§× ×¡××××", "c3": "××¨××¥ ×§××", "c4": "×××¨×× ×××××ª"}.get(self.agent_id, "×¡××× Chrome")
+        tasks = self.AGENT_TASKS.get(self.agent_id, [{"name": "General Task", "detail": "ÃÂÃÂÃÂ¦ÃÂÃÂ¢ ÃÂÃÂÃÂÃÂ"}])
+        role = {"c1": "ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂ¨ÃÂ¤ÃÂÃÂ", "c2": "ÃÂÃÂ ÃÂ§ÃÂ ÃÂ¡ÃÂÃÂÃÂÃÂ", "c3": "ÃÂÃÂ¨ÃÂÃÂ¥ ÃÂ§ÃÂÃÂ", "c4": "ÃÂÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂª"}.get(self.agent_id, "ÃÂ¡ÃÂÃÂÃÂ Chrome")
 
-        update_agent(self.agent_id, "working", f"{role} - ××ª×××...", 5)
-        log_activity("ð¥ï¸", f"{self.name} ××ª×××", f"×ª×¤×§××: {role}", self.team_id)
-        self.record(f"××ª×××ª {role}", f"×××¦××¢ {len(tasks)} ××©××××ª")
+        update_agent(self.agent_id, "working", f"{role} - ÃÂÃÂªÃÂÃÂÃÂ...", 5)
+        log_activity("Ã°ÂÂÂ¥Ã¯Â¸Â", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", f"ÃÂªÃÂ¤ÃÂ§ÃÂÃÂ: {role}", self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role}", f"ÃÂÃÂÃÂ¦ÃÂÃÂ¢ {len(tasks)} ÃÂÃÂ©ÃÂÃÂÃÂÃÂª")
 
         for idx, task in enumerate(tasks):
             if self.should_stop.is_set():
@@ -2271,24 +2272,24 @@ class ChromeAgent(BaseAgent):
             progress = int(((idx + 1) / len(tasks)) * 80) + 10
             update_agent(self.agent_id, "working", f"{task['name']}...", progress,
                         "https://www.tradingview.com/chart/",
-                        f"<div style='color:#6366f1'>ð¥ï¸ {task['name']}</div>"
+                        f"<div style='color:#6366f1'>Ã°ÂÂÂ¥Ã¯Â¸Â {task['name']}</div>"
                         f"<div style='margin-top:4px;color:#94a3b8'>{task['detail']}</div>"
-                        f"<div style='margin-top:4px;color:#eab308'>â³ ×××¦×¢...</div>")
+                        f"<div style='margin-top:4px;color:#eab308'>Ã¢ÂÂ³ ÃÂÃÂÃÂ¦ÃÂ¢...</div>")
 
             time.sleep(3)
 
-            browser_html = (f"<div style='color:#22c55e'>â {task['name']} - ×××©××</div>"
+            browser_html = (f"<div style='color:#22c55e'>Ã¢ÂÂ {task['name']} - ÃÂÃÂÃÂ©ÃÂÃÂ</div>"
                           f"<div style='margin-top:4px;color:#94a3b8'>{task['detail']}</div>"
                           f"<div style='margin-top:4px;color:#10b981'>Status: SUCCESS</div>")
-            update_agent(self.agent_id, "working", f"×××©××: {task['name']}", progress + 5,
+            update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂ©ÃÂÃÂ: {task['name']}", progress + 5,
                         "https://www.tradingview.com/chart/", browser_html)
 
-            log_activity("â", f"{task['name']} ×××¦×¢", task['detail'], self.team_id)
-            self.record(task['name'], f"{task['detail']} - ×××©×× ×××¦×××", True)
+            log_activity("Ã¢ÂÂ", f"{task['name']} ÃÂÃÂÃÂ¦ÃÂ¢", task['detail'], self.team_id)
+            self.record(task['name'], f"{task['detail']} - ÃÂÃÂÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ", True)
             time.sleep(1)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{role} - ×× ×××©××××ª ×××©×××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{role} - ÃÂÃÂ ÃÂÃÂÃÂ©ÃÂÃÂÃÂÃÂª ÃÂÃÂÃÂ©ÃÂÃÂÃÂ", self.team_id)
 
 
 class ParamOptAgent(BaseAgent):
@@ -2296,45 +2297,45 @@ class ParamOptAgent(BaseAgent):
 
     AGENT_ROLES = {
         "po1": {  # Parameter Tuner
-            "role": "××××× ×¤×¨×××¨××",
+            "role": "ÃÂÃÂÃÂÃÂÃÂ ÃÂ¤ÃÂ¨ÃÂÃÂÃÂ¨ÃÂÃÂ",
             "work": [
                 {"strategy": "ORB Breakout", "param": "TP Multiplier", "from": "2.0", "to": "2.5",
-                 "result": "WR ××¨× ×-3% ××× PF ×¢×× ×-0.4 - ×©×××", "accepted": True},
+                 "result": "WR ÃÂÃÂ¨ÃÂ ÃÂ-3% ÃÂÃÂÃÂ PF ÃÂ¢ÃÂÃÂ ÃÂ-0.4 - ÃÂ©ÃÂÃÂÃÂ", "accepted": True},
                 {"strategy": "ORB Breakout", "param": "SL Multiplier", "from": "1.0", "to": "0.8",
-                 "result": "WR ×¢×× ×-2% ×-DD ××¨× ×-1.5% - ××¦×××", "accepted": True},
+                 "result": "WR ÃÂ¢ÃÂÃÂ ÃÂ-2% ÃÂ-DD ÃÂÃÂ¨ÃÂ ÃÂ-1.5% - ÃÂÃÂ¦ÃÂÃÂÃÂ", "accepted": True},
                 {"strategy": "VWAP Reclaim", "param": "Reclaim Bars", "from": "3", "to": "4",
-                 "result": "×¤×××ª ×¢×¡×§×××ª ××× WR ×¢×× ×-5% - ×××××¥", "accepted": True},
+                 "result": "ÃÂ¤ÃÂÃÂÃÂª ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª ÃÂÃÂÃÂ WR ÃÂ¢ÃÂÃÂ ÃÂ-5% - ÃÂÃÂÃÂÃÂÃÂ¥", "accepted": True},
             ]
         },
         "po2": {  # Version Compare
-            "role": "××©××× ××¨×¡×××ª",
+            "role": "ÃÂÃÂ©ÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ¡ÃÂÃÂÃÂª",
             "work": [
                 {"strategy": "ORB Breakout", "v1": "Original (TP=2.0, SL=1.0)",
                  "v2": "Optimized (TP=2.5, SL=0.8)", "winner": "Optimized",
-                 "reason": "PF ×¢×× ×-2.4 ×-2.9, DD ××¨× ×-12% ×-10.5%"},
+                 "reason": "PF ÃÂ¢ÃÂÃÂ ÃÂ-2.4 ÃÂ-2.9, DD ÃÂÃÂ¨ÃÂ ÃÂ-12% ÃÂ-10.5%"},
                 {"strategy": "VWAP Reclaim", "v1": "Original (Bars=3, TP=15)",
                  "v2": "Optimized (Bars=4, TP=18)", "winner": "Optimized",
-                 "reason": "WR ×¢×× ×-72% ×-77%, ×¤×××ª ×¢×¡×§×××ª ××× ×××ª×¨ ×¨××××××ª"},
+                 "reason": "WR ÃÂ¢ÃÂÃÂ ÃÂ-72% ÃÂ-77%, ÃÂ¤ÃÂÃÂÃÂª ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂÃÂªÃÂ¨ ÃÂ¨ÃÂÃÂÃÂÃÂÃÂÃÂª"},
             ]
         },
         "po3": {  # Sensitivity
-            "role": "××××§ ×¨×××©××ª",
+            "role": "ÃÂÃÂÃÂÃÂ§ ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª",
             "work": [
-                {"strategy": "ORB Breakout", "test": "×©×× ×× ORB Start ×-Â±15 ××§××ª",
-                 "result": "×¨×××©××ª × ×××× - ×××¡××¨×××× ××¦×××. Â±2% ×©×× ×× ×-WR", "stable": True},
-                {"strategy": "VWAP Reclaim", "test": "×©×× ×× EMA Period ×-Â±5",
-                 "result": "×¨×××©××ª ××× ×× ××ª - EMA 15 ××¨××¢, EMA 20-25 ××××", "stable": True},
+                {"strategy": "ORB Breakout", "test": "ÃÂ©ÃÂÃÂ ÃÂÃÂ ORB Start ÃÂ-ÃÂ±15 ÃÂÃÂ§ÃÂÃÂª",
+                 "result": "ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª ÃÂ ÃÂÃÂÃÂÃÂ - ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ ÃÂÃÂ¦ÃÂÃÂÃÂ. ÃÂ±2% ÃÂ©ÃÂÃÂ ÃÂÃÂ ÃÂ-WR", "stable": True},
+                {"strategy": "VWAP Reclaim", "test": "ÃÂ©ÃÂÃÂ ÃÂÃÂ EMA Period ÃÂ-ÃÂ±5",
+                 "result": "ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂª - EMA 15 ÃÂÃÂ¨ÃÂÃÂ¢, EMA 20-25 ÃÂÃÂÃÂÃÂ", "stable": True},
             ]
         },
     }
 
     def run(self):
-        config = self.AGENT_ROLES.get(self.agent_id, {"role": "××××¢×", "work": []})
+        config = self.AGENT_ROLES.get(self.agent_id, {"role": "ÃÂÃÂÃÂÃÂ¢ÃÂ", "work": []})
         role = config["role"]
 
-        update_agent(self.agent_id, "working", f"{role} ××ª×××...", 5)
-        log_activity("ð§", f"{self.name} ××ª×××", role, self.team_id)
-        self.record(f"××ª×××ª {role}", f"×××¦××¢ {len(config['work'])} ××××§××ª")
+        update_agent(self.agent_id, "working", f"{role} ÃÂÃÂªÃÂÃÂÃÂ...", 5)
+        log_activity("Ã°ÂÂÂ§", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", role, self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role}", f"ÃÂÃÂÃÂ¦ÃÂÃÂ¢ {len(config['work'])} ÃÂÃÂÃÂÃÂ§ÃÂÃÂª")
 
         for idx, work in enumerate(config["work"]):
             if self.should_stop.is_set():
@@ -2344,50 +2345,50 @@ class ParamOptAgent(BaseAgent):
 
             if self.agent_id == "po1":  # Parameter Tuner
                 browser_html = (
-                    f"<div style='color:#8b5cf6'>ðï¸ ×××× ××: {work['strategy']}</div>"
-                    f"<div style='margin-top:4px;color:#94a3b8'>×¤×¨×××¨: {work['param']}</div>"
-                    f"<div style='color:#eab308'>×©×× ××: {work['from']} â {work['to']}</div>"
+                    f"<div style='color:#8b5cf6'>Ã°ÂÂÂÃ¯Â¸Â ÃÂÃÂÃÂÃÂ ÃÂÃÂ: {work['strategy']}</div>"
+                    f"<div style='margin-top:4px;color:#94a3b8'>ÃÂ¤ÃÂ¨ÃÂÃÂÃÂ¨: {work['param']}</div>"
+                    f"<div style='color:#eab308'>ÃÂ©ÃÂÃÂ ÃÂÃÂ: {work['from']} Ã¢ÂÂ {work['to']}</div>"
                     f"<div style='margin-top:4px;color:{'#22c55e' if work['accepted'] else '#ef4444'}'>"
-                    f"{'â' if work['accepted'] else 'â'} {work['result']}</div>"
+                    f"{'Ã¢ÂÂ' if work['accepted'] else 'Ã¢ÂÂ'} {work['result']}</div>"
                 )
                 update_agent(self.agent_id, "working",
-                           f"×××× ×× {work['param']} ×-{work['strategy']}: {work['from']}â{work['to']}",
+                           f"ÃÂÃÂÃÂÃÂ ÃÂÃÂ {work['param']} ÃÂ-{work['strategy']}: {work['from']}Ã¢ÂÂ{work['to']}",
                            progress, "", browser_html)
-                self.record(f"×××× ×× {work['param']} - {work['strategy']}",
-                           f"×©×× ×× {work['from']} â {work['to']}. ×ª××¦××: {work['result']}. "
-                           f"{'××ª×§××' if work['accepted'] else '× ×××'}", work['accepted'])
+                self.record(f"ÃÂÃÂÃÂÃÂ ÃÂÃÂ {work['param']} - {work['strategy']}",
+                           f"ÃÂ©ÃÂÃÂ ÃÂÃÂ {work['from']} Ã¢ÂÂ {work['to']}. ÃÂªÃÂÃÂ¦ÃÂÃÂ: {work['result']}. "
+                           f"{'ÃÂÃÂªÃÂ§ÃÂÃÂ' if work['accepted'] else 'ÃÂ ÃÂÃÂÃÂ'}", work['accepted'])
 
             elif self.agent_id == "po2":  # Version Compare
                 browser_html = (
-                    f"<div style='color:#8b5cf6'>ð ××©××××ª ××¨×¡×××ª: {work['strategy']}</div>"
+                    f"<div style='color:#8b5cf6'>Ã°ÂÂÂ ÃÂÃÂ©ÃÂÃÂÃÂÃÂª ÃÂÃÂ¨ÃÂ¡ÃÂÃÂÃÂª: {work['strategy']}</div>"
                     f"<div style='margin-top:4px;color:#94a3b8'>V1: {work['v1']}</div>"
                     f"<div style='color:#94a3b8'>V2: {work['v2']}</div>"
-                    f"<div style='margin-top:4px;color:#22c55e'>ð ×× ×¦×: {work['winner']}</div>"
+                    f"<div style='margin-top:4px;color:#22c55e'>Ã°ÂÂÂ ÃÂÃÂ ÃÂ¦ÃÂ: {work['winner']}</div>"
                     f"<div style='color:#94a3b8;margin-top:2px'>{work['reason']}</div>"
                 )
                 update_agent(self.agent_id, "working",
-                           f"××©××××: {work['strategy']} - ×× ×¦×: {work['winner']}",
+                           f"ÃÂÃÂ©ÃÂÃÂÃÂÃÂ: {work['strategy']} - ÃÂÃÂ ÃÂ¦ÃÂ: {work['winner']}",
                            progress, "", browser_html)
-                self.record(f"××©××××ª ××¨×¡×××ª - {work['strategy']}",
-                           f"V1: {work['v1']} vs V2: {work['v2']}. ×× ×¦×: {work['winner']}. {work['reason']}", True)
+                self.record(f"ÃÂÃÂ©ÃÂÃÂÃÂÃÂª ÃÂÃÂ¨ÃÂ¡ÃÂÃÂÃÂª - {work['strategy']}",
+                           f"V1: {work['v1']} vs V2: {work['v2']}. ÃÂÃÂ ÃÂ¦ÃÂ: {work['winner']}. {work['reason']}", True)
 
             elif self.agent_id == "po3":  # Sensitivity
                 browser_html = (
-                    f"<div style='color:#8b5cf6'>ð ××××§×ª ×¨×××©××ª: {work['strategy']}</div>"
-                    f"<div style='margin-top:4px;color:#94a3b8'>××××§×: {work['test']}</div>"
+                    f"<div style='color:#8b5cf6'>Ã°ÂÂÂ ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª: {work['strategy']}</div>"
+                    f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂÃÂÃÂ§ÃÂ: {work['test']}</div>"
                     f"<div style='margin-top:4px;color:{'#22c55e' if work['stable'] else '#ef4444'}'>"
-                    f"{'â ××¦××' if work['stable'] else 'â ï¸ ×× ××¦××'}: {work['result']}</div>"
+                    f"{'Ã¢ÂÂ ÃÂÃÂ¦ÃÂÃÂ' if work['stable'] else 'Ã¢ÂÂ Ã¯Â¸Â ÃÂÃÂ ÃÂÃÂ¦ÃÂÃÂ'}: {work['result']}</div>"
                 )
                 update_agent(self.agent_id, "working",
-                           f"×¨×××©××ª: {work['strategy']} - {'××¦××' if work['stable'] else '×× ××¦××'}",
+                           f"ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª: {work['strategy']} - {'ÃÂÃÂ¦ÃÂÃÂ' if work['stable'] else 'ÃÂÃÂ ÃÂÃÂ¦ÃÂÃÂ'}",
                            progress, "", browser_html)
-                self.record(f"××××§×ª ×¨×××©××ª - {work['strategy']}",
-                           f"××××§×: {work['test']}. ×ª××¦××: {work['result']}. {'××¦××' if work['stable'] else '×× ××¦××'}", work['stable'])
+                self.record(f"ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂ¨ÃÂÃÂÃÂ©ÃÂÃÂª - {work['strategy']}",
+                           f"ÃÂÃÂÃÂÃÂ§ÃÂ: {work['test']}. ÃÂªÃÂÃÂ¦ÃÂÃÂ: {work['result']}. {'ÃÂÃÂ¦ÃÂÃÂ' if work['stable'] else 'ÃÂÃÂ ÃÂÃÂ¦ÃÂÃÂ'}", work['stable'])
 
             time.sleep(3)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{role} ×××©××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{role} ÃÂÃÂÃÂ©ÃÂÃÂ", self.team_id)
 
 
 class ImprovementAgent(BaseAgent):
@@ -2395,51 +2396,51 @@ class ImprovementAgent(BaseAgent):
 
     AGENT_ROLES = {
         "i1": {  # Logic Optimizer
-            "role": "××××¢× ×××××§×",
+            "role": "ÃÂÃÂÃÂÃÂ¢ÃÂ ÃÂÃÂÃÂÃÂÃÂ§ÃÂ",
             "suggestions": [
-                {"strategy": "ORB Breakout", "suggestion": "×××¡×¤×ª Volume Filter",
-                 "detail": "×××¡×¤×ª ×ª× ×× volume > SMA(volume,20)*1.5 ××× ××¡× - ××¡× × ×¤×¨××¦××ª ×©×××",
-                 "impact": "WR ×¦×¤×× ××¢×××ª ×-4-6%, ×¤×××ª ×¢×¡×§×××ª ××× ×××ª×¨ ×××××ª×××ª",
+                {"strategy": "ORB Breakout", "suggestion": "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª Volume Filter",
+                 "detail": "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª ÃÂªÃÂ ÃÂÃÂ volume > SMA(volume,20)*1.5 ÃÂÃÂÃÂ ÃÂÃÂ¡ÃÂ - ÃÂÃÂ¡ÃÂ ÃÂ ÃÂ¤ÃÂ¨ÃÂÃÂ¦ÃÂÃÂª ÃÂ©ÃÂÃÂÃÂ",
+                 "impact": "WR ÃÂ¦ÃÂ¤ÃÂÃÂ ÃÂÃÂ¢ÃÂÃÂÃÂª ÃÂ-4-6%, ÃÂ¤ÃÂÃÂÃÂª ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª ÃÂÃÂÃÂ ÃÂÃÂÃÂªÃÂ¨ ÃÂÃÂÃÂÃÂÃÂªÃÂÃÂÃÂª",
                  "code_change": "volumeFilter = volume > ta.sma(volume, 20) * 1.5\nlongSignal = orbDone and ta.crossover(close, orbHigh) and volumeFilter"},
-                {"strategy": "VWAP Reclaim", "suggestion": "×××¡×¤×ª Session Filter",
-                 "detail": "×××××ª ××¡××¨ ××©×¢××ª 9:30-15:00 ××××, ××× ××××× ×¢ ×-pre/post market",
-                 "impact": "××¤××ª×ª DD ×¦×¤××× ×©× 2-3%, ×¡×× ×× ×ª× ×××ª×××ª ××××ª×¨×ª",
+                {"strategy": "VWAP Reclaim", "suggestion": "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª Session Filter",
+                 "detail": "ÃÂÃÂÃÂÃÂÃÂª ÃÂÃÂ¡ÃÂÃÂ¨ ÃÂÃÂ©ÃÂ¢ÃÂÃÂª 9:30-15:00 ÃÂÃÂÃÂÃÂ, ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ ÃÂ¢ ÃÂ-pre/post market",
+                 "impact": "ÃÂÃÂ¤ÃÂÃÂªÃÂª DD ÃÂ¦ÃÂ¤ÃÂÃÂÃÂ ÃÂ©ÃÂ 2-3%, ÃÂ¡ÃÂÃÂ ÃÂÃÂ ÃÂªÃÂ ÃÂÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂÃÂÃÂªÃÂ¨ÃÂª",
                  "code_change": "sessionOK = (hour >= 9 and minute >= 30) or (hour >= 10 and hour < 15)"},
             ]
         },
         "i2": {  # Filter Addition
-            "role": "×××¡××£ ×¤××××¨××",
+            "role": "ÃÂÃÂÃÂ¡ÃÂÃÂ£ ÃÂ¤ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ",
             "suggestions": [
-                {"strategy": "ORB Breakout", "suggestion": "×××¡×¤×ª VWAP ××¤××××¨",
-                 "detail": "Long ×¨×§ ××¢× VWAP, Short ×¨×§ ××ª××ª VWAP - ×××××¨ ××¡×ª××¨××ª ×××¦×××",
-                 "impact": "WR ×¦×¤×× ××¢×××ª ×-8-10%, ××××× ×¢×¡×§×××ª × ×× ×××××",
+                {"strategy": "ORB Breakout", "suggestion": "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª VWAP ÃÂÃÂ¤ÃÂÃÂÃÂÃÂ¨",
+                 "detail": "Long ÃÂ¨ÃÂ§ ÃÂÃÂ¢ÃÂ VWAP, Short ÃÂ¨ÃÂ§ ÃÂÃÂªÃÂÃÂª VWAP - ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂ¡ÃÂªÃÂÃÂ¨ÃÂÃÂª ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ",
+                 "impact": "WR ÃÂ¦ÃÂ¤ÃÂÃÂ ÃÂÃÂ¢ÃÂÃÂÃÂª ÃÂ-8-10%, ÃÂÃÂÃÂÃÂÃÂ ÃÂ¢ÃÂ¡ÃÂ§ÃÂÃÂÃÂª ÃÂ ÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂ",
                  "code_change": "vwapVal = ta.vwap(hlc3)\nlongSignal = orbDone and ta.crossover(close, orbHigh) and close > vwapVal"},
-                {"strategy": "VWAP Reclaim", "suggestion": "×××¡×¤×ª ATR-based Stop Loss",
-                 "detail": "×©××××© ×-ATR(14) * 1.5 ×-Stop Loss ××× ×× ×××§×× ×§×××¢",
-                 "impact": "DD ×¦×¤×× ××¨××ª ×-2%, SL ×××ª×× ××ª× ×××ª×××ª ××©××§",
+                {"strategy": "VWAP Reclaim", "suggestion": "ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª ATR-based Stop Loss",
+                 "detail": "ÃÂ©ÃÂÃÂÃÂÃÂ© ÃÂ-ATR(14) * 1.5 ÃÂ-Stop Loss ÃÂÃÂÃÂ ÃÂÃÂ ÃÂÃÂÃÂ§ÃÂÃÂ ÃÂ§ÃÂÃÂÃÂ¢",
+                 "impact": "DD ÃÂ¦ÃÂ¤ÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂª ÃÂ-2%, SL ÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂªÃÂ ÃÂÃÂÃÂªÃÂÃÂÃÂª ÃÂÃÂ©ÃÂÃÂ§",
                  "code_change": "atrVal = ta.atr(14)\nstrategy.exit('Exit', 'Long', loss=atrVal*1.5/syminfo.mintick)"},
             ]
         },
         "i3": {  # Vault Storage
-            "role": "×©×××¨ ××¡×¤×ª",
+            "role": "ÃÂ©ÃÂÃÂÃÂ¨ ÃÂÃÂ¡ÃÂ¤ÃÂª",
             "suggestions": [
-                {"strategy": "ORB Breakout", "suggestion": "×××©××¨ ×¡××¤× ××©×××¨× ×××¡×¤×ª",
-                 "detail": "×××¡××¨×××× ×¢××¨× ××ª ×× ××©××××: ×××§×¨ â ×§×× â ××××§× â ×××¢××",
-                 "impact": "×××× × ×××¤×¢×× ×¢× ×¤×¨×××¨×× ××××¢×××", "code_change": ""},
-                {"strategy": "VWAP Reclaim", "suggestion": "×××©××¨ ×¡××¤× ××©×××¨× ×××¡×¤×ª",
-                 "detail": "××¡××¨×××× ×××× × ×¢× ×× ××¤××××¨×× ×××©××¤××¨××",
-                 "impact": "×××× × ×××¤×¢×× ×-live trading", "code_change": ""},
+                {"strategy": "ORB Breakout", "suggestion": "ÃÂÃÂÃÂ©ÃÂÃÂ¨ ÃÂ¡ÃÂÃÂ¤ÃÂ ÃÂÃÂ©ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª",
+                 "detail": "ÃÂÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ ÃÂ¢ÃÂÃÂ¨ÃÂ ÃÂÃÂª ÃÂÃÂ ÃÂÃÂ©ÃÂÃÂÃÂÃÂ: ÃÂÃÂÃÂ§ÃÂ¨ Ã¢ÂÂ ÃÂ§ÃÂÃÂ Ã¢ÂÂ ÃÂÃÂÃÂÃÂ§ÃÂ Ã¢ÂÂ ÃÂÃÂÃÂ¢ÃÂÃÂ",
+                 "impact": "ÃÂÃÂÃÂÃÂ ÃÂ ÃÂÃÂÃÂ¤ÃÂ¢ÃÂÃÂ ÃÂ¢ÃÂ ÃÂ¤ÃÂ¨ÃÂÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂ", "code_change": ""},
+                {"strategy": "VWAP Reclaim", "suggestion": "ÃÂÃÂÃÂ©ÃÂÃÂ¨ ÃÂ¡ÃÂÃÂ¤ÃÂ ÃÂÃÂ©ÃÂÃÂÃÂ¨ÃÂ ÃÂÃÂÃÂ¡ÃÂ¤ÃÂª",
+                 "detail": "ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ ÃÂ ÃÂ¢ÃÂ ÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂÃÂ©ÃÂÃÂ¤ÃÂÃÂ¨ÃÂÃÂ",
+                 "impact": "ÃÂÃÂÃÂÃÂ ÃÂ ÃÂÃÂÃÂ¤ÃÂ¢ÃÂÃÂ ÃÂ-live trading", "code_change": ""},
             ]
         },
     }
 
     def run(self):
-        config = self.AGENT_ROLES.get(self.agent_id, {"role": "××©×¤×¨", "suggestions": []})
+        config = self.AGENT_ROLES.get(self.agent_id, {"role": "ÃÂÃÂ©ÃÂ¤ÃÂ¨", "suggestions": []})
         role = config["role"]
 
-        update_agent(self.agent_id, "working", f"{role} ××ª×××...", 5)
-        log_activity("ð", f"{self.name} ××ª×××", role, self.team_id)
-        self.record(f"××ª×××ª {role}", f"××××§×ª {len(config['suggestions'])} ×©××¤××¨×× ××¤×©×¨×××")
+        update_agent(self.agent_id, "working", f"{role} ÃÂÃÂªÃÂÃÂÃÂ...", 5)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", role, self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role}", f"ÃÂÃÂÃÂÃÂ§ÃÂª {len(config['suggestions'])} ÃÂ©ÃÂÃÂ¤ÃÂÃÂ¨ÃÂÃÂ ÃÂÃÂ¤ÃÂ©ÃÂ¨ÃÂÃÂÃÂ")
 
         for idx, sug in enumerate(config["suggestions"]):
             if self.should_stop.is_set():
@@ -2448,27 +2449,27 @@ class ImprovementAgent(BaseAgent):
             progress = int(((idx + 1) / max(len(config["suggestions"]), 1)) * 80) + 10
 
             browser_html = (
-                f"<div style='color:#3b82f6'>ð {sug['suggestion']}</div>"
-                f"<div style='margin-top:4px;color:#94a3b8'>××¡××¨××××: {sug['strategy']}</div>"
+                f"<div style='color:#3b82f6'>Ã°ÂÂÂ {sug['suggestion']}</div>"
+                f"<div style='margin-top:4px;color:#94a3b8'>ÃÂÃÂ¡ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ: {sug['strategy']}</div>"
                 f"<div style='margin-top:4px;color:#e2e8f0'>{sug['detail']}</div>"
-                f"<div style='margin-top:4px;color:#22c55e'>ð ××©×¤×¢× ×¦×¤×××: {sug['impact']}</div>"
+                f"<div style='margin-top:4px;color:#22c55e'>Ã°ÂÂÂ ÃÂÃÂ©ÃÂ¤ÃÂ¢ÃÂ ÃÂ¦ÃÂ¤ÃÂÃÂÃÂ: {sug['impact']}</div>"
             )
             if sug['code_change']:
-                browser_html += f"<div style='margin-top:6px;color:#94a3b8'>×©×× ×× ××§××:</div>"
+                browser_html += f"<div style='margin-top:6px;color:#94a3b8'>ÃÂ©ÃÂÃÂ ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂ:</div>"
                 browser_html += f"<pre style='color:#c9d1d9;font-size:9px;background:rgba(0,0,0,.3);padding:4px;border-radius:4px;margin-top:2px'>{html_module.escape(sug['code_change'])}</pre>"
 
             update_agent(self.agent_id, "working",
-                       f"{sug['suggestion']} â {sug['strategy']}",
+                       f"{sug['suggestion']} Ã¢ÂÂ {sug['strategy']}",
                        progress, "", browser_html)
 
             self.record(f"{sug['suggestion']} - {sug['strategy']}",
-                       f"{sug['detail']}. ××©×¤×¢×: {sug['impact']}"
-                       + (f". ×§××: {sug['code_change'][:60]}..." if sug['code_change'] else ""), True)
+                       f"{sug['detail']}. ÃÂÃÂ©ÃÂ¤ÃÂ¢ÃÂ: {sug['impact']}"
+                       + (f". ÃÂ§ÃÂÃÂ: {sug['code_change'][:60]}..." if sug['code_change'] else ""), True)
 
             time.sleep(3)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{role} ×××©××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{role} ÃÂÃÂÃÂ©ÃÂÃÂ", self.team_id)
 
 
 class VisualDesignAgent(BaseAgent):
@@ -2476,76 +2477,76 @@ class VisualDesignAgent(BaseAgent):
 
     AGENT_DESIGNS = {
         "v1": {  # Chart Designer
-            "role": "××¢×¦× ××¨×¤××",
+            "role": "ÃÂÃÂ¢ÃÂ¦ÃÂ ÃÂÃÂ¨ÃÂ¤ÃÂÃÂ",
             "designs": [
                 {"name": "ORB Box + Entry Arrows",
-                 "description": "×ª×××ª ORB ××××× ×©×§××£ (09:30-10:00), ×××¦× ×× ××¡× ××¨××§××/××××××",
+                 "description": "ÃÂªÃÂÃÂÃÂª ORB ÃÂÃÂÃÂÃÂÃÂ ÃÂ©ÃÂ§ÃÂÃÂ£ (09:30-10:00), ÃÂÃÂÃÂ¦ÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂ ÃÂÃÂ¨ÃÂÃÂ§ÃÂÃÂ/ÃÂÃÂÃÂÃÂÃÂÃÂ",
                  "visual": (
-                     "ð ORB Breakout Visual:\n"
-                     "âââââââââââââââââââââââââââ\n"
-                     "â  âââ ORB High âââ 4520  â â ×§× ××¨××§ ××§×××§×\n"
-                     "â  ââââââââââââââââââââ  â â ORB Zone (×××× 20%)\n"
-                     "â  âââ ORB Low ââââ 4510  â â ×§× ×××× ××§×××§×\n"
-                     "â         â LONG 4521     â â ××¥ ××¨××§ ×× ××¡×\n"
-                     "â  ââââ TP âââââ 4540     â â ×§× ××¨××§ TP\n"
-                     "â  ââââ SL âââââ 4508     â â ×§× ×××× SL\n"
-                     "âââââââââââââââââââââââââââ"
+                     "Ã°ÂÂÂ ORB Breakout Visual:\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ ORB High Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ 4520  Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂ¨ÃÂÃÂ§ ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ  Ã¢ÂÂ Ã¢ÂÂ ORB Zone (ÃÂÃÂÃÂÃÂ 20%)\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ ORB Low Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ 4510  Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ\n"
+                     "Ã¢ÂÂ         Ã¢ÂÂ LONG 4521     Ã¢ÂÂ Ã¢ÂÂ ÃÂÃÂ¥ ÃÂÃÂ¨ÃÂÃÂ§ ÃÂÃÂ ÃÂÃÂ¡ÃÂ\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ TP Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ 4540     Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂ¨ÃÂÃÂ§ TP\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ SL Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ 4508     Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂÃÂÃÂ SL\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ"
                  )},
                 {"name": "VWAP Bands + Reclaim Markers",
-                 "description": "×§× VWAP ×¡××× ×¢× bands, ×¡×× ×× ×©× Reclaim ×× ×§××××ª ×× ××¡×",
+                 "description": "ÃÂ§ÃÂ VWAP ÃÂ¡ÃÂÃÂÃÂ ÃÂ¢ÃÂ bands, ÃÂ¡ÃÂÃÂ ÃÂÃÂ ÃÂ©ÃÂ Reclaim ÃÂÃÂ ÃÂ§ÃÂÃÂÃÂÃÂª ÃÂÃÂ ÃÂÃÂ¡ÃÂ",
                  "visual": (
-                     "ð VWAP Reclaim Visual:\n"
-                     "âââââââââââââââââââââââââââ\n"
-                     "â  ~~~ Upper Band ~~~      â â ×§× ×¡××× ××××¨\n"
-                     "â  âââ VWAP ââââ 4515     â â ×§× ×¡××× ×¢××\n"
-                     "â  ~~~ Lower Band ~~~      â â ×§× ×¡××× ××××¨\n"
-                     "â    â Reclaim â 4516      â â ×¢×××× ××¨××§ + ××¥\n"
-                     "â  âââ EMA20 ââ 4512      â â ×§× ××ª××\n"
-                     "â  TP: +15pts â 4531      â â ×§× ××¨××§××§×××§×\n"
-                     "â  SL: -8pts  â 4504      â â ×§× ×××× ××§×××§×\n"
-                     "âââââââââââââââââââââââââââ"
+                     "Ã°ÂÂÂ VWAP Reclaim Visual:\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ\n"
+                     "Ã¢ÂÂ  ~~~ Upper Band ~~~      Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ VWAP Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ 4515     Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂ¡ÃÂÃÂÃÂ ÃÂ¢ÃÂÃÂ\n"
+                     "Ã¢ÂÂ  ~~~ Lower Band ~~~      Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂ¡ÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨\n"
+                     "Ã¢ÂÂ    Ã¢ÂÂ Reclaim Ã¢ÂÂ 4516      Ã¢ÂÂ Ã¢ÂÂ ÃÂ¢ÃÂÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂ§ + ÃÂÃÂ¥\n"
+                     "Ã¢ÂÂ  Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ EMA20 Ã¢ÂÂÃ¢ÂÂ 4512      Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂªÃÂÃÂ\n"
+                     "Ã¢ÂÂ  TP: +15pts Ã¢ÂÂ 4531      Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂ¨ÃÂÃÂ§ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ\n"
+                     "Ã¢ÂÂ  SL: -8pts  Ã¢ÂÂ 4504      Ã¢ÂÂ Ã¢ÂÂ ÃÂ§ÃÂ ÃÂÃÂÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ"
                  )},
             ]
         },
         "v2": {  # Trade Markers
-            "role": "×¡×× × ××¡××¨",
+            "role": "ÃÂ¡ÃÂÃÂ ÃÂ ÃÂÃÂ¡ÃÂÃÂ¨",
             "designs": [
                 {"name": "Trade Entry/Exit Markers",
-                 "description": "×¡×××× ××××××× ×©× ×× ×× ××¡× ×××¦××× ×¢× ×××¨×£",
+                 "description": "ÃÂ¡ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂ©ÃÂ ÃÂÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂ ÃÂÃÂÃÂ¦ÃÂÃÂÃÂ ÃÂ¢ÃÂ ÃÂÃÂÃÂ¨ÃÂ£",
                  "visual": (
-                     "ð Trade Markers:\n"
-                     "  â² Long Entry (××¨××§)\n"
-                     "  â¼ Short Entry (××××)\n"
-                     "  â Take Profit (×××)\n"
-                     "  â Stop Loss (×××× ×××)\n"
-                     "  ââ TP Line (××¨××§××§×××§×)\n"
-                     "  ââ SL Line (×××× ××§×××§×)\n"
-                     "  ââ Profit Zone (××¨××§×©×§××£)\n"
-                     "  ââ Loss Zone (×××× ×©×§××£)"
+                     "Ã°ÂÂÂ Trade Markers:\n"
+                     "  Ã¢ÂÂ² Long Entry (ÃÂÃÂ¨ÃÂÃÂ§)\n"
+                     "  Ã¢ÂÂ¼ Short Entry (ÃÂÃÂÃÂÃÂ)\n"
+                     "  Ã¢ÂÂ Take Profit (ÃÂÃÂÃÂ)\n"
+                     "  Ã¢ÂÂ Stop Loss (ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ)\n"
+                     "  Ã¢ÂÂÃ¢ÂÂ TP Line (ÃÂÃÂ¨ÃÂÃÂ§ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ)\n"
+                     "  Ã¢ÂÂÃ¢ÂÂ SL Line (ÃÂÃÂÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂ§ÃÂ)\n"
+                     "  Ã¢ÂÂÃ¢ÂÂ Profit Zone (ÃÂÃÂ¨ÃÂÃÂ§ÃÂ©ÃÂ§ÃÂÃÂ£)\n"
+                     "  Ã¢ÂÂÃ¢ÂÂ Loss Zone (ÃÂÃÂÃÂÃÂ ÃÂ©ÃÂ§ÃÂÃÂ£)"
                  )},
                 {"name": "P&L Summary Overlay",
-                 "description": "×ª×¦×××ª P&L ××× ××¤×× ×ª ×××¨×£",
+                 "description": "ÃÂªÃÂ¦ÃÂÃÂÃÂª P&L ÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂÃÂ ÃÂª ÃÂÃÂÃÂ¨ÃÂ£",
                  "visual": (
-                     "ð P&L Overlay (×¤×× × ××× ××ª ×¢×××× ×):\n"
-                     "ââââââââââââââââââââ\n"
-                     "â ð P&L: +$1,245  â â ××¨××§\n"
-                     "â WR: 68% (34/50)  â\n"
-                     "â PF: 2.4          â\n"
-                     "â DD: -4.2%        â\n"
-                     "â Today: +$285      â â ××¨××§\n"
-                     "ââââââââââââââââââââ"
+                     "Ã°ÂÂÂ P&L Overlay (ÃÂ¤ÃÂÃÂ ÃÂ ÃÂÃÂÃÂ ÃÂÃÂª ÃÂ¢ÃÂÃÂÃÂÃÂ ÃÂ):\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ\n"
+                     "Ã¢ÂÂ Ã°ÂÂÂ P&L: +$1,245  Ã¢ÂÂ Ã¢ÂÂ ÃÂÃÂ¨ÃÂÃÂ§\n"
+                     "Ã¢ÂÂ WR: 68% (34/50)  Ã¢ÂÂ\n"
+                     "Ã¢ÂÂ PF: 2.4          Ã¢ÂÂ\n"
+                     "Ã¢ÂÂ DD: -4.2%        Ã¢ÂÂ\n"
+                     "Ã¢ÂÂ Today: +$285      Ã¢ÂÂ Ã¢ÂÂ ÃÂÃÂ¨ÃÂÃÂ§\n"
+                     "Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ"
                  )},
             ]
         },
     }
 
     def run(self):
-        config = self.AGENT_DESIGNS.get(self.agent_id, {"role": "××¢×¦×", "designs": []})
+        config = self.AGENT_DESIGNS.get(self.agent_id, {"role": "ÃÂÃÂ¢ÃÂ¦ÃÂ", "designs": []})
         role = config["role"]
 
-        update_agent(self.agent_id, "working", f"{role} ××ª×××...", 5)
-        log_activity("ð¨", f"{self.name} ××ª×××", role, self.team_id)
-        self.record(f"××ª×××ª {role}", f"×¢××¦×× {len(config['designs'])} ×¨××××× ×××××××××")
+        update_agent(self.agent_id, "working", f"{role} ÃÂÃÂªÃÂÃÂÃÂ...", 5)
+        log_activity("Ã°ÂÂÂ¨", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", role, self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role}", f"ÃÂ¢ÃÂÃÂ¦ÃÂÃÂ {len(config['designs'])} ÃÂ¨ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ")
 
         for idx, design in enumerate(config["designs"]):
             if self.should_stop.is_set():
@@ -2553,19 +2554,19 @@ class VisualDesignAgent(BaseAgent):
 
             progress = int(((idx + 1) / max(len(config["designs"]), 1)) * 80) + 10
             browser_html = (
-                f"<div style='color:#ec4899'>ð¨ {design['name']}</div>"
+                f"<div style='color:#ec4899'>Ã°ÂÂÂ¨ {design['name']}</div>"
                 f"<div style='margin-top:4px;color:#94a3b8'>{design['description']}</div>"
                 f"<pre style='margin-top:6px;color:#e2e8f0;font-size:9px;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;white-space:pre;line-height:1.4'>{html_module.escape(design['visual'])}</pre>"
             )
-            update_agent(self.agent_id, "working", f"××¦××¦××: {design['name']}", progress,
+            update_agent(self.agent_id, "working", f"ÃÂÃÂ¦ÃÂÃÂ¦ÃÂÃÂ: {design['name']}", progress,
                         "https://www.tradingview.com/chart/", browser_html)
 
-            log_activity("ð¨", f"{design['name']} ×¢××¦×", design['description'][:60], self.team_id)
-            self.record(f"×¢××¦×× {design['name']}", f"{design['description']}. ××××: TP/SL lines, entry arrows, zone shading", True)
+            log_activity("Ã°ÂÂÂ¨", f"{design['name']} ÃÂ¢ÃÂÃÂ¦ÃÂ", design['description'][:60], self.team_id)
+            self.record(f"ÃÂ¢ÃÂÃÂ¦ÃÂÃÂ {design['name']}", f"{design['description']}. ÃÂÃÂÃÂÃÂ: TP/SL lines, entry arrows, zone shading", True)
             time.sleep(3)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{role} ×××©××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{role} ÃÂÃÂÃÂ©ÃÂÃÂ", self.team_id)
 
 
 class AlertsAgent(BaseAgent):
@@ -2573,41 +2574,41 @@ class AlertsAgent(BaseAgent):
 
     AGENT_CONFIG = {
         "al1": {  # Webhook Setup
-            "role": "×××××¨ Webhooks",
+            "role": "ÃÂÃÂÃÂÃÂÃÂ¨ Webhooks",
             "alerts": [
-                {"type": "Discord Webhook", "detail": "××ª×¨×××ª ×-Discord ×¢× ×× ××¡×/××¦××× ××¢×¡×§×",
+                {"type": "Discord Webhook", "detail": "ÃÂÃÂªÃÂ¨ÃÂÃÂÃÂª ÃÂ-Discord ÃÂ¢ÃÂ ÃÂÃÂ ÃÂÃÂ¡ÃÂ/ÃÂÃÂ¦ÃÂÃÂÃÂ ÃÂÃÂ¢ÃÂ¡ÃÂ§ÃÂ",
                  "config": "URL: discord.com/webhook/...\nPayload: {strategy}, {action}, {price}"},
-                {"type": "Telegram Bot", "detail": "×©××××ª ××ª×¨×××ª Telegram ×¢× ×¦×××× ××¨×£",
+                {"type": "Telegram Bot", "detail": "ÃÂ©ÃÂÃÂÃÂÃÂª ÃÂÃÂªÃÂ¨ÃÂÃÂÃÂª Telegram ÃÂ¢ÃÂ ÃÂ¦ÃÂÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂ£",
                  "config": "Bot Token: ***\nChat ID: ***\nInclude: chart screenshot"},
             ]
         },
         "al2": {  # AutoView/3Commas
-            "role": "×¡××× AutoView",
+            "role": "ÃÂ¡ÃÂÃÂÃÂ AutoView",
             "alerts": [
-                {"type": "AutoView Integration", "detail": "×××××¨ TradingView ×-AutoView ×××¨×¦× ××××××××ª",
+                {"type": "AutoView Integration", "detail": "ÃÂÃÂÃÂÃÂÃÂ¨ TradingView ÃÂ-AutoView ÃÂÃÂÃÂ¨ÃÂ¦ÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂª",
                  "config": "Mode: Paper Trading\nBroker: Alpaca\nSize: 1 contract"},
-                {"type": "3Commas Bot", "detail": "××××¨×ª ××× 3Commas ×¢× TP/SL ×××××××",
+                {"type": "3Commas Bot", "detail": "ÃÂÃÂÃÂÃÂ¨ÃÂª ÃÂÃÂÃÂ 3Commas ÃÂ¢ÃÂ TP/SL ÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
                  "config": "Bot Type: Simple\nPair: ES/USD\nTP: 2x ORB Range\nSL: 1x ORB Range"},
             ]
         },
         "al3": {  # Timing
-            "role": "××ª×××",
+            "role": "ÃÂÃÂªÃÂÃÂÃÂ",
             "alerts": [
-                {"type": "Market Hours", "detail": "××××¨×ª ×©×¢××ª ×¤×¢××××ª: 09:30-16:00 EST ×××× ×××",
+                {"type": "Market Hours", "detail": "ÃÂÃÂÃÂÃÂ¨ÃÂª ÃÂ©ÃÂ¢ÃÂÃÂª ÃÂ¤ÃÂ¢ÃÂÃÂÃÂÃÂª: 09:30-16:00 EST ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ",
                  "config": "Active: Mon-Fri 09:30-16:00 EST\nBlacklist: FOMC days, NFP days"},
-                {"type": "Pre-Market Check", "detail": "××××§×ª ×ª× ××× ××¤× × ×¤×ª×××ª ×©××§",
+                {"type": "Pre-Market Check", "detail": "ÃÂÃÂÃÂÃÂ§ÃÂª ÃÂªÃÂ ÃÂÃÂÃÂ ÃÂÃÂ¤ÃÂ ÃÂ ÃÂ¤ÃÂªÃÂÃÂÃÂª ÃÂ©ÃÂÃÂ§",
                  "config": "Check: VIX < 25, Gap < 1%, Futures positive"},
             ]
         },
     }
 
     def run(self):
-        config = self.AGENT_CONFIG.get(self.agent_id, {"role": "×××××¨ ××ª×¨×××ª", "alerts": []})
+        config = self.AGENT_CONFIG.get(self.agent_id, {"role": "ÃÂÃÂÃÂÃÂÃÂ¨ ÃÂÃÂªÃÂ¨ÃÂÃÂÃÂª", "alerts": []})
         role = config["role"]
 
-        update_agent(self.agent_id, "working", f"{role} ××ª×××...", 5)
-        log_activity("ð", f"{self.name} ××ª×××", role, self.team_id)
-        self.record(f"××ª×××ª {role}", f"××××¨×ª {len(config['alerts'])} ××ª×¨×××ª")
+        update_agent(self.agent_id, "working", f"{role} ÃÂÃÂªÃÂÃÂÃÂ...", 5)
+        log_activity("Ã°ÂÂÂ", f"{self.name} ÃÂÃÂªÃÂÃÂÃÂ", role, self.team_id)
+        self.record(f"ÃÂÃÂªÃÂÃÂÃÂª {role}", f"ÃÂÃÂÃÂÃÂ¨ÃÂª {len(config['alerts'])} ÃÂÃÂªÃÂ¨ÃÂÃÂÃÂª")
 
         for idx, alert in enumerate(config["alerts"]):
             if self.should_stop.is_set():
@@ -2615,18 +2616,18 @@ class AlertsAgent(BaseAgent):
 
             progress = int(((idx + 1) / max(len(config["alerts"]), 1)) * 80) + 10
             browser_html = (
-                f"<div style='color:#06b6d4'>ð {alert['type']}</div>"
+                f"<div style='color:#06b6d4'>Ã°ÂÂÂ {alert['type']}</div>"
                 f"<div style='margin-top:4px;color:#94a3b8'>{alert['detail']}</div>"
                 f"<pre style='margin-top:4px;color:#c9d1d9;font-size:9px;background:rgba(0,0,0,.3);padding:4px;border-radius:4px'>{html_module.escape(alert['config'])}</pre>"
             )
-            update_agent(self.agent_id, "working", f"×××××¨: {alert['type']}", progress, "", browser_html)
+            update_agent(self.agent_id, "working", f"ÃÂÃÂÃÂÃÂÃÂ¨: {alert['type']}", progress, "", browser_html)
 
-            log_activity("ð", f"{alert['type']} ××××", alert['detail'][:60], self.team_id)
-            self.record(f"××××¨×ª {alert['type']}", f"{alert['detail']}. Config: {alert['config'][:80]}", True)
+            log_activity("Ã°ÂÂÂ", f"{alert['type']} ÃÂÃÂÃÂÃÂ", alert['detail'][:60], self.team_id)
+            self.record(f"ÃÂÃÂÃÂÃÂ¨ÃÂª {alert['type']}", f"{alert['detail']}. Config: {alert['config'][:80]}", True)
             time.sleep(3)
 
-        update_agent(self.agent_id, "idle", f"×¡××× - {role}", 100)
-        log_activity("â", f"{self.name} ×¡×××", f"{role} ×××©××", self.team_id)
+        update_agent(self.agent_id, "idle", f"ÃÂ¡ÃÂÃÂÃÂ - {role}", 100)
+        log_activity("Ã¢ÂÂ", f"{self.name} ÃÂ¡ÃÂÃÂÃÂ", f"{role} ÃÂÃÂÃÂ©ÃÂÃÂ", self.team_id)
 
 
 
@@ -2715,13 +2716,8 @@ class YouTubeContentAgent(BaseAgent):
             transcript_text = self._get_transcript(vid_id)
             time.sleep(1)
 
-            # 2. Also fetch video page for description
-            video_url = f"https://www.youtube.com/watch?v={vid_id}"
-            page_content = self.fetch_url(video_url)
+            # 2. Description - skip fetch (blocked on Render), rely on transcript
             desc_text = ""
-            if not page_content.startswith("Error"):
-                desc_text = self._extract_description(page_content)
-            time.sleep(1)
 
             # 3. Combine all text and analyze
             all_text = ""
@@ -2822,7 +2818,7 @@ def stop_team(team_id):
     for aid, agent in active_agents.items():
         if agent.team_id == team_id:
             agent.stop()
-            update_agent(aid, "idle", "× ×¢×¦×¨", 0)
+            update_agent(aid, "idle", "ÃÂ ÃÂ¢ÃÂ¦ÃÂ¨", 0)
             to_remove.append(aid)
     for aid in to_remove:
         del active_agents[aid]
@@ -2985,17 +2981,17 @@ def main():
     load_errors()
     load_activities()
     if _use_cloud():
-        print(f"âï¸ Cloud storage: Upstash Redis connected")
+        print(f"Ã¢ÂÂÃ¯Â¸Â Cloud storage: Upstash Redis connected")
     else:
-        print(f"ð Local storage: vault.json + history.json (set UPSTASH_REDIS_REST_URL & UPSTASH_REDIS_REST_TOKEN for cloud persistence)")
+        print(f"Ã°ÂÂÂ Local storage: vault.json + history.json (set UPSTASH_REDIS_REST_URL & UPSTASH_REDIS_REST_TOKEN for cloud persistence)")
     server = ThreadedHTTPServer(('0.0.0.0', PORT), AgentHTTPHandler)
-    print(f"ð Agent Office Server running on http://localhost:{PORT}")
-    print(f"ð Open the URL above in your browser")
-    print(f"ð§ API: /api/start/{{teamId}} | /api/stop/{{teamId}} | /api/start-all | /api/events")
+    print(f"Ã°ÂÂÂ Agent Office Server running on http://localhost:{PORT}")
+    print(f"Ã°ÂÂÂ Open the URL above in your browser")
+    print(f"Ã°ÂÂÂ§ API: /api/start/{{teamId}} | /api/stop/{{teamId}} | /api/start-all | /api/events")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nð Shutting down...")
+        print("\nÃ°ÂÂÂ Shutting down...")
         global running
         running = False
         for agent in active_agents.values():
