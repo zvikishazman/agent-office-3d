@@ -803,7 +803,7 @@ class FundingResearchAgent(BaseAgent):
 
             # Build structured output
             browser_html = f"<div style='color:#06b6d4;font-weight:bold'>📊 {company_name}</div>"
-            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>מקור: {"live"}</div>"
+            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>מקור: live</div>"
 
             # Routes
             browser_html += "<div style='margin-top:8px;color:#22c55e;font-weight:bold'>מסלולים:</div>"
@@ -842,7 +842,7 @@ class FundingResearchAgent(BaseAgent):
                        f"חשבונות: {accounts_summary}. "
                        f"חלוקת רווח: {terms.get('profit_split', 'N/A')}. "
                        f"Scaling: {terms.get('scaling', 'N/A')}. "
-                       f"מקור: {"live"}", True)
+                       f"מקור: live", True)
 
             log_activity("📋", f"{company_name} נסרק",
                         f"{len(result_data.get('accounts',[]))} חשבונות, חלוקת רווח {terms.get('profit_split','N/A')}", self.team_id)
