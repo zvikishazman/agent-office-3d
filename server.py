@@ -22,7 +22,7 @@ try:
 except ImportError:
     HAS_TRANSCRIPT_API = False
 
-YOUTUBE_API_KEY = "AIzaSyCr_XMTVs05KwsZeSBWBNVTx4z9dZ9-QIg"
+YOUTUBE_API_KEY = "AIzaSyCr_XMTVs05KwsZeSBWBNVTx4z9dZ9-Qlg"
 
 import html as html_module
 import random
