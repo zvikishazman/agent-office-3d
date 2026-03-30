@@ -352,8 +352,8 @@ class BaseAgent(threading.Thread):
                 }
                 # Reddit needs special handling
                 if 'reddit.com' in url:
-                    headers['User-Agent'] = f'AgentOffice3D/1.0 (trading research bot) attempt/{attempt}'
-                    headers['Accept'] = 'application/json'
+                    headers['User-Agent'] = 'python:AgentOffice3D:v1.0 (by /u/zviki36)'
+                    headers['Accept'] = 'application/rss+xml, application/xml, text/xml'
                 req = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
                     return resp.read().decode('utf-8', errors='ignore')
@@ -438,8 +438,8 @@ class StrategyResearchAgent(BaseAgent):
             ("TradingView Trending", "https://www.tradingview.com/scripts/trending/"),
         ],
         "r2": [  # Reddit Scanner
-            ("Reddit AlgoTrading", "https://www.reddit.com/r/algotrading/.json"),
-            ("Reddit Daytrading", "https://www.reddit.com/r/Daytrading/.json"),
+            ("Reddit AlgoTrading", "https://www.reddit.com/r/algotrading/.rss"),
+            ("Reddit Daytrading", "https://www.reddit.com/r/Daytrading/.rss"),
         ],
         "r3": [  # YouTube Scanner
             ("YouTube Trading", "https://www.youtube.com/results?search_query=trading+strategy+pine+script+2024"),
@@ -570,7 +570,7 @@ class StrategyResearchAgent(BaseAgent):
                     self.record(f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}", f"\u26a0\ufe0f \u05e7\u05d9\u05d1\u05dc\u05e0\u05d5 {len(content)} bytes \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 \u05e9\u05d5\u05dd \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d4. \u05e6\u05e8\u05d9\u05da \u05dc\u05e2\u05d3\u05db\u05df regex.", False)
                     continue
             elif "reddit" in url.lower():
-                scripts = re.findall(r'"title"\s*:\s*"([^"]{10,120})"', content)
+                scripts = re.findall(r'<title>([^<]{10,120})</title>', content)
                 if not scripts:
                     content_preview = content[:1000].replace('\n', ' ').replace('\r', '')
                     self.report_error(
