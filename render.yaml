@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: agent-office-3d
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
