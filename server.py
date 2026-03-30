@@ -2638,29 +2638,37 @@ class YouTubeContentAgent(BaseAgent):
     """Extracts strategy content from YouTube videos using transcripts and descriptions"""
 
     def _get_transcript_web(self, video_id):
-        """Get transcript via YouTube innertube API (works from cloud servers)"""
+        """Get transcript by scraping YouTube watch page for embedded caption data"""
         try:
             import urllib.request, json as json_mod, re as re_mod
-            # Step 1: Get caption track URLs via innertube player API
-            payload = json_mod.dumps({
-                "context": {"client": {"clientName": "WEB", "clientVersion": "2.20240101.00.00", "hl": "en", "gl": "US"}},
-                "videoId": video_id
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-                data=payload, method="POST"
-            )
-            req.add_header("Content-Type", "application/json")
-            req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                player_data = json_mod.loads(resp.read().decode("utf-8"))
+            # Step 1: Fetch the YouTube watch page HTML
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            req = urllib.request.Request(url)
+            req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            req.add_header("Accept-Language", "en-US,en;q=0.9")
+            req.add_header("Accept", "text/html,application/xhtml+xml")
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            # Step 2: Extract ytInitialPlayerResponse JSON from the HTML
+            match = re_mod.search(r'ytInitialPlayerResponse\s*=\s*({.+?});\s*(?:var\s|<\/script)', html)
+            if not match:
+                match = re_mod.search(r'ytInitialPlayerResponse\s*=\s*({.+?});', html)
+            if not match:
+                self.record(f"web_transcript {video_id}", "no ytInitialPlayerResponse in page")
+                return None
+            try:
+                player_data = json_mod.loads(match.group(1))
+            except json_mod.JSONDecodeError:
+                self.record(f"web_transcript {video_id}", "failed to parse player JSON")
+                return None
+            # Step 3: Extract caption track URLs
             captions = player_data.get("captions", {})
             renderer = captions.get("playerCaptionsTracklistRenderer", {})
             tracks = renderer.get("captionTracks", [])
             if not tracks:
-                self.record(f"web_transcript {video_id}", "no caption tracks available")
+                self.record(f"web_transcript {video_id}", "no caption tracks in page data")
                 return None
-            # Prefer English, then any available track
+            # Prefer English, then any track
             track_url = None
             for t in tracks:
                 if t.get("languageCode", "").startswith("en"):
@@ -2670,11 +2678,12 @@ class YouTubeContentAgent(BaseAgent):
                 track_url = tracks[0].get("baseUrl", "")
             if not track_url:
                 return None
-            # Step 2: Fetch the actual captions (XML format)
+            # Step 4: Fetch captions in json3 format
             if "fmt=json3" not in track_url:
-                track_url += "&fmt=json3"
+                sep = "&" if "?" in track_url else "?"
+                track_url += sep + "fmt=json3"
             req2 = urllib.request.Request(track_url)
-            req2.add_header("User-Agent", "Mozilla/5.0")
+            req2.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
             with urllib.request.urlopen(req2, timeout=15) as resp2:
                 caption_data = json_mod.loads(resp2.read().decode("utf-8"))
             # Extract text from json3 format
@@ -2695,7 +2704,6 @@ class YouTubeContentAgent(BaseAgent):
         except Exception as e:
             self.record(f"web_transcript {video_id}", f"failed: {str(e)[:80]}")
             return None
-
     def _get_transcript(self, video_id):
         """Get transcript - tries youtube-transcript-api first, then web fallback"""
         # Try youtube-transcript-api first (faster, more reliable when it works)
