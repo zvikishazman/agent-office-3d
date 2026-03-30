@@ -16,6 +16,12 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import ssl
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+    HAS_TRANSCRIPT_API = True
+except ImportError:
+    HAS_TRANSCRIPT_API = False
+
 import html as html_module
 import random
 from datetime import datetime, timezone, timedelta
@@ -2626,21 +2632,74 @@ class AlertsAgent(BaseAgent):
 
 
 class YouTubeContentAgent(BaseAgent):
-    """Extracts actual strategy content from YouTube video descriptions and captions"""
+    """Extracts strategy content from YouTube videos using transcripts and descriptions"""
+
+    def _get_transcript(self, video_id):
+        """Get transcript using youtube-transcript-api"""
+        if not HAS_TRANSCRIPT_API:
+            return None
+        try:
+            ytt_api = YouTubeTranscriptApi()
+            transcript = ytt_api.fetch(video_id, languages=["en", "he"])
+            full_text = " ".join([entry.text for entry in transcript])
+            return full_text
+        except Exception as e:
+            self.record(f"transcript {video_id}", f"failed: {str(e)[:60]}")
+            return None
+
+    def _extract_description(self, content):
+        """Extract description from YouTube page HTML"""
+        desc_match = re.search(r'"shortDescription":"(.*?)(?<!\\\\)"', content)
+        if desc_match:
+            desc = desc_match.group(1)
+            return desc.replace("\\n", " ").replace("\\t", " ")[:2000]
+        return ""
+
+    def _analyze_strategy(self, text, title):
+        """Analyze text for strategy content"""
+        strategy_keywords = [
+            "entry", "exit", "stop loss", "take profit", "indicator",
+            "timeframe", "setup", "signal", "buy", "sell", "long", "short",
+            "support", "resistance", "breakout", "pullback", "reversal",
+            "EMA", "SMA", "RSI", "MACD", "VWAP", "volume", "momentum",
+            "backtest", "win rate", "risk reward",
+            "pine script", "strategy", "alert", "condition",
+            "moving average", "fibonacci", "trend", "scalp", "swing"
+        ]
+        text_lower = text.lower()
+        hits = [kw for kw in strategy_keywords if kw.lower() in text_lower]
+
+        # Extract specific rules
+        entry_rules = re.findall(r'(?:entry|buy|long|short|sell)[:\s-]+([^.\n]{10,150})', text_lower)
+        exit_rules = re.findall(r'(?:exit|stop.?loss|take.?profit|tp|sl)[:\s-]+([^.\n]{10,150})', text_lower)
+        indicators = re.findall(r'((?:EMA|SMA|RSI|MACD|VWAP|Bollinger|Supertrend|ATR|Stochastic|CCI|ADX|Ichimoku)\s*\(?\s*\d*\s*\)?)', text, re.IGNORECASE)
+        timeframes = re.findall(r'(\d+\s*(?:min|minute|hour|daily|weekly|h|m|D|W))', text, re.IGNORECASE)
+
+        return {
+            "title": title,
+            "keywords_found": hits,
+            "keyword_count": len(hits),
+            "has_strategy": len(hits) >= 3,
+            "entry_rules": entry_rules[:3],
+            "exit_rules": exit_rules[:3],
+            "indicators": list(set(indicators))[:6],
+            "timeframes": list(set(timeframes))[:4]
+        }
 
     def run(self):
         update_agent(self.agent_id, "working", "waiting for YouTube results...", 10)
         self.record("start", "waiting for r3 video URLs")
-        time.sleep(12)  # Wait for r3 to finish
+        time.sleep(12)
 
         video_urls = pipeline_get_video_urls()
         if not video_urls:
-            update_agent(self.agent_id, "idle", "no YouTube videos found", 100)
-            self.record("no videos", "r3 found no video URLs")
+            update_agent(self.agent_id, "idle", "no YouTube videos to analyze", 100)
+            self.record("no videos", "pipeline has no video URLs")
             return
 
-        update_agent(self.agent_id, "working", f"analyzing {len(video_urls)} videos...", 20)
-        log_activity("film", f"{self.name} started", f"analyzing {len(video_urls)} YouTube videos", self.team_id)
+        total = min(len(video_urls), 8)
+        update_agent(self.agent_id, "working", f"analyzing {total} videos...", 15)
+        log_activity("film", f"{self.name} started", f"extracting content from {total} YouTube videos", self.team_id)
 
         extracted = 0
         for i, entry in enumerate(video_urls[:8]):
@@ -2649,87 +2708,71 @@ class YouTubeContentAgent(BaseAgent):
 
             vid_id = entry["video_id"]
             vid_title = entry["title"]
-            progress = int(((i + 1) / min(len(video_urls), 8)) * 70) + 20
+            progress = int(((i + 1) / total) * 75) + 15
             update_agent(self.agent_id, "working", f"extracting: {vid_title[:40]}...", progress)
 
-            # Fetch video page for description
-            video_url = f"https://www.youtube.com/watch?v={vid_id}"
-            content = self.fetch_url(video_url)
-            time.sleep(2)
+            # 1. Try to get transcript (best source of strategy content)
+            transcript_text = self._get_transcript(vid_id)
+            time.sleep(1)
 
-            if content.startswith("Error"):
-                self.record(f"fetch {vid_title[:30]}", f"failed: {content[:60]}")
+            # 2. Also fetch video page for description
+            video_url = f"https://www.youtube.com/watch?v={vid_id}"
+            page_content = self.fetch_url(video_url)
+            desc_text = ""
+            if not page_content.startswith("Error"):
+                desc_text = self._extract_description(page_content)
+            time.sleep(1)
+
+            # 3. Combine all text and analyze
+            all_text = ""
+            source_label = ""
+            if transcript_text:
+                all_text = transcript_text[:5000]
+                source_label = f"transcript ({len(transcript_text)} chars)"
+            if desc_text:
+                all_text += " " + desc_text
+                source_label += f" + description ({len(desc_text)} chars)" if source_label else f"description ({len(desc_text)} chars)"
+
+            if not all_text:
+                self.record(f"skip {vid_title[:30]}", "no transcript or description available")
                 continue
 
-            # Extract description from video page
-            desc = ""
-            desc_match = re.search(r'"shortDescription":"(.*?)(?<!\\)"', content)
-            if desc_match:
-                desc = desc_match.group(1)
-                desc = desc.replace("\\n", " ").replace("\\t", " ")[:2000]
+            # 4. Analyze for strategy content
+            analysis = self._analyze_strategy(all_text, vid_title)
 
-            # Extract strategy-related keywords from description
-            strategy_keywords = [
-                "entry", "exit", "stop loss", "take profit", "indicator",
-                "timeframe", "setup", "signal", "buy", "sell", "long", "short",
-                "support", "resistance", "breakout", "pullback", "reversal",
-                "EMA", "SMA", "RSI", "MACD", "VWAP", "volume", "momentum",
-                "backtest", "win rate", "risk reward", "R:R",
-                "pine script", "strategy", "alert", "condition"
-            ]
+            # 5. Store in pipeline
+            pipeline_add_video_content(vid_id, vid_title, desc_text[:500], analysis)
 
-            # Count how many strategy keywords appear in description
-            keyword_hits = []
-            desc_lower = desc.lower()
-            for kw in strategy_keywords:
-                if kw.lower() in desc_lower:
-                    keyword_hits.append(kw)
-
-            # Extract specific strategy rules if present
-            strategy_info = {
-                "title": vid_title,
-                "video_id": vid_id,
-                "description_length": len(desc),
-                "keywords_found": keyword_hits,
-                "has_strategy_content": len(keyword_hits) >= 3,
-            }
-
-            # Try to find entry/exit rules
-            entry_patterns = re.findall(r'(?:entry|buy|long|short|sell)\s*[:=\-]\s*([^.\n]{10,100})', desc_lower)
-            exit_patterns = re.findall(r'(?:exit|stop loss|take profit|tp|sl)\s*[:=\-]\s*([^.\n]{10,100})', desc_lower)
-            indicator_patterns = re.findall(r'(?:EMA|SMA|RSI|MACD|VWAP|Bollinger|Supertrend|ATR)\s*\(?\s*(\d+)?\)?', desc, re.IGNORECASE)
-
-            if entry_patterns:
-                strategy_info["entry_rules"] = entry_patterns[:3]
-            if exit_patterns:
-                strategy_info["exit_rules"] = exit_patterns[:3]
-            if indicator_patterns:
-                strategy_info["indicators"] = list(set(indicator_patterns))[:5]
-
-            # Store in pipeline
-            pipeline_add_video_content(vid_id, vid_title, desc[:500], strategy_info)
-
-            if strategy_info["has_strategy_content"]:
+            if analysis["has_strategy"]:
                 extracted += 1
-                kw_str = ", ".join(keyword_hits[:5])
+                kw_str = ", ".join(analysis["keywords_found"][:6])
+                ind_str = ", ".join(analysis["indicators"][:3]) if analysis["indicators"] else "none"
+                tf_str = ", ".join(analysis["timeframes"][:2]) if analysis["timeframes"] else "N/A"
+
                 browser_html = (
-                    f"<div style='color:#22c55e'>film {vid_title[:50]}</div>"
-                    f"<div style='margin-top:2px;color:#94a3b8'>keywords: {kw_str}</div>"
+                    f"<div style='color:#22c55e'>check {vid_title[:50]}</div>"
+                    f"<div style='margin-top:2px;color:#94a3b8'>{source_label}</div>"
+                    f"<div style='margin-top:2px;color:#a855f7'>Indicators: {ind_str}</div>"
+                    f"<div style='margin-top:2px;color:#f59e0b'>Timeframe: {tf_str}</div>"
                 )
-                update_agent(self.agent_id, "working", f"found strategy content in {vid_title[:30]}...", progress, video_url, browser_html)
-                log_activity("check", f"{self.name} extracted", f"strategy from: {vid_title[:40]}", self.team_id)
-                self.record(f"extracted {vid_title[:30]}", f"found {len(keyword_hits)} keywords: {kw_str}", True)
+                update_agent(self.agent_id, "working", f"found strategy: {vid_title[:30]}", progress, video_url, browser_html)
+                log_activity("check", f"{self.name} extracted", f"strategy from: {vid_title[:40]} ({len(analysis['keywords_found'])} keywords)", self.team_id)
+                self.record(f"extracted {vid_title[:30]}", f"{source_label} | {len(analysis['keywords_found'])} keywords | indicators: {ind_str}", True)
+
+                # Also add strategy-related titles to research_found for r4 filter
+                pipeline_add_found([vid_title])
+                kpi["found"] = kpi.get("found", 0) + 1
+                update_kpi("found", kpi["found"])
             else:
-                self.record(f"scanned {vid_title[:30]}", f"only {len(keyword_hits)} keywords - not enough strategy content")
+                self.record(f"scanned {vid_title[:30]}", f"only {analysis['keyword_count']} keywords - not enough")
 
             time.sleep(1)
 
-        summary = f"analyzed {min(len(video_urls), 8)} videos, extracted {extracted} strategies"
+        summary = f"analyzed {total} videos, extracted {extracted} strategies (transcript + description)"
         update_agent(self.agent_id, "idle", summary, 100)
         log_activity("check", f"{self.name} finished", summary, self.team_id)
         self.record("finished", summary)
-        kpi["found"] = kpi.get("found", 0) + extracted
-        update_kpi("found", kpi["found"])
+
 
 # ============ AGENT MANAGER ============
 active_agents = {}
