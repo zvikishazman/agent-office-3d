@@ -441,8 +441,11 @@ class StrategyResearchAgent(BaseAgent):
             ("Reddit AlgoTrading", "https://www.reddit.com/r/algotrading/.rss"),
             ("Reddit Daytrading", "https://www.reddit.com/r/Daytrading/.rss"),
         ],
-        "r3": [  # YouTube Scanner
-            ("YouTube Trading", "https://www.youtube.com/results?search_query=trading+strategy+pine+script+2024"),
+        "r3": [  # YouTube Scanner - multiple searches
+            ("YouTube Strategy", "https://www.youtube.com/results?search_query=trading+strategy+2026&sp=CAMSAhAB"),
+            ("YouTube Pine Script", "https://www.youtube.com/results?search_query=pine+script+strategy+tradingview&sp=CAMSAhAB"),
+            ("YouTube Algo Trading", "https://www.youtube.com/results?search_query=algorithmic+trading+strategy+backtest&sp=CAMSAhAB"),
+            ("YouTube Day Trading", "https://www.youtube.com/results?search_query=best+day+trading+strategy+2026&sp=CAMSAhAB"),
         ],
         "r4": [],  # Filter agent - works on results from others
     }
@@ -595,12 +598,12 @@ class StrategyResearchAgent(BaseAgent):
                     continue
 
             if scripts:
-                unique_scripts = list(set(s.strip() for s in scripts))[:6]
+                unique_scripts = list(set(s.strip() for s in scripts))[:10]
                 total_found += len(unique_scripts)
                 pipeline_add_found(unique_scripts)
 
                 browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
-                for s in unique_scripts[:6]:
+                for s in unique_scripts[:10]:
                     clean = html_module.escape(s.strip()[:60])
                     browser_html += f"<div style='margin-top:2px'>• {clean}</div>"
 
