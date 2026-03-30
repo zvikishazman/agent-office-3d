@@ -595,6 +595,20 @@ class StrategyResearchAgent(BaseAgent):
                     continue
 
             if scripts:
+                unique_scripts = list(set(s.strip() for s in scripts))[:6]
+                total_found += len(unique_scripts)
+                pipeline_add_found(unique_scripts)
+
+                browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
+                for s in unique_scripts[:6]:
+                    clean = html_module.escape(s.strip()[:60])
+                    browser_html += f"<div style='margin-top:2px'>• {clean}</div>"
+
+                update_agent(self.agent_id, "working", f"נמצאו {len(unique_scripts)} מ-{source_name} (מקור חי ✅)", progress, url, browser_html)
+                log_activity("📊", f"נמצאו תוצאות מ-{source_name}", f"{len(unique_scripts)} אסטרטגיות (מקור חי ✅)", self.team_id)
+                self.record(f"סריקת {source_name}", f"נמצאו {len(unique_scripts)} אסטרטגיות (מקור חי ✅)", True)
+                kpi["found"] = kpi.get("found", 0) + len(unique_scripts)
+                update_kpi("found", kpi["found"])
 
             time.sleep(1)
 
