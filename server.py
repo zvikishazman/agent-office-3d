@@ -93,7 +93,7 @@ def _upstash_request(method, path, body=None):
         return None
     try:
         url = f"{UPSTASH_URL}{path}"
-        data = json.dumps(body, ensure_ascii=False).encode('utf-8') if body else None
+        data = json.dumps(body).encode() if body else None
         req = urllib.request.Request(url, data=data, method=method, headers={
             "Authorization": f"Bearer {UPSTASH_TOKEN}",
             "Content-Type": "application/json"
@@ -253,6 +253,11 @@ def add_to_vault(strategy):
     vault_strategies.insert(0, strategy)
     save_vault()
     emit_event("vault_update", {"strategies": vault_strategies})
+
+IL_TZ = timezone(timedelta(hours=3))  # Israel Summer Time (UTC+3)
+
+def now_il():
+    return datetime.now(IL_TZ)
 
 def add_agent_history(agent_id, action, result, success=True):
     if agent_id not in agent_history:
@@ -445,7 +450,7 @@ class StrategyResearchAgent(BaseAgent):
     def run(self):
         sources = self.AGENT_SOURCES.get(self.agent_id, [])
 
-                if self.agent_id == "r4":
+        if self.agent_id == "r4":
             # Filter agent: wait for research agents, then pick from their actual results
             update_agent(self.agent_id, "working", "ממתין לתוצאות מהסורקים...", 10)
             self.record("התחלת סינון", "ממתין לתוצאות מסורקים אחרים")
@@ -888,10 +893,8 @@ if not orbActive and not orbDone and not na(orbHigh)
 orbRange = orbHigh - orbLow
 
 // Entry signals
-crossUp = ta.crossover(close, orbHigh)
-longSignal  = orbDone and crossUp
-crossDown = ta.crossunder(close, orbLow)
-shortSignal = orbDone and crossDown
+longSignal  = orbDone and ta.crossover(close, orbHigh)
+shortSignal = orbDone and ta.crossunder(close, orbLow)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1212,8 +1215,7 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         }
     }
 
-
-    # Strategy name -> template key mapping
+    # Strategy name → template key mapping
     STRATEGY_TO_KEY = {
         "ORB Breakout": "ORB",
         "ICT Smart Money": "ICT",
@@ -1247,8 +1249,6 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
             if key and key in self.TEMPLATES:
                 keys.append(key)
         return keys if keys else ["ORB", "VWAP"]
-
-
 
     def run(self):
         role_info = self.AGENT_ROLES.get(self.agent_id, {"role": "Coder", "task": "כתיבת קוד"})
@@ -1347,7 +1347,6 @@ plot(useEMA ? ema20 : na, "EMA", color.orange, 1)
         log_activity("✅", f"{self.name} סיים", role_info['task'], self.team_id)
 
 
-
 class AnalysisAgent(BaseAgent):
     """Analyzes backtest results with detailed per-agent breakdowns"""
 
@@ -1417,7 +1416,6 @@ class AnalysisAgent(BaseAgent):
             result.append(s)
         return result
 
-
     @staticmethod
     def _generate_pine_code(strat, version=6):
         """Generate unique Pine Script code based on strategy type"""
@@ -1428,7 +1426,96 @@ class AnalysisAgent(BaseAgent):
         sl = strat.get("avgLoss", 10)
         ver = f"//@version={version}"
 
-        if "ORB" in name:
+        if "ICT" in name or "Smart Money" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true, margin_long=100, margin_short=100)
+// {name} - Asset: {asset}, TF: {tf}
+lookback    = input.int(20, "Structure Lookback")
+fvgMinSize  = input.float(0.5, "FVG Min Size (points)", step=0.1)
+tpMult      = input.float({round(tp/max(sl,1), 1)}, "TP Multiplier (R:R)", step=0.1)
+slMult      = input.float(1.0, "SL Multiplier", step=0.1)
+sessionStart = input.int(9, "Session Start Hour")
+sessionEnd   = input.int(16, "Session End Hour")
+useOBFilter  = input.bool(true, "Use Order Block Filter")
+
+inSession = hour >= sessionStart and hour < sessionEnd
+
+swingHigh = ta.pivothigh(high, lookback, lookback)
+swingLow  = ta.pivotlow(low, lookback, lookback)
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+
+if not na(swingHigh)
+    lastSwingHigh := swingHigh
+if not na(swingLow)
+    lastSwingLow := swingLow
+
+bullFVG = low[0] > high[2] and (low[0] - high[2]) >= fvgMinSize
+bearFVG = high[0] < low[2] and (low[2] - high[0]) >= fvgMinSize
+
+bullOB = close[1] < open[1] and close > open and close > high[1]
+bearOB = close[1] > open[1] and close < open and close < low[1]
+
+bullSweep = low < lastSwingLow and close > lastSwingLow
+bearSweep = high > lastSwingHigh and close < lastSwingHigh
+
+longCond = bullSweep and inSession and (not useOBFilter or bullOB or bullFVG)
+shortCond = bearSweep and inSession and (not useOBFilter or bearOB or bearFVG)
+
+slSize = ta.atr(14) * slMult
+tpSize = slSize * tpMult
+
+if longCond and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=tpSize / syminfo.mintick, loss=slSize / syminfo.mintick)
+
+if shortCond and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("TP/SL", "Short", profit=tpSize / syminfo.mintick, loss=slSize / syminfo.mintick)
+
+plot(lastSwingHigh, "Swing High", color.red, 1, plot.style_stepline)
+plot(lastSwingLow, "Swing Low", color.green, 1, plot.style_stepline)
+bgcolor(bullFVG ? color.new(color.green, 90) : bearFVG ? color.new(color.red, 90) : na)
+"""
+        elif "Supply" in name or "Demand" in name:
+            return f"""{ver}
+strategy("{name}", overlay=true)
+// {name} - Asset: {asset}, TF: {tf}
+lookback = input.int(20, "Zone Lookback")
+zoneWidth = input.float(0.5, "Zone Width %", step=0.1)
+tpMult = input.float({round(tp/max(sl,1), 1)}, "TP Multiplier")
+slMult = input.float(1.0, "SL Multiplier")
+
+pvtHigh = ta.pivothigh(high, lookback, lookback)
+pvtLow  = ta.pivotlow(low, lookback, lookback)
+
+var float demandZone = na
+var float supplyZone = na
+
+if not na(pvtLow)
+    demandZone := pvtLow
+if not na(pvtHigh)
+    supplyZone := pvtHigh
+
+zoneSize = ta.atr(14) * zoneWidth
+longCond = not na(demandZone) and low <= demandZone + zoneSize and close > demandZone
+shortCond = not na(supplyZone) and high >= supplyZone - zoneSize and close < supplyZone
+slDist = ta.atr(14) * slMult
+tpDist = slDist * tpMult
+
+if longCond and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=tpDist/syminfo.mintick, loss=slDist/syminfo.mintick)
+
+if shortCond and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("TP/SL", "Short", profit=tpDist/syminfo.mintick, loss=slDist/syminfo.mintick)
+
+plot(demandZone, "Demand", color.green, 2, plot.style_stepline)
+plot(supplyZone, "Supply", color.red, 2, plot.style_stepline)
+"""
+        elif "ORB" in name:
             return f"""{ver}
 strategy("{name}", overlay=true, margin_long=100, margin_short=100)
 // {name} - Asset: {asset}, TF: {tf}
@@ -1457,10 +1544,8 @@ if not orbActive and not orbDone and not na(orbHigh)
     orbDone := true
 
 orbRange = orbHigh - orbLow
-crossUp = ta.crossover(close, orbHigh)
-longSignal  = orbDone and crossUp
-crossDown = ta.crossunder(close, orbLow)
-shortSignal = orbDone and crossDown
+longSignal  = orbDone and ta.crossover(close, orbHigh)
+shortSignal = orbDone and ta.crossunder(close, orbLow)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1527,10 +1612,8 @@ emaFast = ta.ema(close, fastLen)
 emaSlow = ta.ema(close, slowLen)
 [diPlus, diMinus, adx] = ta.dmi(14, 14)
 
-crossUp = ta.crossover(emaFast, emaSlow)
-longSignal = crossUp and (not useADX or adx > adxThreshold)
-crossDown = ta.crossunder(emaFast, emaSlow)
-shortSignal = crossDown and (not useADX or adx > adxThreshold)
+longSignal = ta.crossover(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
+shortSignal = ta.crossunder(emaFast, emaSlow) and (not useADX or adx > adxThreshold)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1554,10 +1637,8 @@ tpPoints = input.float({round(tp, 1)}, "TP Points")
 slPoints = input.float({round(sl, 1)}, "SL Points")
 
 rsiVal = ta.rsi(close, rsiLen)
-crossUp = ta.crossover(rsiVal, oversold)
-longSignal = crossUp
-crossDown = ta.crossunder(rsiVal, overbought)
-shortSignal = crossDown
+longSignal = ta.crossover(rsiVal, oversold)
+shortSignal = ta.crossunder(rsiVal, overbought)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1583,10 +1664,8 @@ slPoints = input.float({round(sl, 1)}, "SL Points")
 
 [macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, signalLen)
 
-crossUp = ta.crossover(macdLine, signalLine)
-longSignal = crossUp and histLine > 0
-crossDown = ta.crossunder(macdLine, signalLine)
-shortSignal = crossDown and histLine < 0
+longSignal = ta.crossover(macdLine, signalLine) and histLine > 0
+shortSignal = ta.crossunder(macdLine, signalLine) and histLine < 0
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1643,10 +1722,8 @@ slPoints = input.float({round(sl, 1)}, "SL Points")
 fast = ta.ema(close, fastLen)
 slow = ta.sma(close, slowLen)
 
-crossUp = ta.crossover(fast, slow)
-longSignal = crossUp and close > ta.sma(close, 200)
-crossDown = ta.crossunder(fast, slow)
-shortSignal = crossDown and close < ta.sma(close, 200)
+longSignal = ta.crossover(fast, slow) and close > ta.sma(close, 200)
+shortSignal = ta.crossunder(fast, slow) and close < ta.sma(close, 200)
 
 if longSignal and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -1779,7 +1856,7 @@ class DuplicateDetectionAgent(BaseAgent):
     """Detects duplicate strategies in research results - allows similar strategies if mechanics differ"""
 
     def run(self):
-        update_agent(self.agent_id, "working", "בודק כפילויות באסטרטגיות...", 10)
+        update_agent(self.agent_id, "working", "בודק כפילויות באסלרטגיות...", 10)
         log_activity("🔎", f"{self.name} מתחיל", "בדיקת כפילויות באסטרטגיות שנמצאו", self.team_id)
         self.record("התחלת בדיקת כפילויות", "סורק אסטרטגיות שנמצאו לזיהוי כפילויות")
 
@@ -1869,7 +1946,7 @@ class MatchingAgent(BaseAgent):
     """Compares funding companies and recommends best match per strategy. Runs LAST."""
 
     def run(self):
-        update_agent(self.agent_id, "working", "ממתין לנתוני מימון ואסטרטגיות...", 5)
+        update_agent(self.agent_id, "working", "ממتין לנתוני מימון ואסטרטגיות...", 5)
         log_activity("🎯", f"{self.name} מתחיל", "ממתין לתוצאות כל הצוותים", self.team_id)
         self.record("התחלת התאמה", "ממתין לנתוני סריקת מימון ואסטרטגיות מאושרות")
 
@@ -2016,7 +2093,7 @@ class DeepDiveAgent(BaseAgent):
                                     "TP = 2x גודל הטווח, SL = 1x גודל הטווח", "עובד הכי טוב בנכסים עם Gap פתיחה"],
                     "what_to_do": "להגדיר את שעת הפתיחה (9:30 EST), לחשב High/Low של 30 דקות ראשונות, להיכנס בפריצה עם Volume filter. TP/SL יחס 2:1.",
                     "risks": "פריצות שווא בימים עם VIX גבוה. להוסיף פילטר VIX < 25.",
-                    "best_for": "ES (S&P 500 E-mini), NQ (Nasdaq) - 5 דקות"
+                    "best_for": "ES (S&P 500 E-mini), NY (Nasdaq) - 5 דקות"
                 },
                 {
                     "name": "VWAP Reclaim Strategy",
@@ -2037,7 +2114,7 @@ class DeepDiveAgent(BaseAgent):
                     "name": "EMA Crossover System",
                     "source": "Technical Analysis of the Financial Markets (J. Murphy)",
                     "what_found": "מערכת חציית EMA משתמשת בשני ממוצעים נעים (מהיר ואיטי). חצייה למעלה = Long, למטה = Short. פשוטה אך אפקטיבית בשווקים טרנדיים.",
-                    "key_concepts": ["EMA מהיר (9) חוצה EMA איטי (21)", "ADX > 25 מאשר שיש טרנד",
+                    "key_concepts": ["EMA מהיר (9) חזצה EMA איטי (21)", "ADX > 25 מאשר שיש טרנד",
                                     "ATR-based stops מותאמים לתנודתיות", "עובד טוב ב-15 דקות"],
                     "what_to_do": "להגדיר EMA 9 ו-EMA 21. להיכנס בחצייה כשADX > 25. SL = ATR(14) * 1.5 מתחת לכניסה.",
                     "risks": "בשוק Sideways ייווצרו הרבה אותות שווא (Whipsaw). ADX פילטר הכרחי.",
@@ -2272,7 +2349,7 @@ class ImprovementAgent(BaseAgent):
                 {"strategy": "ORB Breakout", "suggestion": "הוספת Volume Filter",
                  "detail": "הוספת תנאי volume > SMA(volume,20)*1.5 לכניסה - מסנן פריצות שווא",
                  "impact": "WR צפוי לעלות ב-4-6%, פחות עסקאות אבל יותר איכותיות",
-                 "code_change": "volumeFilter = volume > ta.sma(volume, 20) * 1.5\ncrossUp = ta.crossover(close, orbHigh)\nlongSignal = orbDone and crossUp and volumeFilter"},
+                 "code_change": "volumeFilter = volume > ta.sma(volume, 20) * 1.5\nlongSignal = orbDone and ta.crossover(close, orbHigh) and volumeFilter"},
                 {"strategy": "VWAP Reclaim", "suggestion": "הוספת Session Filter",
                  "detail": "הגבלת מסחר לשעות 9:30-15:00 בלבד, כדי להימנע מ-pre/post market",
                  "impact": "הפחתת DD צפויה של 2-3%, סינון תנודתיות מיותרת",
@@ -2285,7 +2362,7 @@ class ImprovementAgent(BaseAgent):
                 {"strategy": "ORB Breakout", "suggestion": "הוספת VWAP כפילטר",
                  "detail": "Long רק מעל VWAP, Short רק מתחת VWAP - מגביר הסתברות להצלחה",
                  "impact": "WR צפוי לעלות ב-8-10%, מגביל עסקאות נגד המגמה",
-                 "code_change": "vwapVal = ta.vwap(hlc3)\ncrossUp = ta.crossover(close, orbHigh)\nlongSignal = orbDone and crossUp and close > vwapVal"},
+                 "code_change": "vwapVal = ta.vwap(hlc3)\nlongSignal = orbDone and ta.crossover(close, orbHigh) and close > vwapVal"},
                 {"strategy": "VWAP Reclaim", "suggestion": "הוספת ATR-based Stop Loss",
                  "detail": "שימוש ב-ATR(14) * 1.5 כ-Stop Loss דינמי במקום קבוע",
                  "impact": "DD צפוי לרדת ב-2%, SL מותאם לתנודתיות השוק",
@@ -2373,8 +2450,8 @@ class VisualDesignAgent(BaseAgent):
                      "│  ~~~ Lower Band ~~~      │ ← קו סגול בהיר\n"
                      "│    ● Reclaim ↑ 4516      │ ← עיגול ירוק + חץ\n"
                      "│  ─── EMA20 ── 4512      │ ← קו כתום\n"
-                     "│  TP: +15pts → 4531      │ ← קו ירוק מקווקו\n"
-                     "│  SL: -8pts  → 4508      │ ← קו אדום מקווקו\n"
+                     "│  TP: +15pts → 4531      │ ← קו ירוקמקווקו\n"
+                     "│  SL: -8pts  → 4504      │ ← קו אדום מקווקו\n"
                      "└─────────────────────────┘"
                  )},
             ]
@@ -2390,9 +2467,9 @@ class VisualDesignAgent(BaseAgent):
                      "  ▼ Short Entry (אדום)\n"
                      "  ◆ Take Profit (זהב)\n"
                      "  ✖ Stop Loss (אדום כהה)\n"
-                     "  ── TP Line (ירוק מקווקו)\n"
+                     "  ── TP Line (ירוקמקווקו)\n"
                      "  ── SL Line (אדום מקווקו)\n"
-                     "  ▓▓ Profit Zone (ירוק שקוף)\n"
+                     "  ▓▓ Profit Zone (ירוקשקוף)\n"
                      "  ▓▓ Loss Zone (אדום שקוף)"
                  )},
                 {"name": "P&L Summary Overlay",
@@ -2404,7 +2481,7 @@ class VisualDesignAgent(BaseAgent):
                      "│ WR: 68% (34/50)  │\n"
                      "│ PF: 2.4          │\n"
                      "│ DD: -4.2%        │\n"
-                     "│ Today: +$285     │ ← ירוק\n"
+                     "│ Today: +$285      │ ← ירוק\n"
                      "└──────────────────┘"
                  )},
             ]
@@ -2429,7 +2506,7 @@ class VisualDesignAgent(BaseAgent):
                 f"<div style='margin-top:4px;color:#94a3b8'>{design['description']}</div>"
                 f"<pre style='margin-top:6px;color:#e2e8f0;font-size:9px;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;white-space:pre;line-height:1.4'>{html_module.escape(design['visual'])}</pre>"
             )
-            update_agent(self.agent_id, "working", f"עיצוב: {design['name']}", progress,
+            update_agent(self.agent_id, "working", f"יציצוב: {design['name']}", progress,
                         "https://www.tradingview.com/chart/", browser_html)
 
             log_activity("🎨", f"{design['name']} עוצב", design['description'][:60], self.team_id)
@@ -2602,6 +2679,7 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
         elif self.path == '/api/activities':
             self.send_json({"activities": activity_log})
         elif self.path.startswith('/api/file-b64/'):
+            # Temporary endpoint to serve local files as base64 for GitHub push
             import base64 as b64mod
             fname = self.path.split('/')[-1]
             fpath = Path(__file__).parent / fname
@@ -2657,14 +2735,14 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
 
     def send_json(self, data):
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+        self.wfile.write(json.dumps(data).encode())
 
     def send_sse_stream(self):
         self.send_response(200)
-        self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+        self.send_header('Content-Type', 'text/event-stream')
         self.send_header('Cache-Control', 'no-cache')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Connection', 'keep-alive')
@@ -2675,16 +2753,16 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             sse_clients.append(client_queue)
 
         try:
-            self.wfile.write(f"data: {json.dumps({'type': 'init', 'data': {'agents': agent_states, 'kpi': kpi, 'vault': vault_strategies, 'history': agent_history, 'errors': agent_errors, 'activities': activity_log}}, ensure_ascii=False)}\n\n".encode('utf-8'))
+            self.wfile.write(f"data: {json.dumps({'type': 'init', 'data': {'agents': agent_states, 'kpi': kpi, 'vault': vault_strategies, 'history': agent_history, 'errors': agent_errors, 'activities': activity_log}})}\n\n".encode())
             self.wfile.flush()
 
             while running:
                 try:
                     event = client_queue.get(timeout=2)
-                    self.wfile.write(f"data: {json.dumps(event, ensure_ascii=False)}\n\n".encode('utf-8'))
+                    self.wfile.write(f"data: {json.dumps(event)}\n\n".encode())
                     self.wfile.flush()
                 except queue.Empty:
-                    self.wfile.write(f": heartbeat\n\n".encode('utf-8'))
+                    self.wfile.write(f": heartbeat\n\n".encode())
                     self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError, OSError):
             pass
@@ -2698,11 +2776,6 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
 
 
 import socketserver
-
-IL_TZ = timezone(timedelta(hours=3))  # Israel Summer Time (UTC+3)
-
-def now_il():
-    return datetime.now(IL_TZ)
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     daemon_threads = True
