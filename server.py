@@ -2638,71 +2638,104 @@ class YouTubeContentAgent(BaseAgent):
     """Extracts strategy content from YouTube videos using transcripts and descriptions"""
 
     def _get_transcript_web(self, video_id):
-        """Get transcript by scraping YouTube watch page for embedded caption data"""
+        """Get transcript using yt-dlp (robust, handles datacenter IPs)"""
         try:
-            import urllib.request, json as json_mod, re as re_mod
-            # Step 1: Fetch the YouTube watch page HTML
-            url = f"https://www.youtube.com/watch?v={video_id}"
-            req = urllib.request.Request(url)
-            req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            req.add_header("Accept-Language", "en-US,en;q=0.9")
-            req.add_header("Accept", "text/html,application/xhtml+xml")
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                html = resp.read().decode("utf-8", errors="replace")
-            # Step 2: Extract ytInitialPlayerResponse JSON from the HTML
-            match = re_mod.search(r'ytInitialPlayerResponse\s*=\s*({.+?});\s*(?:var\s|<\/script)', html)
-            if not match:
-                match = re_mod.search(r'ytInitialPlayerResponse\s*=\s*({.+?});', html)
-            if not match:
-                self.record(f"web_transcript {video_id}", "no ytInitialPlayerResponse in page")
+            import yt_dlp
+            ydl_opts = {
+                'writesubtitles': True,
+                'writeautomaticsub': True,
+                'subtitleslangs': ['en', 'en-US', 'en-GB'],
+                'skip_download': True,
+                'quiet': True,
+                'no_warnings': True,
+                'socket_timeout': 15,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
+                # Try manual subtitles first, then auto-generated
+                subs = info.get('subtitles', {})
+                auto_subs = info.get('automatic_captions', {})
+                # Find English subtitles
+                sub_data = None
+                for lang_key in ['en', 'en-US', 'en-GB']:
+                    if lang_key in subs:
+                        sub_data = subs[lang_key]
+                        break
+                    if lang_key in auto_subs:
+                        sub_data = auto_subs[lang_key]
+                        break
+                if not sub_data:
+                    # Try any English variant
+                    for key in list(subs.keys()) + list(auto_subs.keys()):
+                        if key.startswith('en'):
+                            sub_data = subs.get(key) or auto_subs.get(key)
+                            break
+                if not sub_data:
+                    self.record(f"web_transcript {video_id}", "no English subs available")
+                    return None
+                # Find json3 or srv1 format for text extraction
+                sub_url = None
+                for fmt in sub_data:
+                    if fmt.get('ext') == 'json3':
+                        sub_url = fmt.get('url')
+                        break
+                if not sub_url:
+                    for fmt in sub_data:
+                        if fmt.get('ext') in ('srv1', 'vtt', 'ttml'):
+                            sub_url = fmt.get('url')
+                            break
+                if not sub_url and sub_data:
+                    sub_url = sub_data[0].get('url')
+                if not sub_url:
+                    self.record(f"web_transcript {video_id}", "no subtitle URL found")
+                    return None
+                # Fetch the subtitle content
+                import urllib.request, json as json_mod
+                req = urllib.request.Request(sub_url)
+                req.add_header("User-Agent", "Mozilla/5.0")
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    raw = resp.read().decode("utf-8")
+                # Try json3 parsing first
+                try:
+                    caption_data = json_mod.loads(raw)
+                    events = caption_data.get("events", [])
+                    lines = []
+                    for event in events:
+                        segs = event.get("segs", [])
+                        for seg in segs:
+                            text = seg.get("utf8", "").strip()
+                            if text and text != "\n":
+                                lines.append(text)
+                    if lines:
+                        full_text = " ".join(lines)
+                        self.record(f"web_transcript {video_id}", f"yt-dlp json3: {len(lines)} segs, {len(full_text)} chars")
+                        return full_text
+                except (json_mod.JSONDecodeError, KeyError):
+                    pass
+                # Fallback: extract text from VTT/SRV format
+                import re as re_mod
+                # Remove VTT headers and timestamps, keep text
+                text_lines = []
+                for line in raw.split("\n"):
+                    line = line.strip()
+                    if not line or line.startswith("WEBVTT") or line.startswith("NOTE"):
+                        continue
+                    if re_mod.match(r'\d{2}:\d{2}', line) or line.startswith("Kind:") or line.startswith("Language:"):
+                        continue
+                    if '-->' in line:
+                        continue
+                    # Remove HTML tags
+                    clean = re_mod.sub(r'<[^>]+>', '', line).strip()
+                    if clean:
+                        text_lines.append(clean)
+                if text_lines:
+                    full_text = " ".join(text_lines)
+                    self.record(f"web_transcript {video_id}", f"yt-dlp vtt: {len(text_lines)} lines, {len(full_text)} chars")
+                    return full_text
+                self.record(f"web_transcript {video_id}", "yt-dlp: no text extracted from subs")
                 return None
-            try:
-                player_data = json_mod.loads(match.group(1))
-            except json_mod.JSONDecodeError:
-                self.record(f"web_transcript {video_id}", "failed to parse player JSON")
-                return None
-            # Step 3: Extract caption track URLs
-            captions = player_data.get("captions", {})
-            renderer = captions.get("playerCaptionsTracklistRenderer", {})
-            tracks = renderer.get("captionTracks", [])
-            if not tracks:
-                self.record(f"web_transcript {video_id}", "no caption tracks in page data")
-                return None
-            # Prefer English, then any track
-            track_url = None
-            for t in tracks:
-                if t.get("languageCode", "").startswith("en"):
-                    track_url = t.get("baseUrl", "")
-                    break
-            if not track_url and tracks:
-                track_url = tracks[0].get("baseUrl", "")
-            if not track_url:
-                return None
-            # Step 4: Fetch captions in json3 format
-            if "fmt=json3" not in track_url:
-                sep = "&" if "?" in track_url else "?"
-                track_url += sep + "fmt=json3"
-            req2 = urllib.request.Request(track_url)
-            req2.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-            with urllib.request.urlopen(req2, timeout=15) as resp2:
-                caption_data = json_mod.loads(resp2.read().decode("utf-8"))
-            # Extract text from json3 format
-            events = caption_data.get("events", [])
-            lines = []
-            for event in events:
-                segs = event.get("segs", [])
-                for seg in segs:
-                    text = seg.get("utf8", "").strip()
-                    if text and text != "\n":
-                        lines.append(text)
-            if not lines:
-                self.record(f"web_transcript {video_id}", "no text in caption data")
-                return None
-            full_text = " ".join(lines)
-            self.record(f"web_transcript {video_id}", f"got {len(lines)} segments, {len(full_text)} chars")
-            return full_text
         except Exception as e:
-            self.record(f"web_transcript {video_id}", f"failed: {str(e)[:80]}")
+            self.record(f"web_transcript {video_id}", f"yt-dlp failed: {str(e)[:80]}")
             return None
     def _get_transcript(self, video_id):
         """Get transcript - tries youtube-transcript-api first, then web fallback"""
