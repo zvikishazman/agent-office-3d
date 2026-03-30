@@ -523,7 +523,7 @@ class StrategyResearchAgent(BaseAgent):
             # Pick top 2-3 strategies by score, or fallback to random if no matches
             if scores:
                 sorted_strats = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)
-                picks = sorted_strats[:random.randint(2, min(3, len(sorted_strats)))]
+                picks = sorted_strats[:min(random.randint(2, 3), len(sorted_strats))]
             else:
                 picks = random.sample(list(STRATEGY_KEYWORDS.keys()), 2)
 
@@ -2786,7 +2786,7 @@ class YouTubeContentAgent(BaseAgent):
                     f"<div style='margin-top:2px;color:#a855f7'>Indicators: {ind_str}</div>"
                     f"<div style='margin-top:2px;color:#f59e0b'>Timeframe: {tf_str}</div>"
                 )
-                update_agent(self.agent_id, "working", f"found strategy: {vid_title[:30]}", progress, video_url, browser_html)
+                update_agent(self.agent_id, "working", f"found strategy: {vid_title[:30]}", progress, "", browser_html)
                 log_activity("check", f"{self.name} extracted", f"strategy from: {vid_title[:40]} ({len(analysis['keywords_found'])} keywords)", self.team_id)
                 self.record(f"extracted {vid_title[:30]}", f"{source_label} | {len(analysis['keywords_found'])} keywords | indicators: {ind_str}", True)
 
