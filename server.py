@@ -40,6 +40,8 @@ pipeline_state = {
     "research_found": [],     # strategy names found by research agents
     "filter_picks": [],       # strategy names selected by filter (2-3 best)
     "pine_coded": [],         # strategies with Pine Script code ready
+    "video_urls": [],          # YouTube video URLs found by r3
+    "video_content": [],       # extracted content from YouTube videos
 }
 
 def pipeline_add_found(strategy_names):
@@ -69,6 +71,28 @@ def pipeline_get_found():
     """Get all research findings (thread-safe)"""
     with pipeline_lock:
         return list(pipeline_state["research_found"])
+
+def pipeline_add_video_url(title, video_id):
+    """r3 stores YouTube video URLs for content extraction"""
+    with pipeline_lock:
+        entry = {"title": title, "video_id": video_id}
+        if entry not in pipeline_state["video_urls"]:
+            pipeline_state["video_urls"].append(entry)
+
+def pipeline_get_video_urls():
+    """Get all YouTube video URLs"""
+    with pipeline_lock:
+        return list(pipeline_state["video_urls"])
+
+def pipeline_add_video_content(video_id, title, description, strategy_info):
+    """Store extracted video content"""
+    with pipeline_lock:
+        pipeline_state["video_content"].append({
+            "video_id": video_id,
+            "title": title,
+            "description": description,
+            "strategy_info": strategy_info
+        })
 
 def pipeline_reset():
     """Reset pipeline state for a new run"""
@@ -601,6 +625,11 @@ class StrategyResearchAgent(BaseAgent):
                 unique_scripts = list(set(s.strip() for s in scripts))[:10]
                 total_found += len(unique_scripts)
                 pipeline_add_found(unique_scripts)
+                    # Extract video IDs for YouTube deep content extraction
+                    if "youtube" in url.lower():
+                        video_ids = re.findall(r'"videoId":"([a-zA-Z0-9_-]{11})"', content)
+                        for vid_title, vid_id in zip(unique_scripts, video_ids[:len(unique_scripts)]):
+                            pipeline_add_video_url(vid_title, vid_id)
 
                 browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
                 for s in unique_scripts[:10]:
@@ -2594,6 +2623,114 @@ class AlertsAgent(BaseAgent):
         log_activity("✅", f"{self.name} סיים", f"{role} הושלם", self.team_id)
 
 
+
+
+class YouTubeContentAgent(BaseAgent):
+    """Extracts actual strategy content from YouTube video descriptions and captions"""
+
+    def run(self):
+        update_agent(self.agent_id, "working", "waiting for YouTube results...", 10)
+        self.record("start", "waiting for r3 video URLs")
+        time.sleep(12)  # Wait for r3 to finish
+
+        video_urls = pipeline_get_video_urls()
+        if not video_urls:
+            update_agent(self.agent_id, "idle", "no YouTube videos found", 100)
+            self.record("no videos", "r3 found no video URLs")
+            return
+
+        update_agent(self.agent_id, "working", f"analyzing {len(video_urls)} videos...", 20)
+        log_activity("film", f"{self.name} started", f"analyzing {len(video_urls)} YouTube videos", self.team_id)
+
+        extracted = 0
+        for i, entry in enumerate(video_urls[:8]):
+            if self.should_stop.is_set():
+                break
+
+            vid_id = entry["video_id"]
+            vid_title = entry["title"]
+            progress = int(((i + 1) / min(len(video_urls), 8)) * 70) + 20
+            update_agent(self.agent_id, "working", f"extracting: {vid_title[:40]}...", progress)
+
+            # Fetch video page for description
+            video_url = f"https://www.youtube.com/watch?v={vid_id}"
+            content = self.fetch_url(video_url)
+            time.sleep(2)
+
+            if content.startswith("Error"):
+                self.record(f"fetch {vid_title[:30]}", f"failed: {content[:60]}")
+                continue
+
+            # Extract description from video page
+            desc = ""
+            desc_match = re.search(r'"shortDescription":"(.*?)(?<!\\)"', content)
+            if desc_match:
+                desc = desc_match.group(1)
+                desc = desc.replace("\\n", " ").replace("\\t", " ")[:2000]
+
+            # Extract strategy-related keywords from description
+            strategy_keywords = [
+                "entry", "exit", "stop loss", "take profit", "indicator",
+                "timeframe", "setup", "signal", "buy", "sell", "long", "short",
+                "support", "resistance", "breakout", "pullback", "reversal",
+                "EMA", "SMA", "RSI", "MACD", "VWAP", "volume", "momentum",
+                "backtest", "win rate", "risk reward", "R:R",
+                "pine script", "strategy", "alert", "condition"
+            ]
+
+            # Count how many strategy keywords appear in description
+            keyword_hits = []
+            desc_lower = desc.lower()
+            for kw in strategy_keywords:
+                if kw.lower() in desc_lower:
+                    keyword_hits.append(kw)
+
+            # Extract specific strategy rules if present
+            strategy_info = {
+                "title": vid_title,
+                "video_id": vid_id,
+                "description_length": len(desc),
+                "keywords_found": keyword_hits,
+                "has_strategy_content": len(keyword_hits) >= 3,
+            }
+
+            # Try to find entry/exit rules
+            entry_patterns = re.findall(r'(?:entry|buy|long|short|sell)\s*[:=\-]\s*([^.\n]{10,100})', desc_lower)
+            exit_patterns = re.findall(r'(?:exit|stop loss|take profit|tp|sl)\s*[:=\-]\s*([^.\n]{10,100})', desc_lower)
+            indicator_patterns = re.findall(r'(?:EMA|SMA|RSI|MACD|VWAP|Bollinger|Supertrend|ATR)\s*\(?\s*(\d+)?\)?', desc, re.IGNORECASE)
+
+            if entry_patterns:
+                strategy_info["entry_rules"] = entry_patterns[:3]
+            if exit_patterns:
+                strategy_info["exit_rules"] = exit_patterns[:3]
+            if indicator_patterns:
+                strategy_info["indicators"] = list(set(indicator_patterns))[:5]
+
+            # Store in pipeline
+            pipeline_add_video_content(vid_id, vid_title, desc[:500], strategy_info)
+
+            if strategy_info["has_strategy_content"]:
+                extracted += 1
+                kw_str = ", ".join(keyword_hits[:5])
+                browser_html = (
+                    f"<div style='color:#22c55e'>film {vid_title[:50]}</div>"
+                    f"<div style='margin-top:2px;color:#94a3b8'>keywords: {kw_str}</div>"
+                )
+                update_agent(self.agent_id, "working", f"found strategy content in {vid_title[:30]}...", progress, video_url, browser_html)
+                log_activity("check", f"{self.name} extracted", f"strategy from: {vid_title[:40]}", self.team_id)
+                self.record(f"extracted {vid_title[:30]}", f"found {len(keyword_hits)} keywords: {kw_str}", True)
+            else:
+                self.record(f"scanned {vid_title[:30]}", f"only {len(keyword_hits)} keywords - not enough strategy content")
+
+            time.sleep(1)
+
+        summary = f"analyzed {min(len(video_urls), 8)} videos, extracted {extracted} strategies"
+        update_agent(self.agent_id, "idle", summary, 100)
+        log_activity("check", f"{self.name} finished", summary, self.team_id)
+        self.record("finished", summary)
+        kpi["found"] = kpi.get("found", 0) + extracted
+        update_kpi("found", kpi["found"])
+
 # ============ AGENT MANAGER ============
 active_agents = {}
 
@@ -2609,6 +2746,7 @@ def start_team(team_id):
             ("r1", StrategyResearchAgent), ("r2", StrategyResearchAgent),
             ("r3", StrategyResearchAgent), ("r4", StrategyResearchAgent),
             ("r5", DuplicateDetectionAgent),
+            ("r6", YouTubeContentAgent),
         ],
         "deepdive": [("d1", DeepDiveAgent), ("d2", DeepDiveAgent)],
         "pinescript": [
