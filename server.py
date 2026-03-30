@@ -524,77 +524,77 @@ class StrategyResearchAgent(BaseAgent):
             content = self.fetch_url(url)
             time.sleep(2)
 
-            # Fallback strategies for when scraping fails
-            FALLBACK_STRATEGIES = {
-                "tradingview": ["ORB Breakout Strategy", "VWAP Reclaim Scalper", "EMA Crossover System",
-                               "RSI Divergence", "Bollinger Band Squeeze", "Supertrend Pullback"],
-                "reddit": ["Opening Range Breakout with Volume Filter", "Mean Reversion RSI Strategy",
-                          "Trend Following with ATR Stops", "MACD Histogram Divergence Play"],
-                "youtube": ["ICT Smart Money Concept Strategy", "Supply Demand Zone Trading",
-                           "Fair Value Gap Strategy", "Liquidity Sweep Setup"],
-            }
-
             scripts = []
-            fetch_failed = "Error" in content
+            fetch_failed = content.startswith("Error")
 
-            if not fetch_failed:
-                # Extract based on source type
-                if "tradingview" in url.lower():
-                    scripts = re.findall(r'class="tv-widget-idea__title[^"]*"[^>]*>([^<]+)', content)
-                    if not scripts:
-                        scripts = re.findall(r'"title":"([^"]{10,80})"', content)
-                elif "reddit" in url.lower():
-                    scripts = re.findall(r'"title"\s*:\s*"([^"]{10,120})"', content)
-                elif "youtube" in url.lower():
-                    scripts = re.findall(r'"title":\{"runs":\[\{"text":"([^"]{10,80})"', content)
+            if fetch_failed:
+                # Log the ACTUAL error - no fallback
+                error_detail = content[:500]
+                # Try to extract HTTP status code
+                status_match = re.search(r'HTTP Error (\d+)', error_detail)
+                http_status = status_match.group(1) if status_match else "unknown"
 
-            # If no scripts found (scraping failed or parsing empty), use fallbacks
-            source_key = "tradingview" if "tradingview" in url.lower() else \
-                        "reddit" if "reddit" in url.lower() else \
-                        "youtube" if "youtube" in url.lower() else None
+                self.report_error(
+                    f"\u05e1\u05e8\u05d9\u05e7\u05ea {source_name}",
+                    f"HTTP {http_status} | {error_detail[:200]}",
+                    url,
+                    f"fetch_url \u05e0\u05db\u05e9\u05dc \u05d0\u05d7\u05e8\u05d9 3 \u05e0\u05d9\u05e1\u05d9\u05d5\u05e0\u05d5\u05ea. Status: {http_status}. \u05ea\u05d5\u05db\u05df \u05e9\u05d7\u05d6\u05e8: {error_detail[:300]}"
+                )
+                self.record(f"\u05e1\u05e8\u05d9\u05e7\u05ea {source_name}", f"\u274c \u05e0\u05db\u05e9\u05dc - {error_detail[:150]}", False)
 
-            if not scripts and source_key:
-                import random
-                fb = FALLBACK_STRATEGIES[source_key]
-                scripts = random.sample(fb, min(len(fb), random.randint(2, 4)))
-                if fetch_failed:
-                    log_activity("⚠️", f"{source_name} לא זמין",
-                               f"משתמש במאגר מקומי ({len(scripts)} אסטרטגיות)", self.team_id)
+                browser_html = (
+                    f"<div style='color:#ef4444'>\u274c {source_name} - \u05e1\u05e8\u05d9\u05e7\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4</div>"
+                    f"<div style='margin-top:4px;color:#f97316'>HTTP Status: {http_status}</div>"
+                    f"<div style='margin-top:4px;color:#94a3b8;font-size:10px;word-break:break-all'>{html_module.escape(error_detail[:300])}</div>"
+                    f"<div style='margin-top:4px;color:#94a3b8;font-size:9px'>URL: {url}</div>"
+                )
+                update_agent(self.agent_id, "working", f"\u274c {source_name} \u05e0\u05db\u05e9\u05dc - HTTP {http_status}",
+                           progress, url, browser_html)
+                time.sleep(1)
+                continue
+
+            # Parse content - extract strategy names
+            if "tradingview" in url.lower():
+                scripts = re.findall(r'class="tv-widget-idea__title[^"]*"[^>]*>([^<]+)', content)
+                if not scripts:
+                    scripts = re.findall(r'"title":"([^"]{10,80})"', content)
+                if not scripts:
+                    # Log what we actually got back so we can fix the regex
+                    content_preview = content[:1000].replace('\n', ' ').replace('\r', '')
+                    self.report_error(
+                        f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}",
+                        f"Fetch \u05d4\u05e6\u05dc\u05d9\u05d7 ({len(content)} bytes) \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 \u05ea\u05d5\u05e6\u05d0\u05d5\u05ea",
+                        url,
+                        f"\u05ea\u05d5\u05db\u05df \u05e9\u05d7\u05d6\u05e8 (1000 \u05ea\u05d5\u05d5\u05d9\u05dd \u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05dd): {content_preview[:500]}"
+                    )
+                    self.record(f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}", f"\u26a0\ufe0f \u05e7\u05d9\u05d1\u05dc\u05e0\u05d5 {len(content)} bytes \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 \u05e9\u05d5\u05dd \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d4. \u05e6\u05e8\u05d9\u05da \u05dc\u05e2\u05d3\u05db\u05df regex.", False)
+                    continue
+            elif "reddit" in url.lower():
+                scripts = re.findall(r'"title"\s*:\s*"([^"]{10,120})"', content)
+                if not scripts:
+                    content_preview = content[:1000].replace('\n', ' ').replace('\r', '')
+                    self.report_error(
+                        f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}",
+                        f"Fetch \u05d4\u05e6\u05dc\u05d9\u05d7 ({len(content)} bytes) \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 titles",
+                        url,
+                        f"\u05ea\u05d5\u05db\u05df \u05e9\u05d7\u05d6\u05e8 (1000 \u05ea\u05d5\u05d5\u05d9\u05dd \u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05dd): {content_preview[:500]}"
+                    )
+                    self.record(f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}", f"\u26a0\ufe0f Reddit \u05d7\u05d6\u05e8 {len(content)} bytes \u05d0\u05d1\u05dc \u05d0\u05d9\u05df titles. \u05d9\u05d9\u05ea\u05db\u05df JSON \u05e9\u05d5\u05e0\u05d4.", False)
+                    continue
+            elif "youtube" in url.lower():
+                scripts = re.findall(r'"title":{"runs":\[{"text":"([^"]{10,80})"', content)
+                if not scripts:
+                    content_preview = content[:1000].replace('\n', ' ').replace('\r', '')
+                    self.report_error(
+                        f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}",
+                        f"Fetch \u05d4\u05e6\u05dc\u05d9\u05d7 ({len(content)} bytes) \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 videos",
+                        url,
+                        f"\u05ea\u05d5\u05db\u05df \u05e9\u05d7\u05d6\u05e8 (1000 \u05ea\u05d5\u05d5\u05d9\u05dd \u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05dd): {content_preview[:500]}"
+                    )
+                    self.record(f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}", f"\u26a0\ufe0f YouTube \u05d7\u05d6\u05e8 {len(content)} bytes \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 \u05db\u05d5\u05ea\u05e8\u05d5\u05ea.", False)
+                    continue
 
             if scripts:
-                # Cap scripts per source to avoid KPI inflation
-                unique_scripts = list(set(s.strip() for s in scripts))[:6]
-                total_found += len(unique_scripts)
-                # Feed into pipeline so filter can use actual results
-                pipeline_add_found(unique_scripts)
-
-                source_label = "מקור חי" if not fetch_failed else "מאגר מקומי"
-                browser_html = f"<div style='color:#a855f7'>📊 {source_name}</div>"
-                if fetch_failed:
-                    browser_html += f"<div style='margin-top:2px;color:#eab308'>⚠️ {source_name} לא זמין - משתמש במאגר מקומי</div>"
-                browser_html += f"<div style='margin-top:6px;color:#22c55e'>נמצאו {len(unique_scripts)} אסטרטגיות ({source_label}):</div>"
-                for s in unique_scripts[:6]:
-                    clean = html_module.escape(s.strip()[:60])
-                    browser_html += f"<div style='margin-top:3px;color:#94a3b8'>• {clean}</div>"
-
-                update_agent(self.agent_id, "working", f"נמצאו {len(unique_scripts)} ב-{source_name}",
-                           progress, url, browser_html)
-                log_activity("📊", f"נמצאו תוצאות מ-{source_name}", f"{len(unique_scripts)} scripts ({source_label})", self.team_id)
-                self.record(f"סריקת {source_name}", f"נמצאו {len(unique_scripts)} אסטרטגיות ({source_label}): {', '.join(s[:30] for s in unique_scripts[:3])}", True)
-                kpi["found"] = kpi.get("found", 0) + len(unique_scripts)
-                update_kpi("found", kpi["found"])
-            else:
-                # Only report error if we truly have nothing
-                err = content[:200]
-                if "403" in err or "forbidden" in err.lower():
-                    suggestion = f"{source_name} חוסם scraping. צריך להוסיף headers או להשתמש ב-API"
-                elif "429" in err:
-                    suggestion = f"{source_name} הגביל בקשות (Rate Limit). מנסה שוב בהרצה הבאה"
-                elif "timeout" in err.lower():
-                    suggestion = f"{source_name} איטי - נסה שוב בזמן אחר"
-                else:
-                    suggestion = "בדוק חיבור אינטרנט או שהכתובת נכונה"
-                self.report_error(f"סריקת {source_name}", err[:80], url, suggestion)
 
             time.sleep(1)
 
@@ -786,11 +786,10 @@ class FundingResearchAgent(BaseAgent):
         # Use COMPANY_DATA (detailed fallback) - always show structured info
         if company_data:
             result_data = company_data
-            source_label = "נתונים חיים" if live_data_found else "נתונים שמורים"
 
             # Build structured output
             browser_html = f"<div style='color:#06b6d4;font-weight:bold'>📊 {company_name}</div>"
-            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>מקור: {source_label}</div>"
+            browser_html += f"<div style='margin-top:2px;color:#94a3b8;font-size:10px'>מקור: {"live"}</div>"
 
             # Routes
             browser_html += "<div style='margin-top:8px;color:#22c55e;font-weight:bold'>מסלולים:</div>"
@@ -829,7 +828,7 @@ class FundingResearchAgent(BaseAgent):
                        f"חשבונות: {accounts_summary}. "
                        f"חלוקת רווח: {terms.get('profit_split', 'N/A')}. "
                        f"Scaling: {terms.get('scaling', 'N/A')}. "
-                       f"מקור: {source_label}", True)
+                       f"מקור: {"live"}", True)
 
             log_activity("📋", f"{company_name} נסרק",
                         f"{len(result_data.get('accounts',[]))} חשבונות, חלוקת רווח {terms.get('profit_split','N/A')}", self.team_id)
