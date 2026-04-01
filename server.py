@@ -2353,7 +2353,7 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
-                        login_status_text = '\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'
+                    login_status_text = '\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#2196F3;'>\U0001f4ca TradingView Chart - {asset}</h3>"
@@ -2430,7 +2430,7 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
-                        code_status = '\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'
+                    code_status = '\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'
                     browser_html = (
                         f"<div style='padding:15px;font-family:monospace;background:#1e1e1e;color:#d4d4d4;'>"
                         f"<h3 style='color:#{'4caf50' if code_loaded else 'ff9800'};'>\U0001f4dd Pine Editor - {name}</h3>"
@@ -2518,7 +2518,7 @@ class ChromeAgent(BaseAgent):
                     page_title = page.title()
                     has_data = bool(backtest_data.get("raw"))
                     
-                        results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
+                    results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#{'4caf50' if has_data else 'ff9800'};'>\U0001f4c8 Strategy Tester - {name}</h3>"
@@ -2601,7 +2601,7 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
-                        export_status = '\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'
+                    export_status = '\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#2196F3;'>\U0001f4cb Report - {name}</h3>"
