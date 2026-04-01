@@ -382,10 +382,9 @@ class BaseAgent(threading.Thread):
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
                 }
-                # Reddit needs special handling
+                # Reddit: use browser-like UA to avoid 429 on old.reddit.com
                 if 'reddit.com' in url:
-                    headers['User-Agent'] = 'python:AgentOffice3D:v1.0 (by /u/zviki36)'
-                    headers['Accept'] = 'application/rss+xml, application/xml, text/xml'
+                    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
                 req = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
                     return resp.read().decode('utf-8', errors='ignore')
@@ -470,8 +469,8 @@ class StrategyResearchAgent(BaseAgent):
             ("TradingView Trending", "https://www.tradingview.com/scripts/trending/"),
         ],
         "r2": [  # Reddit Scanner
-            ("Reddit AlgoTrading", "https://www.reddit.com/r/algotrading/.rss"),
-            ("Reddit Daytrading", "https://www.reddit.com/r/Daytrading/.rss"),
+            ("Reddit AlgoTrading", "https://old.reddit.com/r/algotrading/"),
+            ("Reddit Daytrading", "https://old.reddit.com/r/Daytrading/"),
         ],
         "r3": [  # YouTube Scanner - multiple searches
             ("YouTube Strategy", "https://www.youtube.com/results?search_query=trading+strategy+2026&sp=CAMSAhAB"),
@@ -605,7 +604,14 @@ class StrategyResearchAgent(BaseAgent):
                     self.record(f"\u05e4\u05e2\u05e0\u05d5\u05d7 {source_name}", f"\u26a0\ufe0f \u05e7\u05d9\u05d1\u05dc\u05e0\u05d5 {len(content)} bytes \u05d0\u05d1\u05dc regex \u05dc\u05d0 \u05de\u05e6\u05d0 \u05e9\u05d5\u05dd \u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d4. \u05e6\u05e8\u05d9\u05da \u05dc\u05e2\u05d3\u05db\u05df regex.", False)
                     continue
             elif "reddit" in url.lower():
-                scripts = re.findall(r'<title>([^<]{10,120})</title>', content)
+                # Parse old.reddit.com HTML - extract post titles from links
+                scripts = re.findall(r'class="title[^"]*"[^>]*>\s*<a[^>]+>([^<]{10,120})</a>', content)
+                if not scripts:
+                    # Fallback: try JSON-style title extraction in case of JSON response
+                    scripts = re.findall(r'"title"\s*:\s*"([^"]{10,120})"', content)
+                if not scripts:
+                    # Fallback: generic link text in thing/entry areas
+                    scripts = re.findall(r'data-event-action="title"[^>]*>([^<]{10,120})<', content)
                 if not scripts:
                     content_preview = content[:1000].replace('\n', ' ').replace('\r', '')
                     self.report_error(
@@ -3894,7 +3900,20 @@ class AgentHTTPHandler(SimpleHTTPRequestHandler):
             emit_event("all_cleared", {})
             self.send_json({"status": "all data cleared"})
         else:
-            super().do_GET()
+            # Serve index.html with proper UTF-8 charset for Hebrew
+            if self.path == '/' or self.path == '/index.html':
+                try:
+                    with open('index.html', 'rb') as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'text/html; charset=utf-8')
+                    self.send_header('Content-Length', str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                except FileNotFoundError:
+                    self.send_error(404, 'index.html not found')
+            else:
+                super().do_GET()
 
     def do_POST(self):
         if self.path == '/api/submit-strategy':
