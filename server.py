@@ -2353,13 +2353,13 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
+                        login_status_text = '\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#2196F3;'>\U0001f4ca TradingView Chart - {asset}</h3>"
                         f"<p style='color:#d1d4dc;'><b>URL:</b> {tv_url}</p>"
                         f"<p style='color:#d1d4dc;'><b>Page:</b> {page_title[:60]}</p>"
                         f"<p style='color:#{'26a69a' if logged_in else 'f44336'};'>"
-                        login_status_text = '\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'
                         f"<b>Login:</b> {login_status_text}</p>"
                         f"<p style='color:#787b86;'>Strategies: {', '.join(config['names'][:3])}</p>"
                         f"</div>"
@@ -2430,11 +2430,11 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
+                        code_status = '\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'
                     browser_html = (
                         f"<div style='padding:15px;font-family:monospace;background:#1e1e1e;color:#d4d4d4;'>"
                         f"<h3 style='color:#{'4caf50' if code_loaded else 'ff9800'};'>\U0001f4dd Pine Editor - {name}</h3>"
                         f"<p style='color:#aaa;'>Code length: {len(code)} chars</p>"
-                        code_status = '\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'
                         f"<p style='color:#aaa;'>Loaded: {code_status}</p>"
                         f"<pre style='background:#111;padding:8px;border-radius:4px;font-size:11px;max-height:100px;overflow:auto;'>{code[:200]}...</pre>"
                         f"</div>"
@@ -2518,11 +2518,11 @@ class ChromeAgent(BaseAgent):
                     page_title = page.title()
                     has_data = bool(backtest_data.get("raw"))
                     
+                        results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#{'4caf50' if has_data else 'ff9800'};'>\U0001f4c8 Strategy Tester - {name}</h3>"
                         f"<p style='color:#d1d4dc;'><b>Asset:</b> {asset}</p>"
-                        results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
                         f"<p style='color:#d1d4dc;'><b>Data:</b> {results_status}</p>"
                         f"{'<pre style="background:#1e222d;padding:8px;border-radius:4px;font-size:11px;color:#d1d4dc;">' + backtest_data.get('raw', '')[:300] + '</pre>' if has_data else ''}"
                         f"</div>"
@@ -2601,12 +2601,12 @@ class ChromeAgent(BaseAgent):
                     
                     page_title = page.title()
                     
+                        export_status = '\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#2196F3;'>\U0001f4cb Report - {name}</h3>"
                         f"<p style='color:#d1d4dc;'>Asset: {asset} | WR: {strat.get('winRate', '?')}% | PF: {strat.get('profitFactor', '?')}</p>"
                         f"<p style='color:#{'26a69a' if downloaded else 'ff9800'};'>"
-                        export_status = '\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'
                         f"{export_status}</p>"
                         f"</div>"
                     )
