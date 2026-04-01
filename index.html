@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agent Office 3D - מרכז שליטה</title>
+<title>Agent Office 3D - ××¨×× ×©××××</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -186,39 +186,57 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .notif.show{transform:translateY(0)}
 .notif #nIco{font-size:18px}
 .notif #nTxt{font-size:12px;color:var(--text)}
+.collapse-btn{position:absolute;z-index:80;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;font-family:'Heebo',sans-serif}
+.collapse-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+#collapseLeft{top:70px;left:310px}
+#collapseRight{top:70px;right:350px}
+#collapseBottom{bottom:172px;left:50%;transform:translateX(-50%)}
+.app.left-collapsed{grid-template-columns:0px 1fr 360px}
+.app.left-collapsed .left{display:none}
+.app.left-collapsed #collapseLeft{left:4px}
+.app.right-collapsed{grid-template-columns:320px 1fr 0px}
+.app.right-collapsed .right{display:none}
+.app.right-collapsed #collapseRight{right:4px}
+.app.bottom-collapsed{grid-template-rows:56px 1fr 0px}
+.app.bottom-collapsed .bottom-panel{display:none}
+.app.bottom-collapsed #collapseBottom{bottom:4px}
+.app.left-collapsed.right-collapsed{grid-template-columns:0px 1fr 0px}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="appGrid">
+  <button class="collapse-btn" id="collapseLeft" onclick="togglePanel('left')" title="כווץ/הרחב צד שמאל">◀</button>
+  <button class="collapse-btn" id="collapseRight" onclick="togglePanel('right')" title="כווץ/הרחב פרטים">▶</button>
+  <button class="collapse-btn" id="collapseBottom" onclick="togglePanel('bottom')" title="כווץ/הרחב ציר זמן">▼</button>
   <div class="topbar">
     <div class="logo">
-      <h1>🏢 Agent Office 3D - מרכז שליטה</h1>
+      <h1>ð¢ Agent Office 3D - ××¨×× ×©××××</h1>
       <div class="live-dot off" id="liveDot"></div>
     </div>
     <div class="kpis">
-      <div class="kpi"><div class="val" id="kAg">0</div><div class="lbl">סוכנים</div></div>
-      <div class="kpi"><div class="val" id="kF">0</div><div class="lbl">אסטרטגיות</div></div>
-      <div class="kpi"><div class="val" id="kT">0</div><div class="lbl">בדיקות</div></div>
-      <div class="kpi"><div class="val" id="kA">0</div><div class="lbl">אושרו</div></div>
+      <div class="kpi"><div class="val" id="kAg">0</div><div class="lbl">×¡××× ××</div></div>
+      <div class="kpi"><div class="val" id="kF">0</div><div class="lbl">××¡××¨×××××ª</div></div>
+      <div class="kpi"><div class="val" id="kT">0</div><div class="lbl">××××§××ª</div></div>
+      <div class="kpi"><div class="val" id="kA">0</div><div class="lbl">×××©×¨×</div></div>
     </div>
     <div class="btns">
-      <button class="btn go" id="btnStartAll" onclick="startAll()">▶ הפעל הכל</button>
-      <button class="btn stop hidden" id="btnStopAll" onclick="stopAll()">⏹ עצור הכל</button>
+      <button class="btn go" id="btnStartAll" onclick="startAll()">â¶ ××¤×¢× ×××</button>
+      <button class="btn stop hidden" id="btnStopAll" onclick="stopAll()">â¹ ×¢×¦××¨ ×××</button>
     </div>
   </div>
   <div class="left">
-    <div class="sec-title">צוותים ופעילות</div>
+    <div class="sec-title">×¦×××ª×× ××¤×¢××××ª</div>
     <div id="teamsList"></div>
   </div>
   <div id="cWrap" class="canvas-wrap">
     <canvas id="c3d"></canvas>
     <div id="roomLabels"></div>
     <div class="c-overlay">
-      <button class="vbtn on" onclick="setView(this,'office')">משרד</button>
-      <button class="vbtn" onclick="setView(this,'top')">מעל</button>
-      <button class="vbtn" onclick="setView(this,'focus')">התמקד</button>
+      <button class="vbtn on" onclick="setView(this,'office')">××©×¨×</button>
+      <button class="vbtn" onclick="setView(this,'top')">××¢×</button>
+      <button class="vbtn" onclick="setView(this,'focus')">××ª××§×</button>
     </div>
-    <div class="c-help">גרור לסיבוב | לחץ ימין לתנועה | גלגל לזום</div>
+    <div class="c-help">גרור לתנועה | לחץ ימין לסיבוב | גלגל לזום</div>
     <div id="tooltip3d">
       <div class="t-name"></div>
       <div class="t-team"></div>
@@ -229,45 +247,45 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
   </div>
   <div class="right">
     <div class="tabs">
-      <div class="tab on" data-t="log" onclick="swTab(this)">🧑‍💼 סוכנים</div>
-      <div class="tab" data-t="detail" onclick="swTab(this)">👤 פרטים</div>
-      <div class="tab" data-t="errors" onclick="swTab(this)">⚠️ שגיאות</div>
-      <div class="tab" data-t="vault" onclick="swTab(this)">🔐 כספת</div>
+      <div class="tab on" data-t="log" onclick="swTab(this)">ð§âð¼ ×¡××× ××</div>
+      <div class="tab" data-t="detail" onclick="swTab(this)">ð¤ ×¤×¨×××</div>
+      <div class="tab" data-t="errors" onclick="swTab(this)">â ï¸ ×©×××××ª</div>
+      <div class="tab" data-t="vault" onclick="swTab(this)">ð ××¡×¤×ª</div>
     </div>
     <div id="tp-log" class="tpanel on"><div id="actLog"></div></div>
-    <div id="tp-detail" class="tpanel"><div id="agDetail" style="text-align:center;color:var(--dim);padding:20px">בחר סוכן לצפייה בפרטים</div></div>
+    <div id="tp-detail" class="tpanel"><div id="agDetail" style="text-align:center;color:var(--dim);padding:20px">×××¨ ×¡××× ××¦×¤××× ××¤×¨×××</div></div>
     <div id="tp-errors" class="tpanel">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
-        <span style="font-size:13px;font-weight:600">⚠️ שגיאות סוכנים</span>
-        <span id="errorCount" style="font-size:10px;color:var(--dim)">0 שגיאות</span>
+        <span style="font-size:13px;font-weight:600">â ï¸ ×©×××××ª ×¡××× ××</span>
+        <span id="errorCount" style="font-size:10px;color:var(--dim)">0 ×©×××××ª</span>
       </div>
       <div id="errorsList"></div>
     </div>
     <div id="tp-vault" class="tpanel">
       <div id="vaultLocked" style="text-align:center;padding:30px">
-        <div style="font-size:40px;margin-bottom:10px">🔐</div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px">כספת אסטרטגיות</div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הזן סיסמה לצפייה באסטרטגיות שאושרו</div>
-        <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
-        <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כספת</button>
-        <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">סיסמה שגויה</div>
+        <div style="font-size:40px;margin-bottom:10px">ð</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">××¡×¤×ª ××¡××¨×××××ª</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px">××× ×¡××¡×× ××¦×¤××× ×××¡××¨×××××ª ×©×××©×¨×</div>
+        <input type="password" id="vaultPass" placeholder="×¡××¡××..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
+        <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">ð ×¤×ª× ××¡×¤×ª</button>
+        <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">×¡××¡×× ×©××××</div>
       </div>
       <div id="vaultContent" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
-          <span style="font-size:13px;font-weight:600">🏆 אסטרטגיות שאושרו</span>
-          <span id="vaultCount" style="font-size:10px;color:var(--dim)">0 אסטרטגיות</span>
+          <span style="font-size:13px;font-weight:600">ð ××¡××¨×××××ª ×©×××©×¨×</span>
+          <span id="vaultCount" style="font-size:10px;color:var(--dim)">0 ××¡××¨×××××ª</span>
         </div>
-        <input type="text" id="vaultSearch" placeholder="🔍 חיפוש לפי שם, נכס, תוצאה..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:11px;margin-bottom:8px;direction:rtl" oninput="renderVault()">
+        <input type="text" id="vaultSearch" placeholder="ð ×××¤××© ××¤× ×©×, × ××¡, ×ª××¦××..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:11px;margin-bottom:8px;direction:rtl" oninput="renderVault()">
         <div id="vaultList" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
   </div>
-  <div style="grid-column:1/-1;background:var(--panel);border-top:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">
+  <div class="bottom-panel" style="grid-column:1/-1;background:var(--panel);border-top:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">
     <div style="font-size:11px;font-weight:600;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center">
-      <span>⏱ ציר הזמן</span>
+      <span>â± ×¦××¨ ××××</span>
       <div style="display:flex;gap:6px">
-        <button class="btn" onclick="timelineView='cards';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">🃏 כרטיסים</button>
-        <button class="btn" onclick="timelineView='flow';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">📊 זרימה</button>
+        <button class="btn" onclick="timelineView='cards';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">ð ××¨×××¡××</button>
+        <button class="btn" onclick="timelineView='flow';renderTimeline()" style="padding:2px 8px;font-size:9px;opacity:0.7">ð ××¨×××</button>
       </div>
     </div>
     <div id="timeline" style="flex:1"></div>
@@ -276,15 +294,15 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <div class="notif" id="notif"><div id="nIco"></div><div id="nTxt"></div></div>
 <div class="at-popup-overlay" id="atPopup" onclick="if(event.target===this)closeAtPopup()">
   <div class="at-popup">
-    <div class="atp-header"><h3 id="atpTitle">סוכן</h3><div class="atp-close" onclick="closeAtPopup()">✕</div></div>
+    <div class="atp-header"><h3 id="atpTitle">×¡×××</h3><div class="atp-close" onclick="closeAtPopup()">â</div></div>
     <div class="atp-info" id="atpInfo"></div>
     <div class="atp-history" id="atpHistory"></div>
   </div>
 </div>
 <div class="history-panel" id="historyPanel">
   <div class="hp-header">
-    <div class="hp-title" id="histTitle">📜 היסטוריית סוכן</div>
-    <div class="hp-close" onclick="closeHistory()">✕</div>
+    <div class="hp-title" id="histTitle">ð ×××¡×××¨×××ª ×¡×××</div>
+    <div class="hp-close" onclick="closeHistory()">â</div>
   </div>
   <div id="histContent"></div>
 </div>
@@ -292,86 +310,86 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <script>
 // ============ DATA ============
 const TEAMS = [
-  {id:'funding', name:'מחקר חברות מימון', icon:'💰', color:'#ec4899',
-   desc:'סריקה ומחקר של חברות מימון וכללי מסחר',
+  {id:'funding', name:'×××§×¨ ×××¨××ª ×××××', icon:'ð°', color:'#ec4899',
+   desc:'×¡×¨××§× ××××§×¨ ×©× ×××¨××ª ××××× ××××× ××¡××¨',
    agents:[
-     {id:'f1',name:'סוכן FTMO',emoji:'🏦',status:'idle',task:'ממתין',taskProg:0,spec:'FTMO Research',browserUrl:'',browserContent:''},
-     {id:'f2',name:'סוכן MyFunded',emoji:'💳',status:'idle',task:'ממתין',taskProg:0,spec:'MyFunded Research',browserUrl:'',browserContent:''},
-     {id:'f3',name:'סוכן Topstep',emoji:'📈',status:'idle',task:'ממתין',taskProg:0,spec:'Topstep Research',browserUrl:'',browserContent:''},
-     {id:'f4',name:'סוכן Take Profit',emoji:'💹',status:'idle',task:'ממתין',taskProg:0,spec:'Take Profit Trader',browserUrl:'',browserContent:''},
-     {id:'f5',name:'סוכן Lucid',emoji:'🔮',status:'idle',task:'ממתין',taskProg:0,spec:'Lucid Trading',browserUrl:'',browserContent:''},
-     {id:'f6',name:'סוכן Alpha',emoji:'🐺',status:'idle',task:'ממתין',taskProg:0,spec:'Alpha Futures',browserUrl:'',browserContent:''},
+     {id:'f1',name:'×¡××× FTMO',emoji:'ð¦',status:'idle',task:'×××ª××',taskProg:0,spec:'FTMO Research',browserUrl:'',browserContent:''},
+     {id:'f2',name:'×¡××× MyFunded',emoji:'ð³',status:'idle',task:'×××ª××',taskProg:0,spec:'MyFunded Research',browserUrl:'',browserContent:''},
+     {id:'f3',name:'×¡××× Topstep',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Topstep Research',browserUrl:'',browserContent:''},
+     {id:'f4',name:'×¡××× Take Profit',emoji:'ð¹',status:'idle',task:'×××ª××',taskProg:0,spec:'Take Profit Trader',browserUrl:'',browserContent:''},
+     {id:'f5',name:'×¡××× Lucid',emoji:'ð®',status:'idle',task:'×××ª××',taskProg:0,spec:'Lucid Trading',browserUrl:'',browserContent:''},
+     {id:'f6',name:'×¡××× Alpha',emoji:'ðº',status:'idle',task:'×××ª××',taskProg:0,spec:'Alpha Futures',browserUrl:'',browserContent:''},
    ]},
-  {id:'matching', name:'התאמת מסלולים', icon:'🎯', color:'#22c55e',
-   desc:'השוואת ROI, עמלות ותנאי מסחר',
+  {id:'matching', name:'××ª×××ª ××¡×××××', icon:'ð¯', color:'#22c55e',
+   desc:'××©××××ª ROI, ×¢××××ª ××ª× ×× ××¡××¨',
    agents:[
-     {id:'m1',name:'משווה ROI',emoji:'📊',status:'idle',task:'ממתין',taskProg:0,spec:'ROI Analysis',browserUrl:'',browserContent:''},
-     {id:'m2',name:'משווה עמלות',emoji:'💲',status:'idle',task:'ממתין',taskProg:0,spec:'Fee Comparison',browserUrl:'',browserContent:''},
+     {id:'m1',name:'××©××× ROI',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'ROI Analysis',browserUrl:'',browserContent:''},
+     {id:'m2',name:'××©××× ×¢××××ª',emoji:'ð²',status:'idle',task:'×××ª××',taskProg:0,spec:'Fee Comparison',browserUrl:'',browserContent:''},
    ]},
-  {id:'research', name:'מחקר אסטרטגיות', icon:'📚', color:'#a855f7',
-   desc:'סריקת TradingView, Reddit, YouTube לאסטרטגיות',
+  {id:'research', name:'×××§×¨ ××¡××¨×××××ª', icon:'ð', color:'#a855f7',
+   desc:'×¡×¨××§×ª TradingView, Reddit, YouTube ×××¡××¨×××××ª',
    agents:[
-     {id:'r1',name:'סורק TradingView',emoji:'📺',status:'idle',task:'ממתין',taskProg:0,spec:'TradingView Scanner',browserUrl:'',browserContent:''},
-     {id:'r2',name:'סורק Reddit',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'Reddit Scanner',browserUrl:'',browserContent:''},
-     {id:'r3',name:'סורק YouTube',emoji:'🎬',status:'idle',task:'ממתין',taskProg:0,spec:'YouTube Scanner',browserUrl:'',browserContent:''},
-     {id:'r4',name:'מסנן אסטרטגיות',emoji:'🔍',status:'idle',task:'ממתין',taskProg:0,spec:'Strategy Filter',browserUrl:'',browserContent:''},
+     {id:'r1',name:'×¡××¨×§ TradingView',emoji:'ðº',status:'idle',task:'×××ª××',taskProg:0,spec:'TradingView Scanner',browserUrl:'',browserContent:''},
+     {id:'r2',name:'×¡××¨×§ Reddit',emoji:'ð¤',status:'idle',task:'×××ª××',taskProg:0,spec:'Reddit Scanner',browserUrl:'',browserContent:''},
+     {id:'r3',name:'×¡××¨×§ YouTube',emoji:'ð¬',status:'idle',task:'×××ª××',taskProg:0,spec:'YouTube Scanner',browserUrl:'',browserContent:''},
+     {id:'r4',name:'××¡× × ××¡××¨×××××ª',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Strategy Filter',browserUrl:'',browserContent:''},
    ]},
-  {id:'deepdive', name:'העמקה באסטרטגיה', icon:'🎓', color:'#06b6d4',
-   desc:'ניתוח כללים ותיעוד מעמיק',
+  {id:'deepdive', name:'××¢××§× ×××¡××¨××××', icon:'ð', color:'#06b6d4',
+   desc:'× ××ª×× ××××× ××ª××¢×× ××¢×××§',
    agents:[
-     {id:'d1',name:'מנתח כללים',emoji:'🧠',status:'idle',task:'ממתין',taskProg:0,spec:'Rule Analysis',browserUrl:'',browserContent:''},
-     {id:'d2',name:'מתעד',emoji:'📝',status:'idle',task:'ממתין',taskProg:0,spec:'Documentation',browserUrl:'',browserContent:''},
+     {id:'d1',name:'×× ×ª× ×××××',emoji:'ð§ ',status:'idle',task:'×××ª××',taskProg:0,spec:'Rule Analysis',browserUrl:'',browserContent:''},
+     {id:'d2',name:'××ª×¢×',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Documentation',browserUrl:'',browserContent:''},
    ]},
-  {id:'pinescript', name:'Pine Script Coders', icon:'⚙️', color:'#f59e0b',
-   desc:'כתיבת קוד Pine Script V5/V6',
+  {id:'pinescript', name:'Pine Script Coders', icon:'âï¸', color:'#f59e0b',
+   desc:'××ª×××ª ×§×× Pine Script V5/V6',
    agents:[
-     {id:'p1',name:'מומחה V5',emoji:'💻',status:'idle',task:'ממתין',taskProg:0,spec:'Pine V5 Expert',browserUrl:'',browserContent:''},
-     {id:'p2',name:'מומחה V6',emoji:'🖥️',status:'idle',task:'ממתין',taskProg:0,spec:'Pine V6 Expert',browserUrl:'',browserContent:''},
-     {id:'p3',name:'מנקה באגים',emoji:'🐛',status:'idle',task:'ממתין',taskProg:0,spec:'Debugging',browserUrl:'',browserContent:''},
-     {id:'p4',name:'בודק QA',emoji:'✅',status:'idle',task:'ממתין',taskProg:0,spec:'QA Testing',browserUrl:'',browserContent:''},
-     {id:'p5',name:'מייעל קוד',emoji:'⚡',status:'idle',task:'ממתין',taskProg:0,spec:'Code Optimization',browserUrl:'',browserContent:''},
+     {id:'p1',name:'××××× V5',emoji:'ð»',status:'idle',task:'×××ª××',taskProg:0,spec:'Pine V5 Expert',browserUrl:'',browserContent:''},
+     {id:'p2',name:'××××× V6',emoji:'ð¥ï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Pine V6 Expert',browserUrl:'',browserContent:''},
+     {id:'p3',name:'×× ×§× ×××××',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Debugging',browserUrl:'',browserContent:''},
+     {id:'p4',name:'××××§ QA',emoji:'â',status:'idle',task:'×××ª××',taskProg:0,spec:'QA Testing',browserUrl:'',browserContent:''},
+     {id:'p5',name:'××××¢× ×§××',emoji:'â¡',status:'idle',task:'×××ª××',taskProg:0,spec:'Code Optimization',browserUrl:'',browserContent:''},
    ]},
-  {id:'chrome', name:'ניהול Chrome/TradingView', icon:'🌐', color:'#f97316',
-   desc:'הפעלת גרפים, הרצת קוד והורדת דוחות',
+  {id:'chrome', name:'× ×××× Chrome/TradingView', icon:'ð', color:'#f97316',
+   desc:'××¤×¢××ª ××¨×¤××, ××¨×¦×ª ×§×× ××××¨××ª ×××××ª',
    agents:[
-     {id:'c1',name:'מגדיר גרפים',emoji:'📉',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
-     {id:'c2',name:'מנקה סביבה',emoji:'🧹',status:'idle',task:'ממתין',taskProg:0,spec:'Cleanup',browserUrl:'',browserContent:''},
-     {id:'c3',name:'מריץ קוד',emoji:'▶️',status:'idle',task:'ממתין',taskProg:0,spec:'Code Runner',browserUrl:'',browserContent:''},
-     {id:'c4',name:'מוריד דוחות',emoji:'📥',status:'idle',task:'ממתין',taskProg:0,spec:'Report Download',browserUrl:'',browserContent:''},
+     {id:'c1',name:'×××××¨ ××¨×¤××',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Chart Setup',browserUrl:'',browserContent:''},
+     {id:'c2',name:'×× ×§× ×¡××××',emoji:'ð§¹',status:'idle',task:'×××ª××',taskProg:0,spec:'Cleanup',browserUrl:'',browserContent:''},
+     {id:'c3',name:'××¨××¥ ×§××',emoji:'â¶ï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Code Runner',browserUrl:'',browserContent:''},
+     {id:'c4',name:'×××¨×× ×××××ª',emoji:'ð¥',status:'idle',task:'×××ª××',taskProg:0,spec:'Report Download',browserUrl:'',browserContent:''},
    ]},
-  {id:'analysis', name:'בדיקת תוצאות', icon:'📊', color:'#ef4444',
-   desc:'ניתוח ביצועים, סיכונים והחלטות',
+  {id:'analysis', name:'××××§×ª ×ª××¦×××ª', icon:'ð', color:'#ef4444',
+   desc:'× ××ª×× ×××¦××¢××, ×¡×××× ×× ×××××××ª',
    agents:[
-     {id:'a1',name:'מנתח ביצועים',emoji:'📈',status:'idle',task:'ממתין',taskProg:0,spec:'Performance',browserUrl:'',browserContent:''},
-     {id:'a2',name:'מנתח סיכונים',emoji:'⚠️',status:'idle',task:'ממתין',taskProg:0,spec:'Risk Analysis',browserUrl:'',browserContent:''},
-     {id:'a3',name:'מחליט',emoji:'🎯',status:'idle',task:'ממתין',taskProg:0,spec:'Decision Maker',browserUrl:'',browserContent:''},
+     {id:'a1',name:'×× ×ª× ×××¦××¢××',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Performance',browserUrl:'',browserContent:''},
+     {id:'a2',name:'×× ×ª× ×¡×××× ××',emoji:'â ï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Risk Analysis',browserUrl:'',browserContent:''},
+     {id:'a3',name:'×××××',emoji:'ð¯',status:'idle',task:'×××ª××',taskProg:0,spec:'Decision Maker',browserUrl:'',browserContent:''},
    ]},
-  {id:'paramopt', name:'ייעול פרמטרים', icon:'🔧', color:'#8b5cf6',
-   desc:'טיוב פרמטרים והשוואת גרסאות',
+  {id:'paramopt', name:'×××¢×× ×¤×¨×××¨××', icon:'ð§', color:'#8b5cf6',
+   desc:'×××× ×¤×¨×××¨×× ×××©××××ª ××¨×¡×××ª',
    agents:[
-     {id:'po1',name:'מכוון פרמטרים',emoji:'🎛️',status:'idle',task:'ממתין',taskProg:0,spec:'Parameter Tuning',browserUrl:'',browserContent:''},
-     {id:'po2',name:'משווה גרסאות',emoji:'🔄',status:'idle',task:'ממתין',taskProg:0,spec:'Version Compare',browserUrl:'',browserContent:''},
-     {id:'po3',name:'בודק רגישות',emoji:'📐',status:'idle',task:'ממתין',taskProg:0,spec:'Sensitivity',browserUrl:'',browserContent:''},
+     {id:'po1',name:'××××× ×¤×¨×××¨××',emoji:'ðï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Parameter Tuning',browserUrl:'',browserContent:''},
+     {id:'po2',name:'××©××× ××¨×¡×××ª',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Version Compare',browserUrl:'',browserContent:''},
+     {id:'po3',name:'××××§ ×¨×××©××ª',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Sensitivity',browserUrl:'',browserContent:''},
    ]},
-  {id:'improvement', name:'שיפור אסטרטגיות', icon:'🚀', color:'#3b82f6',
-   desc:'שיפור לוגיקה, פילטרים ושמירה בכספת',
+  {id:'improvement', name:'×©××¤××¨ ××¡××¨×××××ª', icon:'ð', color:'#3b82f6',
+   desc:'×©××¤××¨ ×××××§×, ×¤××××¨×× ××©×××¨× ×××¡×¤×ª',
    agents:[
-     {id:'i1',name:'מייעל לוגיקה',emoji:'🧩',status:'idle',task:'ממתין',taskProg:0,spec:'Logic Optimization',browserUrl:'',browserContent:''},
-     {id:'i2',name:'מוסיף פילטרים',emoji:'🎯',status:'idle',task:'ממתין',taskProg:0,spec:'Filter Addition',browserUrl:'',browserContent:''},
-     {id:'i3',name:'שומר כספת',emoji:'🔐',status:'idle',task:'ממתין',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
+     {id:'i1',name:'××××¢× ×××××§×',emoji:'ð§©',status:'idle',task:'×××ª××',taskProg:0,spec:'Logic Optimization',browserUrl:'',browserContent:''},
+     {id:'i2',name:'×××¡××£ ×¤××××¨××',emoji:'ð¯',status:'idle',task:'×××ª××',taskProg:0,spec:'Filter Addition',browserUrl:'',browserContent:''},
+     {id:'i3',name:'×©×××¨ ××¡×¤×ª',emoji:'ð',status:'idle',task:'×××ª××',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
    ]},
-  {id:'visual', name:'עיצוב ויזואלי', icon:'🎨', color:'#f472b6',
-   desc:'עיצוב גרפים וסמנים על המסך',
+  {id:'visual', name:'×¢××¦×× ×××××××', icon:'ð¨', color:'#f472b6',
+   desc:'×¢××¦×× ××¨×¤×× ××¡×× ×× ×¢× ×××¡×',
    agents:[
-     {id:'v1',name:'מעצב גרפים',emoji:'🖌️',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
-     {id:'v2',name:'סמני מסחר',emoji:'🏷️',status:'idle',task:'ממתין',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
+     {id:'v1',name:'××¢×¦× ××¨×¤××',emoji:'ðï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
+     {id:'v2',name:'×¡×× × ××¡××¨',emoji:'ð·ï¸',status:'idle',task:'×××ª××',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
    ]},
-  {id:'alerts', name:'התראות ו-Auto Trading', icon:'🔔', color:'#facc15',
-   desc:'Webhooks, AutoView, 3Commas ותזמונים',
+  {id:'alerts', name:'××ª×¨×××ª ×-Auto Trading', icon:'ð', color:'#facc15',
+   desc:'Webhooks, AutoView, 3Commas ××ª×××× ××',
    agents:[
-     {id:'al1',name:'מגדיר Webhooks',emoji:'🪝',status:'idle',task:'ממתין',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
-     {id:'al2',name:'סוכן AutoView',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
-     {id:'al3',name:'מתזמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
+     {id:'al1',name:'×××××¨ Webhooks',emoji:'ðª',status:'idle',task:'×××ª××',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
+     {id:'al2',name:'×¡××× AutoView',emoji:'ð¤',status:'idle',task:'×××ª××',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
+     {id:'al3',name:'××ª×××',emoji:'â°',status:'idle',task:'×××ª××',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
    ]},
 ];
 
@@ -901,12 +919,12 @@ function handleServerEvent(event){
       Object.entries(event.data).forEach(([k,v])=>updateKPIDisplay(k,v));
       break;
     case 'team_activated':
-      notify('⚡',`צוות ${event.data.teamId} הופעל - ${event.data.agentCount} סוכנים`);
-      addTimeline(`צוות ${event.data.teamId} הופעל`,event.data.teamId,'wip');
+      notify('â¡',`×¦×××ª ${event.data.teamId} ×××¤×¢× - ${event.data.agentCount} ×¡××× ××`);
+      addTimeline(`×¦×××ª ${event.data.teamId} ×××¤×¢×`,event.data.teamId,'wip');
       break;
     case 'team_stopped':
-      notify('⏹',`צוות ${event.data.teamId} נעצר`);
-      addTimeline(`צוות ${event.data.teamId} נעצר`,event.data.teamId,'done');
+      notify('â¹',`×¦×××ª ${event.data.teamId} × ×¢×¦×¨`);
+      addTimeline(`×¦×××ª ${event.data.teamId} × ×¢×¦×¨`,event.data.teamId,'done');
       break;
     case 'vault_update':
       if(event.data.strategies){
@@ -935,19 +953,19 @@ function applyAgentState(agentId,state){
 
       // Timeline + log for status changes
       if(state.status==='working'&&oldStatus!=='working'){
-        addRealLog('⚡','rgba(34,197,94,.15)',ag.name+' התחיל עבודה',state.task||ag.task,team.id);
-        addTimeline(ag.name+': '+(state.task||'עובד'),team.name,'wip');
+        addRealLog('â¡','rgba(34,197,94,.15)',ag.name+' ××ª××× ×¢××××',state.task||ag.task,team.id);
+        addTimeline(ag.name+': '+(state.task||'×¢×××'),team.name,'wip');
         addAgentCard(ag.id,ag.name,ag.emoji,team.id,team.name,team.color,state.task||ag.task);
       }
       if(state.status==='idle'&&oldStatus==='working'){
-        addRealLog('✅','rgba(34,197,94,.15)',ag.name+' סיים',state.task||'הושלם',team.id);
-        addTimeline(ag.name+' סיים',team.name,'done',state.task||'הושלם');
-        finishAgentCard(ag.id,state.task||'הושלם');
+        addRealLog('â','rgba(34,197,94,.15)',ag.name+' ×¡×××',state.task||'×××©××',team.id);
+        addTimeline(ag.name+' ×¡×××',team.name,'done',state.task||'×××©××');
+        finishAgentCard(ag.id,state.task||'×××©××');
         // Vault additions now handled by server via vault_update SSE events
       }
       // Update task progress even during working
       if(state.status==='working'&&oldStatus==='working'&&state.task!==ag.task){
-        addRealLog('🔄','rgba(59,130,246,.12)',ag.name,state.task,team.id);
+        addRealLog('ð','rgba(59,130,246,.12)',ag.name,state.task,team.id);
         updateAgentCardTask(ag.id,state.task);
       }
 
@@ -1019,8 +1037,8 @@ function updateCamera(){
 }
 
 function onMD(e){
-  if(e.button===2)isPanning=true;
-  else if(e.button===0)isDragging=true;
+  if(e.button===2)isDragging=true;
+  else if(e.button===0)isPanning=true;
   prevMouse={x:e.clientX,y:e.clientY};
 }
 
@@ -1063,7 +1081,7 @@ function updateHover(e){
       const ad=pg.userData.agentData;
       const team=TEAMS.find(t=>t.id===pg.userData.teamId);
       const sc=ad.status==='working'?'var(--green)':ad.status==='idle'?'var(--yellow)':'var(--red)';
-      const st=ad.status==='working'?'⚡ עובד':ad.status==='idle'?'😴 ממתין':'❌ שגיאה';
+      const st=ad.status==='working'?'â¡ ×¢×××':ad.status==='idle'?'ð´ ×××ª××':'â ×©××××';
       tip.querySelector('.t-name').innerHTML=ad.emoji+' '+ad.name;
       tip.querySelector('.t-team').textContent=team.name+' | '+ad.spec;
       tip.querySelector('.t-task').textContent=ad.task;
@@ -1071,7 +1089,7 @@ function updateHover(e){
       tip.querySelector('.t-status').style.cssText=`background:${sc}22;color:${sc}`;
       const tProg=ad.status==='idle'?0:ad.taskProg;
       tip.querySelector('.t-bar .fill').style.cssText=`width:${tProg}%;background:${sc}`;
-      document.getElementById('t-prog-text').textContent=ad.status==='idle'?'ממתין':tProg>0?tProg+'%':'אין משימה';
+      document.getElementById('t-prog-text').textContent=ad.status==='idle'?'×××ª××':tProg>0?tProg+'%':'××× ××©×××';
       tip.style.display='block';
       const wr=document.getElementById('cWrap').getBoundingClientRect();
       tip.style.left=(e.clientX-wr.left+15)+'px';
@@ -1111,7 +1129,7 @@ function updateRoomLabels(){
     if(pos.z<1&&x>-100&&x<rect.width+100&&y>-50&&y<rect.height+50){
       const wk=team.agents.filter(a=>a.status==='working').length;
       const sc=wk>0?'color:var(--green)':'color:var(--yellow)';
-      html+=`<div class="room-label" style="left:${x}px;top:${y}px"><div class="rl-name" style="border-color:${team.color}55">${team.icon} ${team.name}</div><div class="rl-count" style="${sc}">${wk}/${team.agents.length} פעילים</div></div>`;
+      html+=`<div class="room-label" style="left:${x}px;top:${y}px"><div class="rl-name" style="border-color:${team.color}55">${team.icon} ${team.name}</div><div class="rl-count" style="${sc}">${wk}/${team.agents.length} ×¤×¢××××</div></div>`;
     }
   });
   document.getElementById('roomLabels').innerHTML=html;
@@ -1169,7 +1187,7 @@ function animate(){
         mesh.userData._rArm.rotation.x=swing*0.3;
         mesh.userData._seated=false;
       }else{
-        // Seated at desk — typing animation
+        // Seated at desk â typing animation
         if(!mesh.userData._seated){
           mesh.userData._seated=true;
           // Face the desk (toward negative Z in room local space)
@@ -1231,17 +1249,17 @@ function renderTeams(){
     total+=team.agents.length;
     const st=wk>0?'working':'idle';
     return `<div class="tcard ${selTeam===team.id?'active':''}" style="border-right-color:${team.color}" onclick="selectTeam('${team.id}')">
-      <div class="hdr"><span class="nm">${team.icon} ${team.name}</span><span class="st ${st}">${wk>0?'⚡ עובד':'😴 ממתין'}</span></div>
+      <div class="hdr"><span class="nm">${team.icon} ${team.name}</span><span class="st ${st}">${wk>0?'â¡ ×¢×××':'ð´ ×××ª××'}</span></div>
       <div class="desc">${team.desc}</div>
       <div class="agents-row">${team.agents.map(a=>{
         const sc=a.status==='working'?'var(--green)':a.status==='idle'?'var(--yellow)':'var(--red)';
         return `<div class="mini-agent" style="background:${team.color}18" onclick="event.stopPropagation();selectAgent('${team.id}','${a.id}')" title="${a.name} [${a.spec}] - ${a.task}">${a.emoji}<div class="dot" style="background:${sc}"></div></div>`;
       }).join('')}</div>
-      <div class="info-row"><span>${wk}/${team.agents.length} פעילים</span></div>
+      <div class="info-row"><span>${wk}/${team.agents.length} ×¤×¢××××</span></div>
       <div class="bar"><div class="fill" style="width:${wk>0?Math.round((wk/team.agents.length)*100):0}%;background:${team.color}"></div></div>
       <div class="agent-ctrl">
-        <button class="ctrl-btn ${wk>0?'active-ctrl':''}" onclick="event.stopPropagation();activateTeam('${team.id}')">⚡ הפעל</button>
-        <button class="ctrl-btn" onclick="event.stopPropagation();stopTeam('${team.id}')">⏹ עצור</button>
+        <button class="ctrl-btn ${wk>0?'active-ctrl':''}" onclick="event.stopPropagation();activateTeam('${team.id}')">â¡ ××¤×¢×</button>
+        <button class="ctrl-btn" onclick="event.stopPropagation();stopTeam('${team.id}')">â¹ ×¢×¦××¨</button>
       </div>
     </div>`;
   }).join('');
@@ -1251,24 +1269,24 @@ function renderTeams(){
 
 function startAll(){
   fetch('/api/start-all').catch(e=>console.log('Start-all failed:',e));
-  notify('▶','בקשה להפעלת כל הצוותים נשלחה לשרת');
+  notify('â¶','××§×©× ×××¤×¢××ª ×× ××¦×××ª×× × ×©××× ××©×¨×ª');
 }
 
 function stopAll(){
   fetch('/api/stop-all').catch(e=>console.log('Stop-all failed:',e));
-  notify('⏹','בקשה לעצירת כל הצוותים נשלחה לשרת');
+  notify('â¹','××§×©× ××¢×¦××¨×ª ×× ××¦×××ª×× × ×©××× ××©×¨×ª');
 }
 
 function activateTeam(tid){
   fetch('/api/start/'+tid).catch(e=>console.log('Activate failed:',e));
   const team=TEAMS.find(t=>t.id===tid);
-  notify('⚡',`בקשה להפעלת ${team.name} נשלחה`);
+  notify('â¡',`××§×©× ×××¤×¢××ª ${team.name} × ×©×××`);
 }
 
 function stopTeam(tid){
   fetch('/api/stop/'+tid).catch(e=>console.log('Stop failed:',e));
   const team=TEAMS.find(t=>t.id===tid);
-  notify('⏹',`בקשה לעצירת ${team.name} נשלחה`);
+  notify('â¹',`××§×©× ××¢×¦××¨×ª ${team.name} × ×©×××`);
 }
 
 function selectTeam(tid){
@@ -1303,20 +1321,20 @@ function selectTeam(tid){
 
   let html=`<div class="ahero"><div class="big" style="background:${team.color}18;border-color:${team.color};font-size:28px">${team.icon}</div>
     <h3>${team.name}</h3><p>${team.desc}</p>
-    <div style="margin-top:6px"><span style="font-size:12px;color:var(--green)">${working.length} עובדים</span> | <span style="font-size:12px;color:var(--dim)">${idle.length} ממתינים</span></div>
+    <div style="margin-top:6px"><span style="font-size:12px;color:var(--green)">${working.length} ×¢×××××</span> | <span style="font-size:12px;color:var(--dim)">${idle.length} ×××ª×× ××</span></div>
   </div>`;
 
   // Agent list
-  html+='<div style="margin-top:8px"><div class="lbl" style="margin-bottom:6px">סוכנים בצוות:</div>';
+  html+='<div style="margin-top:8px"><div class="lbl" style="margin-bottom:6px">×¡××× ×× ××¦×××ª:</div>';
   team.agents.forEach(a=>{
     const sc=a.status==='working'?'var(--green)':'var(--dim)';
     const lastHist=(agentHistoryData[a.id]||[]).slice(-1)[0];
     html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border);cursor:pointer" onclick="selectAgent('${tid}','${a.id}')">
       <span>${a.emoji}</span>
       <div style="flex:1">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">${a.name} <span style="color:${sc};font-size:9px">(${a.status==='working'?'עובד':'לא פעיל'})</span></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text)">${a.name} <span style="color:${sc};font-size:9px">(${a.status==='working'?'×¢×××':'×× ×¤×¢××'})</span></div>
         <div style="font-size:10px;color:var(--dim)">${a.task}</div>
-        ${lastHist?'<div style="font-size:9px;color:var(--dim);margin-top:2px">אחרון: '+(lastHist.success?'✅':'❌')+' '+lastHist.action+'</div>':''}
+        ${lastHist?'<div style="font-size:9px;color:var(--dim);margin-top:2px">×××¨××: '+(lastHist.success?'â':'â')+' '+lastHist.action+'</div>':''}
       </div>
     </div>`;
   });
@@ -1324,11 +1342,11 @@ function selectTeam(tid){
 
   // Team errors summary
   if(teamErrors.length){
-    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px;color:var(--red)">⚠️ שגיאות (${teamErrors.length}):</div>`;
+    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px;color:var(--red)">â ï¸ ×©×××××ª (${teamErrors.length}):</div>`;
     teamErrors.slice(-5).reverse().forEach(e=>{
       html+=`<div style="font-size:10px;padding:4px 6px;margin-bottom:4px;background:rgba(239,68,68,.08);border-radius:4px;border-right:2px solid var(--red)">
         <span style="color:var(--text)">${e.agentName||e.agentId}</span>: <span style="color:var(--red)">${e.error}</span>
-        ${e.suggestion?'<div style="color:var(--yellow);margin-top:2px">💡 '+e.suggestion+'</div>':''}
+        ${e.suggestion?'<div style="color:var(--yellow);margin-top:2px">ð¡ '+e.suggestion+'</div>':''}
       </div>`;
     });
     html+='</div>';
@@ -1336,10 +1354,10 @@ function selectTeam(tid){
 
   // Recent team history
   if(teamHistory.length){
-    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px">📜 היסטוריה אחרונה:</div>`;
+    html+=`<div style="margin-top:10px"><div class="lbl" style="margin-bottom:6px">ð ×××¡×××¨×× ×××¨×× ×:</div>`;
     teamHistory.slice(0,10).forEach(h=>{
       html+=`<div style="font-size:10px;padding:4px 6px;margin-bottom:3px;background:var(--bg);border-radius:4px;border-right:2px solid ${h.success?'var(--green)':'var(--red)'}">
-        <span>${h.agentEmoji} ${h.agentName}</span>: ${h.success?'✅':'❌'} ${h.action}
+        <span>${h.agentEmoji} ${h.agentName}</span>: ${h.success?'â':'â'} ${h.action}
         <div style="color:var(--dim);margin-top:1px">${h.result}</div>
       </div>`;
     });
@@ -1354,9 +1372,9 @@ function selectAgent(tid,aid){
   selTeam=tid;
   renderTeams();
   const team=TEAMS.find(t=>t.id===tid), ag=team.agents.find(a=>a.id===aid);
-  const isInactive=ag.task==='נעצר'||ag.task==='ממתין';
+  const isInactive=ag.task==='× ×¢×¦×¨'||ag.task==='×××ª××';
   const sc=ag.status==='working'?'var(--green)':isInactive?'var(--dim)':'var(--yellow)';
-  const st=ag.status==='working'?'⚡ עובד':isInactive?'💤 לא פעיל':'✅ סיים';
+  const st=ag.status==='working'?'â¡ ×¢×××':isInactive?'ð¤ ×× ×¤×¢××':'â ×¡×××';
 
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelector('[data-t="detail"]').classList.add('on');
@@ -1364,7 +1382,7 @@ function selectAgent(tid,aid){
   document.getElementById('tp-detail').classList.add('on');
 
   const browserUrl=ag.browserUrl||'about:blank';
-  const browserContent=ag.browserContent||'<div style="color:var(--dim);text-align:center;padding:20px">ממתין לפעילות...</div>';
+  const browserContent=ag.browserContent||'<div style="color:var(--dim);text-align:center;padding:20px">×××ª×× ××¤×¢××××ª...</div>';
 
   // Get last action from history
   const hist=agentHistoryData[aid]||[];
@@ -1373,10 +1391,10 @@ function selectAgent(tid,aid){
   if(lastAction){
     const laSc=lastAction.success?'var(--green)':'var(--red)';
     lastActionHtml=`<div class="ainfo" style="background:var(--bg);padding:8px;border-radius:6px;margin-top:6px;border-right:3px solid ${laSc}">
-      <div class="lbl">פעולה אחרונה</div>
+      <div class="lbl">×¤×¢××× ×××¨×× ×</div>
       <div class="val" style="font-size:11px">${lastAction.action}</div>
       <div style="font-size:10px;color:var(--dim);margin-top:4px;line-height:1.3">${lastAction.result}</div>
-      <div style="font-size:9px;color:var(--dim);margin-top:3px">${lastAction.time} | ${lastAction.success?'✅ הצלחה':'❌ שגיאה'}</div>
+      <div style="font-size:9px;color:var(--dim);margin-top:3px">${lastAction.time} | ${lastAction.success?'â ××¦×××':'â ×©××××'}</div>
     </div>`;
   }
 
@@ -1384,13 +1402,13 @@ function selectAgent(tid,aid){
     <div class="ahero"><div class="big" style="background:${team.color}18;border-color:${team.color}">${ag.emoji}</div>
     <h3>${ag.name}</h3><p>${team.name} | ${ag.spec}</p>
     <div style="margin-top:6px"><span class="st ${ag.status}" style="font-size:12px">${st}</span></div></div>
-    <div class="ainfo"><div class="lbl">משימה נוכחית</div><div class="val">${ag.task}</div>
+    <div class="ainfo"><div class="lbl">××©××× × ×××××ª</div><div class="val">${ag.task}</div>
       <div class="aprog"><div class="pbar"><div class="pfill" style="width:${ag.status==='idle'?0:ag.taskProg}%;background:${sc}"></div></div>
-      <div class="plbl"><span>${ag.status==='idle'?'ממתין':ag.taskProg>0?ag.taskProg+'%':'אין משימה'}</span></div></div>
+      <div class="plbl"><span>${ag.status==='idle'?'×××ª××':ag.taskProg>0?ag.taskProg+'%':'××× ××©×××'}</span></div></div>
     </div>
-    <div class="ainfo"><div class="lbl">התמחות</div><div class="val">${ag.spec}</div></div>
+    <div class="ainfo"><div class="lbl">××ª××××ª</div><div class="val">${ag.spec}</div></div>
     ${lastActionHtml}
-    <button class="btn" onclick="openHistory('${aid}','${ag.name}')" style="width:100%;justify-content:center;margin-top:8px">📜 היסטוריה מלאה (${hist.length} פעולות)</button>
+    <button class="btn" onclick="openHistory('${aid}','${ag.name}')" style="width:100%;justify-content:center;margin-top:8px">ð ×××¡×××¨×× ×××× (${hist.length} ×¤×¢××××ª)</button>
     <div class="bprev"><div class="bbar"><div class="dots"><span style="background:var(--red)"></span><span style="background:var(--yellow)"></span><span style="background:var(--green)"></span></div><div class="url">${browserUrl}</div></div>
     <div class="bbody">${browserContent}</div></div>`;
 
@@ -1419,13 +1437,13 @@ function addRealLog(icon,bg,title,desc,teamId){
 function renderLog(){
   const el=document.getElementById('actLog');
   if(!agentTimelineCards.length){
-    el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px">😴 אין פעילות - הפעל צוות</p>';
+    el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px">ð´ ××× ×¤×¢××××ª - ××¤×¢× ×¦×××ª</p>';
     return;
   }
   el.innerHTML=agentTimelineCards.slice().reverse().map((c,i)=>{
     const idx=agentTimelineCards.length-1-i;
     const isW=c.status==='working';
-    const stT=isW?'⚡ עובד':'✅ סיים';
+    const stT=isW?'â¡ ×¢×××':'â ×¡×××';
     const stC=isW?'var(--green)':'var(--accent)';
     const stB=isW?'rgba(34,197,94,.12)':'rgba(59,130,246,.12)';
     return `<div class="at-card ${c.status}" onclick="openAtPopup(${idx})" style="border-right-color:${c.teamColor}">
@@ -1435,7 +1453,7 @@ function renderLog(){
         <div class="at-team" style="color:${c.teamColor}">${c.teamName}</div>
         <div class="at-task">${c.task||''}</div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="at-time">🕐 ${c.startTime}${c.endTime?' → '+c.endTime:''}</div>
+          <div class="at-time">ð ${c.startTime}${c.endTime?' â '+c.endTime:''}</div>
           <span class="at-status" style="color:${stC};background:${stB}">${stT}</span>
         </div>
       </div>
@@ -1469,19 +1487,19 @@ function openAtPopup(idx){
   document.getElementById('atpTitle').innerHTML=c.emoji+' '+c.agentName;
   const isW=c.status==='working';
   document.getElementById('atpInfo').innerHTML=`
-    <span style="color:${c.teamColor}">🏢 ${c.teamName}</span>
-    <span>🕐 התחלה: ${c.startTime}</span>
-    ${c.endTime?`<span>🏁 סיום: ${c.endTime}</span>`:''}
-    <span style="color:${isW?'var(--green)':'var(--accent)'}">📌 ${isW?'עובד כרגע':'סיים'}</span>
-    <span>📋 ${c.task||'—'}</span>`;
+    <span style="color:${c.teamColor}">ð¢ ${c.teamName}</span>
+    <span>ð ××ª×××: ${c.startTime}</span>
+    ${c.endTime?`<span>ð ×¡×××: ${c.endTime}</span>`:''}
+    <span style="color:${isW?'var(--green)':'var(--accent)'}">ð ${isW?'×¢××× ××¨××¢':'×¡×××'}</span>
+    <span>ð ${c.task||'â'}</span>`;
   const hist=agentHistoryData[c.agentId]||[];
   if(!hist.length){
-    document.getElementById('atpHistory').innerHTML='<p style="text-align:center;color:var(--dim);padding:16px">אין היסטוריה עדיין</p>';
+    document.getElementById('atpHistory').innerHTML='<p style="text-align:center;color:var(--dim);padding:16px">××× ×××¡×××¨×× ×¢××××</p>';
   }else{
-    document.getElementById('atpHistory').innerHTML='<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--dim)">📜 היסטוריית פעולות ('+hist.length+')</div>'+
+    document.getElementById('atpHistory').innerHTML='<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--dim)">ð ×××¡×××¨×××ª ×¤×¢××××ª ('+hist.length+')</div>'+
       hist.slice().reverse().map(h=>`<div class="atp-entry ${h.success?'success':'fail'}">
         <div class="ae-time">${h.time}</div>
-        <div class="ae-action">${h.success?'✅':'❌'} ${h.action}</div>
+        <div class="ae-action">${h.success?'â':'â'} ${h.action}</div>
         <div class="ae-result">${h.result}</div>
       </div>`).join('');
   }
@@ -1527,7 +1545,7 @@ let timelineView='cards'; // 'cards' or 'flow'
 
 function renderTimeline(){
   const el=document.getElementById('timeline');
-  if(!timelineItems.length){el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px;font-size:11px">אין אירועים עדיין - הפעל את הסוכנים</p>';return}
+  if(!timelineItems.length){el.innerHTML='<p style="text-align:center;color:var(--dim);padding:30px;font-size:11px">××× ×××¨××¢×× ×¢×××× - ××¤×¢× ××ª ××¡××× ××</p>';return}
 
   if(timelineView==='cards'){
     renderTimelineCards(el);
@@ -1601,15 +1619,15 @@ function renderTimelineFlow(el){
     const tc=item.teamColor||getTeamColor(item.team);
     const isDone=item.status==='done';
     const isWip=item.status==='wip';
-    const resultIcon=isDone?(item.success!==false?'✅':'❌'):isWip?'⚡':'⏳';
-    const resultText=isDone?(item.success!==false?'הצליח':'נכשל'):isWip?'בתהליך':'ממתין';
+    const resultIcon=isDone?(item.success!==false?'â':'â'):isWip?'â¡':'â³';
+    const resultText=isDone?(item.success!==false?'××¦×××':'× ××©×'):isWip?'××ª××××':'×××ª××';
     if(i>0) html+='<div class="tline-connector"></div>';
     html+=`<div class="titem expandable" style="border-top-color:${tc};flex-shrink:0" onclick="this.classList.toggle('expanded')">
-      <div class="tt">${item.time}${item.endTime?' → '+item.endTime:''}</div>
+      <div class="tt">${item.time}${item.endTime?' â '+item.endTime:''}</div>
       <div class="tn">${item.title}</div>
       <div class="tteam" style="color:${tc}">${item.team}</div>
       <div class="t-result" style="color:${isDone?(item.success!==false?'var(--green)':'var(--red)'):'var(--accent)'}">${resultIcon} ${resultText}</div>
-      ${item.decision?`<div class="t-expand"><div style="color:var(--text);margin-bottom:4px;font-weight:500">סיכום:</div><div>${item.decision}</div></div>`:''}
+      ${item.decision?`<div class="t-expand"><div style="color:var(--text);margin-bottom:4px;font-weight:500">×¡××××:</div><div>${item.decision}</div></div>`:''}
     </div>`;
   });
   html+='</div>';
@@ -1646,7 +1664,7 @@ function unlockVault(){
 
 function addToVault(agentName, task, teamName){
   const strategy={
-    name:task.replace(/סיים.*?-\s*/,'').replace(/נמצאו|אושרה?|מוכן/g,'').trim()||'אסטרטגיה חדשה',
+    name:task.replace(/×¡×××.*?-\s*/,'').replace(/× ××¦××|×××©×¨×?|××××/g,'').trim()||'××¡××¨×××× ×××©×',
     source:agentName+' ('+teamName+')',
     date:new Date().toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
     winRate:Math.floor(55+Math.random()*25),
@@ -1658,7 +1676,7 @@ function addToVault(agentName, task, teamName){
   };
   vaultStrategies.unshift(strategy);
   if(vaultUnlocked) renderVault();
-  notify('🏆','אסטרטגיה חדשה נוספה לכספת: '+strategy.name);
+  notify('ð','××¡××¨×××× ×××©× × ××¡×¤× ×××¡×¤×ª: '+strategy.name);
 }
 
 function generateSampleCode(task){
@@ -1680,9 +1698,9 @@ if(task.includes('ORB')||task.includes('Breakout'))
 }
 
 function renderErrors(){
-  document.getElementById('errorCount').textContent=agentErrors.length+' שגיאות';
+  document.getElementById('errorCount').textContent=agentErrors.length+' ×©×××××ª';
   if(!agentErrors.length){
-    document.getElementById('errorsList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">אין שגיאות - כל הסוכנים עובדים כשורה</p>';
+    document.getElementById('errorsList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">××× ×©×××××ª - ×× ××¡××× ×× ×¢××××× ××©××¨×</p>';
     return;
   }
   document.getElementById('errorsList').innerHTML=agentErrors.slice().reverse().map(e=>{
@@ -1690,18 +1708,18 @@ function renderErrors(){
     const teamName=team?team.name:e.teamId;
     return `<div class="error-card">
       <div class="ec-header"><span class="ec-agent">${e.agentName||e.agentId} (${teamName})</span><span class="ec-time">${e.time}</span></div>
-      <div class="ec-action">📌 ${e.action}</div>
-      <div class="ec-error">❌ ${e.error}</div>
-      ${e.suggestion?'<div class="ec-suggestion">💡 '+e.suggestion+'</div>':''}
+      <div class="ec-action">ð ${e.action}</div>
+      <div class="ec-error">â ${e.error}</div>
+      ${e.suggestion?'<div class="ec-suggestion">ð¡ '+e.suggestion+'</div>':''}
       ${e.url?'<div style="font-size:9px;color:var(--dim);margin-top:4px">URL: '+e.url+'</div>':''}
     </div>`;
   }).join('');
 }
 
 function renderVault(){
-  document.getElementById('vaultCount').textContent=vaultStrategies.length+' אסטרטגיות';
+  document.getElementById('vaultCount').textContent=vaultStrategies.length+' ××¡××¨×××××ª';
   if(!vaultStrategies.length){
-    document.getElementById('vaultList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">עדיין אין אסטרטגיות בכספת.<br>הפעל את הסוכנים כדי למצוא ולאשר אסטרטגיות.</p>';
+    document.getElementById('vaultList').innerHTML='<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">×¢×××× ××× ××¡××¨×××××ª ×××¡×¤×ª.<br>××¤×¢× ××ª ××¡××× ×× ××× ×××¦×× ××××©×¨ ××¡××¨×××××ª.</p>';
     return;
   }
   // Filter by search query
@@ -1719,7 +1737,7 @@ function renderVault(){
   });
 
   if(!filtered.length){
-    document.getElementById('vaultList').innerHTML=`<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">לא נמצאו אסטרטגיות עבור "${query}"</p>`;
+    document.getElementById('vaultList').innerHTML=`<p style="text-align:center;color:var(--dim);padding:20px;font-size:11px">×× × ××¦×× ××¡××¨×××××ª ×¢×××¨ "${query}"</p>`;
     return;
   }
 
@@ -1728,32 +1746,32 @@ function renderVault(){
     const wrClass=s.winRate>65?'good':'warn';
     const pfClass=parseFloat(s.profitFactor)>2?'good':'warn';
     const ddClass=s.maxDD<12?'good':'warn';
-    const statusIcon=s.status==='approved'?'✅':'⏳';
+    const statusIcon=s.status==='approved'?'â':'â³';
     return `<div class="vault-card" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin:0">
       <div class="vc-hdr" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span class="vc-name" style="font-weight:600;font-size:12px">${statusIcon} ${s.name}</span>
         <span class="vc-date" style="font-size:9px;color:var(--dim)">${s.date}</span>
       </div>
-      <div class="vc-source" style="font-size:10px;color:var(--dim);margin-bottom:4px">מקור: ${s.source}</div>
+      <div class="vc-source" style="font-size:10px;color:var(--dim);margin-bottom:4px">××§××¨: ${s.source}</div>
       ${s.asset?`<div style="font-size:10px;color:var(--cyan);margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap">
-        <span>📊 ${s.asset}</span><span>⏱ ${s.timeframe||'N/A'}</span><span>📅 ${s.testRange||'N/A'}</span>${s.sharpe?`<span>📈 Sharpe: ${s.sharpe}</span>`:''}
+        <span>ð ${s.asset}</span><span>â± ${s.timeframe||'N/A'}</span><span>ð ${s.testRange||'N/A'}</span>${s.sharpe?`<span>ð Sharpe: ${s.sharpe}</span>`:''}
       </div>`:''}
       <div class="vc-metrics" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
         <span class="vc-m ${wrClass}" style="background:${s.winRate>65?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">WR: ${s.winRate}%</span>
         <span class="vc-m ${pfClass}" style="background:${parseFloat(s.profitFactor)>2?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">PF: ${s.profitFactor}</span>
         <span class="vc-m ${ddClass}" style="background:${s.maxDD<12?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'};padding:2px 6px;border-radius:4px;font-size:10px">DD: ${s.maxDD}%</span>
-        <span class="vc-m" style="background:rgba(99,102,241,0.15);padding:2px 6px;border-radius:4px;font-size:10px">עסקאות: ${s.trades?s.trades.toLocaleString():'N/A'}</span>
+        <span class="vc-m" style="background:rgba(99,102,241,0.15);padding:2px 6px;border-radius:4px;font-size:10px">×¢×¡×§×××ª: ${s.trades?s.trades.toLocaleString():'N/A'}</span>
       </div>
-      ${s.avgWin?`<div style="font-size:9px;color:var(--dim);margin-bottom:4px">ממוצע רווח: $${s.avgWin} | ממוצע הפסד: $${s.avgLoss||'N/A'} | Sortino: ${s.sortino||'N/A'}</div>`:''}
-      ${s.decision?`<div style="font-size:10px;color:var(--cyan);margin-bottom:4px;padding:4px 6px;background:rgba(6,182,212,0.08);border-radius:4px">🎯 ${s.decision}</div>`:''}
+      ${s.avgWin?`<div style="font-size:9px;color:var(--dim);margin-bottom:4px">××××¦×¢ ×¨×××: $${s.avgWin} | ××××¦×¢ ××¤×¡×: $${s.avgLoss||'N/A'} | Sortino: ${s.sortino||'N/A'}</div>`:''}
+      ${s.decision?`<div style="font-size:10px;color:var(--cyan);margin-bottom:4px;padding:4px 6px;background:rgba(6,182,212,0.08);border-radius:4px">ð¯ ${s.decision}</div>`:''}
       <div style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">📋 V5</button>
-        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">📋 V6</button>
-        <button class="btn" onclick="event.stopPropagation();downloadReport(${i},'v5')" style="padding:3px 8px;font-size:10px">📊 V5 Excel</button>
-        <button class="btn" onclick="event.stopPropagation();downloadReport(${i},'v6')" style="padding:3px 8px;font-size:10px">📊 V6 Excel</button>
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v5')" style="padding:3px 8px;font-size:10px">ð V5</button>
+        <button class="btn" onclick="event.stopPropagation();copyVaultCode(${i},'v6')" style="padding:3px 8px;font-size:10px">ð V6</button>
+        <button class="btn" onclick="event.stopPropagation();downloadReport(${i},'v5')" style="padding:3px 8px;font-size:10px">ð V5 Excel</button>
+        <button class="btn" onclick="event.stopPropagation();downloadReport(${i},'v6')" style="padding:3px 8px;font-size:10px">ð V6 Excel</button>
       </div>
     </div>`;
-  }).join('')+'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="downloadAllReports()" style="padding:6px 16px;font-size:11px;background:var(--accent)">📊 הורד דוח Excel מלא (כל האסטרטגיות)</button></div>';
+  }).join('')+'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="downloadAllReports()" style="padding:6px 16px;font-size:11px;background:var(--accent)">ð ×××¨× ××× Excel ××× (×× ×××¡××¨×××××ª)</button></div>';
 }
 
 function openHistory(agentId, agentName){
@@ -1826,7 +1844,7 @@ function copyVaultCode(idx,version){
   else code=s.code_v6||s.code||'// No V6 code available';
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(code).then(()=>{
-      notify('📋',`קוד Pine Script ${version.toUpperCase()} הועתק ללוח!`);
+      notify('ð',`×§×× Pine Script ${version.toUpperCase()} ×××¢×ª×§ ××××!`);
     }).catch(()=>fallbackCopy(code));
   }else{
     fallbackCopy(code);
@@ -1948,20 +1966,20 @@ function downloadReport(idx, version){
 }
 
 function downloadAllReports(){
-  if(!vaultStrategies.length){notify('❌','אין אסטרטגיות בכספת');return}
-  if(typeof XLSX==='undefined'){notify('❌','SheetJS לא נטען');return}
+  if(!vaultStrategies.length){notify('â','××× ××¡××¨×××××ª ×××¡×¤×ª');return}
+  if(typeof XLSX==='undefined'){notify('â','SheetJS ×× × ××¢×');return}
   const wb=XLSX.utils.book_new();
   // All strategies summary sheet
-  const header=['שם','מקור','תאריך','סטטוס','Win Rate','Profit Factor','Max DD','עסקאות','נכס','טיימפריים','Sharpe','החלטה'];
+  const header=['×©×','××§××¨','×ª××¨××','×¡××××¡','Win Rate','Profit Factor','Max DD','×¢×¡×§×××ª','× ××¡','×××××¤×¨×××','Sharpe','×××××'];
   const rows=vaultStrategies.map(s=>[
-    s.name,s.source,s.date,s.status==='approved'?'מאושר':'ממתין',
+    s.name,s.source,s.date,s.status==='approved'?'××××©×¨':'×××ª××',
     s.winRate+'%',s.profitFactor,s.maxDD+'%',s.trades,
     s.asset||'',s.timeframe||'',s.sharpe||'',s.decision||''
   ]);
   rows.unshift(header);
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=header.map(()=>({wch:16}));
-  XLSX.utils.book_append_sheet(wb,ws,'כל האסטרטגיות');
+  XLSX.utils.book_append_sheet(wb,ws,'×× ×××¡××¨×××××ª');
   // Individual code sheets
   vaultStrategies.forEach((s,i)=>{
     const name=(s.name||'Strategy '+(i+1)).substring(0,28);
@@ -1971,15 +1989,15 @@ function downloadAllReports(){
     XLSX.utils.book_append_sheet(wb,wsc,name.substring(0,31));
   });
   XLSX.writeFile(wb,'vault_report_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  notify('📥','דוח Excel מלא הורד!');
+  notify('ð¥','××× Excel ××× ×××¨×!');
 }
 
 function fallbackCopy(text){
   const ta=document.createElement('textarea');
   ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
   document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');notify('📋','קוד Pine Script הועתק ללוח!')}
-  catch(e){notify('❌','לא ניתן להעתיק')}
+  try{document.execCommand('copy');notify('ð','×§×× Pine Script ×××¢×ª×§ ××××!')}
+  catch(e){notify('â','×× × ××ª× ×××¢×ª××§')}
   document.body.removeChild(ta);
 }
 
@@ -2011,8 +2029,8 @@ window.AgentOffice={
         if(task)ag.task=task;
         if(progress!==undefined)ag.taskProg=progress;
         renderTeams();
-        if(status==='working'&&old!=='working')addRealLog('⚡','rgba(34,197,94,.15)',ag.name+' התחיל',task||ag.task,team.id);
-        if(status==='idle'&&old==='working')addRealLog('✅','rgba(34,197,94,.15)',ag.name+' סיים',task||'הושלם',team.id);
+        if(status==='working'&&old!=='working')addRealLog('â¡','rgba(34,197,94,.15)',ag.name+' ××ª×××',task||ag.task,team.id);
+        if(status==='idle'&&old==='working')addRealLog('â','rgba(34,197,94,.15)',ag.name+' ×¡×××',task||'×××©××',team.id);
       }
     });
   },
@@ -2060,6 +2078,28 @@ fetch('/api/state').then(r=>r.json()).then(data=>{
 }).catch(()=>{
   document.getElementById('liveDot').className='live-dot off';
 });
+
+function togglePanel(panel){
+  const app=document.getElementById('appGrid');
+  const cls=panel+'-collapsed';
+  app.classList.toggle(cls);
+  const btn=document.getElementById('collapse'+panel.charAt(0).toUpperCase()+panel.slice(1));
+  if(panel==='left')btn.textContent=app.classList.contains(cls)?'\u25b6':'\u25c0';
+  if(panel==='right')btn.textContent=app.classList.contains(cls)?'\u25c0':'\u25b6';
+  if(panel==='bottom')btn.textContent=app.classList.contains(cls)?'\u25b2':'\u25bc';
+  setTimeout(()=>{const w=document.getElementById('cWrap');if(w&&renderer){renderer.setSize(w.clientWidth,w.clientHeight);cam.aspect=w.clientWidth/w.clientHeight;cam.updateProjectionMatrix();}},300);
+}
+
+function togglePanel(panel){
+  const app=document.getElementById('appGrid');
+  const cls=panel+'-collapsed';
+  app.classList.toggle(cls);
+  const btn=document.getElementById('collapse'+panel.charAt(0).toUpperCase()+panel.slice(1));
+  if(panel==='left')btn.textContent=app.classList.contains(cls)?'\u25b6':'\u25c0';
+  if(panel==='right')btn.textContent=app.classList.contains(cls)?'\u25c0':'\u25b6';
+  if(panel==='bottom')btn.textContent=app.classList.contains(cls)?'\u25b2':'\u25bc';
+  setTimeout(()=>{const w=document.getElementById('cWrap');if(w&&renderer){renderer.setSize(w.clientWidth,w.clientHeight);cam.aspect=w.clientWidth/w.clientHeight;cam.updateProjectionMatrix();}},300);
+}
 </script>
 </body>
 </html>
