@@ -2359,12 +2359,14 @@ class ChromeAgent(BaseAgent):
                         f"<p style='color:#d1d4dc;'><b>URL:</b> {tv_url}</p>"
                         f"<p style='color:#d1d4dc;'><b>Page:</b> {page_title[:60]}</p>"
                         f"<p style='color:#{'26a69a' if logged_in else 'f44336'};'>"
-                        f"<b>Login:</b> {'\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'}</p>"
+                        login_status_text = '\u2705 \u05de\u05d7\u05d5\u05d1\u05e8' if logged_in else '\u274c \u05dc\u05d0 \u05de\u05d7\u05d5\u05d1\u05e8'
+                        f"<b>Login:</b> {login_status_text}</p>"
                         f"<p style='color:#787b86;'>Strategies: {', '.join(config['names'][:3])}</p>"
                         f"</div>"
                     )
                     update_agent(self.agent_id, "working", f"\u05d2\u05e8\u05e3 {asset} \u05e0\u05e4\u05ea\u05d7", progress, tv_url, browser_html)
-                    self.record(f"Chart {asset} ({tf})", f"\u05e0\u05e4\u05ea\u05d7 \u05d1\u05d4\u05e6\u05dc\u05d7\u05d4. Login: {'\u05db\u05df' if logged_in else '\u05dc\u05d0'}. Title: {page_title[:40]}", True)
+                    yes_no = '\u05db\u05df' if logged_in else '\u05dc\u05d0'
+                    self.record(f"Chart {asset} ({tf})", f"\u05e0\u05e4\u05ea\u05d7 \u05d1\u05d4\u05e6\u05dc\u05d7\u05d4. Login: {yes_no}. Title: {page_title[:40]}", True)
                     
                 except Exception as e:
                     self.record(f"Chart {asset}", f"\u05e9\u05d2\u05d9\u05d0\u05d4: {str(e)[:100]}", False)
@@ -2432,12 +2434,15 @@ class ChromeAgent(BaseAgent):
                         f"<div style='padding:15px;font-family:monospace;background:#1e1e1e;color:#d4d4d4;'>"
                         f"<h3 style='color:#{'4caf50' if code_loaded else 'ff9800'};'>\U0001f4dd Pine Editor - {name}</h3>"
                         f"<p style='color:#aaa;'>Code length: {len(code)} chars</p>"
-                        f"<p style='color:#aaa;'>Loaded: {'\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'}</p>"
+                        code_status = '\u2705 Yes' if code_loaded else '\u26a0\ufe0f Editor not found, code ready'
+                        f"<p style='color:#aaa;'>Loaded: {code_status}</p>"
                         f"<pre style='background:#111;padding:8px;border-radius:4px;font-size:11px;max-height:100px;overflow:auto;'>{code[:200]}...</pre>"
                         f"</div>"
                     )
-                    update_agent(self.agent_id, "working", f"{'\u2705' if code_loaded else '\u26a0\ufe0f'} {name}", progress, "", browser_html)
-                    self.record(f"Pine Load - {name}", f"Code: {len(code)} chars. {'\u05e0\u05d8\u05e2\u05df \u05d1\u05e2\u05d5\u05e8\u05da' if code_loaded else '\u05e2\u05d5\u05e8\u05da \u05dc\u05d0 \u05e0\u05de\u05e6\u05d0'}. Page: {page_title[:40]}", code_loaded)
+                    pine_icon = '\u2705' if code_loaded else '\u26a0\ufe0f'
+                    update_agent(self.agent_id, "working", f"{pine_icon} {name}", progress, "", browser_html)
+                    pine_status_text = '\u05e0\u05d8\u05e2\u05df \u05d1\u05e2\u05d5\u05e8\u05da' if code_loaded else '\u05e2\u05d5\u05e8\u05da \u05dc\u05d0 \u05e0\u05de\u05e6\u05d0'
+                    self.record(f"Pine Load - {name}", f"Code: {len(code)} chars. {pine_status_text}. Page: {page_title[:40]}", code_loaded)
                     
                 except Exception as e:
                     self.record(f"Pine Load - {name}", f"\u05e9\u05d2\u05d9\u05d0\u05d4: {str(e)[:100]}", False)
@@ -2517,12 +2522,15 @@ class ChromeAgent(BaseAgent):
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#{'4caf50' if has_data else 'ff9800'};'>\U0001f4c8 Strategy Tester - {name}</h3>"
                         f"<p style='color:#d1d4dc;'><b>Asset:</b> {asset}</p>"
-                        f"<p style='color:#d1d4dc;'><b>Data:</b> {'\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'}</p>"
+                        results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
+                        f"<p style='color:#d1d4dc;'><b>Data:</b> {results_status}</p>"
                         f"{'<pre style="background:#1e222d;padding:8px;border-radius:4px;font-size:11px;color:#d1d4dc;">' + backtest_data.get('raw', '')[:300] + '</pre>' if has_data else ''}"
                         f"</div>"
                     )
-                    update_agent(self.agent_id, "working", f"{'\u2705' if has_data else '\u26a0\ufe0f'} {name}", progress, "", browser_html)
-                    self.record(f"Backtest - {name}", f"Asset: {asset}. {'\u05ea\u05d5\u05e6\u05d0\u05d5\u05ea \u05e0\u05d0\u05e1\u05e4\u05d5' if has_data else '\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05d5\u05e6\u05d0\u05d5\u05ea'}. Page: {page_title[:40]}", True)
+                    results_icon = '\u2705' if has_data else '\u26a0\ufe0f'
+                    update_agent(self.agent_id, "working", f"{results_icon} {name}", progress, "", browser_html)
+                    results_status_text = '\u05ea\u05d5\u05e6\u05d0\u05d5\u05ea \u05e0\u05d0\u05e1\u05e4\u05d5' if has_data else '\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05d5\u05e6\u05d0\u05d5\u05ea'
+                    self.record(f"Backtest - {name}", f"Asset: {asset}. {results_status_text}. Page: {page_title[:40]}", True)
                     
                 except Exception as e:
                     self.record(f"Backtest - {name}", f"\u05e9\u05d2\u05d9\u05d0\u05d4: {str(e)[:100]}", False)
@@ -2598,11 +2606,13 @@ class ChromeAgent(BaseAgent):
                         f"<h3 style='color:#2196F3;'>\U0001f4cb Report - {name}</h3>"
                         f"<p style='color:#d1d4dc;'>Asset: {asset} | WR: {strat.get('winRate', '?')}% | PF: {strat.get('profitFactor', '?')}</p>"
                         f"<p style='color:#{'26a69a' if downloaded else 'ff9800'};'>"
-                        f"{'\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'}</p>"
+                        export_status = '\u2705 Export initiated' if downloaded else '\u26a0\ufe0f Export button not found - CSV generated locally'
+                        f"{export_status}</p>"
                         f"</div>"
                     )
                     update_agent(self.agent_id, "working", f"\u05d3\u05d5\u05d7 {name}", progress, "", browser_html)
-                    self.record(f"Report - {name}", f"WR:{strat.get('winRate','?')}%, PF:{strat.get('profitFactor','?')}. {'\u05d9\u05d5\u05e6\u05d0 \u05de-TV' if downloaded else '\u05e0\u05d5\u05e6\u05e8 CSV \u05de\u05e7\u05d5\u05de\u05d9'}", True)
+                    export_status_text = '\u05d9\u05d5\u05e6\u05d0 \u05de-TV' if downloaded else '\u05e0\u05d5\u05e6\u05e8 CSV \u05de\u05e7\u05d5\u05de\u05d9'
+                    self.record(f"Report - {name}", f"WR:{strat.get('winRate','?')}%, PF:{strat.get('profitFactor','?')}. {export_status_text}", True)
                     
                 except Exception as e:
                     self.record(f"Report - {name}", f"\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05d9\u05d9\u05e6\u05d5\u05d0: {str(e)[:100]}", False)
