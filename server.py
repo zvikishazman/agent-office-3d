@@ -2519,12 +2519,13 @@ class ChromeAgent(BaseAgent):
                     has_data = bool(backtest_data.get("raw"))
                     
                     results_status = '\u2705 Results captured' if has_data else '\u26a0\ufe0f Waiting for results'
+                    backtest_pre = '<pre style="background:#1e222d;padding:8px;border-radius:4px;font-size:11px;color:#d1d4dc;">' + backtest_data.get('raw', '')[:300] + '</pre>' if has_data else ''
                     browser_html = (
                         f"<div style='padding:15px;font-family:Arial;background:#131722;'>"
                         f"<h3 style='color:#{'4caf50' if has_data else 'ff9800'};'>\U0001f4c8 Strategy Tester - {name}</h3>"
                         f"<p style='color:#d1d4dc;'><b>Asset:</b> {asset}</p>"
                         f"<p style='color:#d1d4dc;'><b>Data:</b> {results_status}</p>"
-                        f"{'<pre style="background:#1e222d;padding:8px;border-radius:4px;font-size:11px;color:#d1d4dc;">' + backtest_data.get('raw', '')[:300] + '</pre>' if has_data else ''}"
+                        f"{backtest_pre}"
                         f"</div>"
                     )
                     results_icon = '\u2705' if has_data else '\u26a0\ufe0f'
