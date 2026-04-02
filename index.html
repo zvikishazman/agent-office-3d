@@ -92,9 +92,9 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
 .pfill{height:100%;border-radius:2px;transition:width .3s}
 .plbl{font-size:10px;color:var(--dim);margin-top:3px}
-.bprev{blbackground:var(--bg);border-radius:8px;padding:8px;margin-top:10px}
-.bbar{display:flex;align-items:center;gip:6px;margin-bottom:6px}
-.dots{display:flex;gap:3px;}
+.bprev{background:var(--bg);border-radius:8px;padding:8px;margin-top:10px}
+.bbar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.dots{display:flex;gap:3px}
 .dots span{width:8px;height:8px;border-radius:50%}
 .url{font-size:9px;color:var(--dim);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bbody{font-size:10px;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;color:var(--dim)}
@@ -103,15 +103,15 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .log .ico{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .log .body{flex:1;min-width:0}
 .log .ttl{font-size:11px;font-weight:600;margin-bottom:2px}
-.log .dsc{font-size:10px;color:var(--dim);margin-bottom:2px;}
+.log .dsc{font-size:10px;color:var(--dim);margin-bottom:2px}
 .log .tm{font-size:8px;color:var(--dim)}
-#actLog{overflow-y: auto; flex: 1; padding: 8px; }
-.at-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border-right:3px solid var(--border);cursor:pointer;transition:all .2s;display:flex;gip:10px;align-items:flex-start}
-.at-card:hover{blackground:var(--card);transform:translateX(-2px)}
+#actLog{overflow-y:auto;flex:1;padding:8px}
+.at-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border-right:3px solid var(--border);cursor:pointer;transition:all .2s;display:flex;gap:10px;align-items:flex-start}
+.at-card:hover{background:var(--card);transform:translateX(-2px)}
 .at-card.working{border-right-color:var(--green);animation:atPulse 2s infinite}
 .at-card.done{border-right-color:var(--accent)}
 @keyframes atPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.15)}50%{box-shadow:0 0 8px 0 rgba(34,197,94,.1)}}
-.at-card .at-emoje{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.at-card .at-emoji{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .at-card .at-body{flex:1;min-width:0}
 .at-card .at-name{font-size:12px;font-weight:600;margin-bottom:2px}
 .at-card .at-team{font-size:9px;margin-bottom:4px}
@@ -124,18 +124,18 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .at-popup .atp-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1}
 .at-popup .atp-header h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
 .at-popup .atp-close{cursor:pointer;font-size:18px;color:var(--dim);padding:4px 8px;border-radius:4px}
-.at-popup .atp-close:hover{blackground:var(--card);color:var(--text)}
+.at-popup .atp-close:hover{background:var(--card);color:var(--text)}
 .at-popup .atp-info{padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
-.at-popup .atp-info span{display:flex;align-items:center;gip:4px}
+.at-popup .atp-info span{display:flex;align-items:center;gap:4px}
 .at-popup .atp-history{padding:12px 16px}
-.at-popup .atp-entry{padding:8px;blackground:var(--bg);border-radius:6px;margin-bottom:6px;border-right:3px solid var(--border);font-size:10px}
+.at-popup .atp-entry{padding:8px;background:var(--bg);border-radius:6px;margin-bottom:6px;border-right:3px solid var(--border);font-size:10px}
 .at-popup .atp-entry.success{border-right-color:var(--green)}
 .at-popup .atp-entry.fail{border-right-color:var(--red)}
-.at-popup .atp-entry .ae-time{font-size:9px;color:var(--dim);margin-bottom:2px;}
+.at-popup .atp-entry .ae-time{font-size:9px;color:var(--dim);margin-bottom:2px}
 .at-popup .atp-entry .ae-action{font-weight:600;color:var(--text);margin-bottom:2px}
 .at-popup .atp-entry .ae-result{color:var(--dim);line-height:1.3}
-#timeline{display:flex;flex-direction:row;overflow-x:auto;overflow-y: hidden; padding: 8px 12px; gap: 0; align-items: stretch; scrollbar-width: thin; }
-#timeline::-webkit-scrollbar{height:5px;}
+#timeline{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px 12px;gap:0;align-items:stretch;scrollbar-width:thin}
+#timeline::-webkit-scrollbar{height:5px}
 #timeline::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .titem{min-width:160px;max-width:200px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-shrink:0;font-size:10px;position:relative;border-top:3px solid var(--border);align-self:stretch;display:flex;flex-direction:column}
 .titem .tt{font-weight:600;color:var(--glow);margin-bottom:2px;font-size:9px}
@@ -155,59 +155,50 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .history-panel .hp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .history-panel .hp-title{font-size:14px;font-weight:600}
 .history-panel .hp-close{cursor:pointer;font-size:18px;color:var(--dim);padding:4px 8px;border-radius:4px}
-.history-panel .hp-close:hover{blackground:var(--card);color:var(--text)}
+.history-panel .hp-close:hover{background:var(--card);color:var(--text)}
 .hist-entry{padding:8px;background:var(--bg);border-radius:6px;margin-bottom:6px;border-right:3px solid var(--border);font-size:10px}
 .hist-entry.success{border-right-color:var(--green)}
 .hist-entry.fail{border-right-color:var(--red)}
-.hist-entry .he-time{font-size:9px;color:var(--dim);margin-bottom:2px;}
+.hist-entry .he-time{font-size:9px;color:var(--dim);margin-bottom:2px}
 .hist-entry .he-action{font-weight:600;color:var(--text);margin-bottom:2px}
 .hist-entry .he-result{color:var(--dim);line-height:1.3}
-.vault-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.vault-card{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s}
 .vault-card:hover{border-color:var(--accent);transform:translateY(-1px)}
-.vault-card .vc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.vault-card .vc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .vault-card .vc-name{font-size:12px;font-weight:600;color:var(--green)}
 .vault-card .vc-date{font-size:9px;color:var(--dim)}
-.vault-card .vc-source{font-size:10px;color:var(--dim);margin-bottom:6px;}
-.vault-card .vc-metrics{display:flex;gip:8px;flex-wrap:wrap}
+.vault-card .vc-source{font-size:10px;color:var(--dim);margin-bottom:6px}
+.vault-card .vc-metrics{display:flex;gap:8px;flex-wrap:wrap}
 .vault-card .vc-m{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--card)}
 .vault-card .vc-m.good{color:var(--green);background:rgba(34,197,94,.1)}
-.vault-card .vc-m.warn~�olor:var(--yellow);background:rgba(234,179,8,.1)}
+.vault-card .vc-m.warn{color:var(--yellow);background:rgba(234,179,8,.1)}
 .vault-card .vc-detail{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
 .vault-card.expanded .vc-detail{display:block}
-.vault-card .vc-code{background:var(--card);padding:6px;border-radius:4px;font-family:monospace;font-size:9px;color:#9cd1d9;max-height:120px;overflow-y:auto;margin-top:4px;white-space:pre-wrap;direction:ltr;text-align:left}
+.vault-card .vc-code{background:var(--card);padding:6px;border-radius:4px;font-family:monospace;font-size:9px;color:#c9d1d9;max-height:120px;overflow-y:auto;margin-top:4px;white-space:pre-wrap;direction:ltr;text-align:left}
 .error-card{background:var(--panel);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px;margin-bottom:8px;border-right:3px solid var(--red)}
 .error-card .ec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .error-card .ec-agent{font-size:12px;font-weight:600;color:var(--text)}
 .error-card .ec-time{font-size:9px;color:var(--dim)}
-.error-card .ec-action{font-size:11px;color:var(--cyan);margin-bottom:4px;}
+.error-card .ec-action{font-size:11px;color:var(--cyan);margin-bottom:4px}
 .error-card .ec-error{font-size:11px;color:var(--red);line-height:1.4}
-.error-card .ec-suggestion{font-size:10px;color:var(---yellow);margin-top:4px;padding:4px 6px;background:rgba(234,179,8,.08);border-radius:4px;}
-.notif{position:fixed;bottom:20px;left:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px;z-index:300;transform:translateY(120px);transition:transform .3s;}
+.error-card .ec-suggestion{font-size:10px;color:var(--yellow);margin-top:4px;padding:4px 6px;background:rgba(234,179,8,.08);border-radius:4px}
+.notif{position:fixed;bottom:20px;left:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px;z-index:300;transform:translateY(120px);transition:transform .3s;backdrop-filter:blur(8px)}
 .notif.show{transform:translateY(0)}
-.notif #nIcon{font-size:18px}
+.notif #nIco{font-size:18px}
 .notif #nTxt{font-size:12px;color:var(--text)}
-.collapse-btn{position:absolute;z-index:80;width:32px;height:32px;border-radius:50%;background:var(--accent);border:2px solid var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;font-family:'Heebo', sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.4)}
-.collapse-btn:hover{background:#fff;color:var(--accent);transform:scale(1.1)}
-#collapseLeft{top:50%;left:310px;transform:translateY(-50%)}
-#collapseRight{top:50%;right:350px;transform:translateY(-50%)}
-#collapseBottom{bottom:172px;left:50%;transform:translateX(-50%)}
-.app.left-collapsed{grid-template-columns:0px 1fr 360px}
-.app.left-collapsed .left{display:none}
-.app.left-collapsed #collapseLeft{left:4px;transform:translateY(-50%)}
-.app.right-collapsed{grid-template-columns:320px 1fr 0px}
-.app.right-collapsed .right{display:none}
-.app.right-collapsed #collapseRight{right:4px;transform:translateY(-50%)}
-.app.bottom-collapsed{grid-template-rows:56px 1fr 0px}
-.app.bottom-collapsed .bottom-panel{display:none}
-.app.bottom-collapsed #collapseBottom{bottom:4px}
-.app.left-collapsed.right-collapsed{grid-template-columns:0px 1fr 0px}
+.resize-handle{position:absolute;z-index:80;background:transparent;transition:background .2s}
+.resize-handle:hover{background:var(--accent)}
+.resize-handle.resize-left{top:56px;bottom:0;width:5px;cursor:col-resize;left:320px}
+.resize-handle.resize-right{top:56px;bottom:0;width:5px;cursor:col-resize;right:360px}
+.resize-handle.resize-bottom{left:0;right:0;height:5px;cursor:row-resize;bottom:180px}
+.resize-handle:active{background:var(--accent)}
 </style>
 </head>
 <body>
 <div class="app" id="appGrid">
-  <button class="collapse-btn" id="collapseLeft" onclick="togglePanel('left')" title="סגור/פתח צוותים">◀</button>
-  <button class="collapse-btn" id="collapseRight" onclick="togglePanel('right')" title="סגור/פתח פרטים">▶</button>
-  <button class="collapse-btn" id="collapseBottom" onclick="togglePanel('bottom')" title="סגור/פתח ציר זמן">▼</button>
+  <div class="resize-handle resize-left" id="resizeLeft"></div>
+  <div class="resize-handle resize-right" id="resizeRight"></div>
+  <div class="resize-handle resize-bottom" id="resizeBottom"></div>
   <div class="topbar">
     <div class="logo">
       <h1>🏢 Agent Office 3D - מרכז שליטה</h1>
@@ -223,12 +214,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
       <button class="btn go" id="btnStartAll" onclick="startAll()">▶ הפעל הכל</button>
       <button class="btn stop hidden" id="btnStopAll" onclick="stopAll()">⏹ עצור הכל</button>
     </div>
-  
-  
-  
-  
-  </div>
-    <div class="left">
+  </div>
+  <div class="left">
     <div class="sec-title">צוותים ופעילות</div>
     <div id="teamsList"></div>
   </div>
@@ -240,7 +227,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
       <button class="vbtn" onclick="setView(this,'top')">מעל</button>
       <button class="vbtn" onclick="setView(this,'focus')">התמקד</button>
     </div>
-    <div class="c-help">גרור לתנועה | לחץ ימין לסיבוב | גלגל לזום</div>
+    <div class="c-help">גרור לתנועה | לחץ ימין לסיבוב ותנועה | גלגל לזום</div>
     <div id="tooltip3d">
       <div class="t-name"></div>
       <div class="t-team"></div>
@@ -266,17 +253,18 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
       <div id="errorsList"></div>
     </div>
     <div id="tp-vault" class="tpanel">
-      <div id="vaultLocked" style="text-align:center;paddin="font-size:40px;margin-bottom:10px">🔐</div>
+      <div id="vaultLocked" style="text-align:center;padding:30px">
+        <div style="font-size:40px;margin-bottom:10px">🔐</div>
         <div style="font-size:14px;font-weight:600;margin-bottom:6px">כספת אסטרטגיות</div>
         <div style="font-size:11px;color:var(--dim);margin-bottom:12px">הזן סיסמה לצפייה באסטרטגיות שאושרו</div>
         <input type="password" id="vaultPass" placeholder="סיסמה..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:12px;width:160px;text-align:center;margin-bottom:8px;direction:ltr" onkeydown="if(event.key==='Enter')unlockVault()">
-        <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כסשת</button>
+        <br><button class="btn" onclick="unlockVault()" style="margin:0 auto;display:inline-flex">🔓 פתח כספת</button>
         <div id="vaultErr" style="color:var(--red);font-size:10px;margin-top:6px;display:none">סיסמה שגויה</div>
       </div>
       <div id="vaultContent" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
           <span style="font-size:13px;font-weight:600">🏆 אסטרטגיות שאושרו</span>
-          <span id="vaultCount" style="font-size:10px;color:var(--dim)">0 אסטרטגיות</span>
+          <div style="display:flex;align-items:center;gap:8px"><span id="vaultCount" style="font-size:10px;color:var(--dim)">0 אסטרטגיות</span><button class="btn" onclick="clearAllStrategies()" style="padding:2px 8px;font-size:9px;color:var(--red);border-color:var(--red)">🗑️ נקה הכל</button></div>
         </div>
         <input type="text" id="vaultSearch" placeholder="🔍 חיפוש לפי שם, נכס, תוצאה..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:11px;margin-bottom:8px;direction:rtl" oninput="renderVault()">
         <div id="vaultList" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -382,7 +370,7 @@ const TEAMS = [
      {id:'i3',name:'שומר כספת',emoji:'🔐',status:'idle',task:'ממתין',taskProg:0,spec:'Vault Storage',browserUrl:'',browserContent:''},
    ]},
   {id:'visual', name:'עיצוב ויזואלי', icon:'🎨', color:'#f472b6',
-   desc:'עךצוב גרפים וסמנים על המסך',
+   desc:'עיצוב גרפים וסמנים על המסך',
    agents:[
      {id:'v1',name:'מעצב גרפים',emoji:'🖌️',status:'idle',task:'ממתין',taskProg:0,spec:'Chart Design',browserUrl:'',browserContent:''},
      {id:'v2',name:'סמני מסחר',emoji:'🏷️',status:'idle',task:'ממתין',taskProg:0,spec:'Trade Markers',browserUrl:'',browserContent:''},
@@ -393,6 +381,13 @@ const TEAMS = [
      {id:'al1',name:'מגדיר Webhooks',emoji:'🪝',status:'idle',task:'ממתין',taskProg:0,spec:'Webhook Setup',browserUrl:'',browserContent:''},
      {id:'al2',name:'סוכן AutoView',emoji:'🤖',status:'idle',task:'ממתין',taskProg:0,spec:'AutoView/3Commas',browserUrl:'',browserContent:''},
      {id:'al3',name:'מתזמן',emoji:'⏰',status:'idle',task:'ממתין',taskProg:0,spec:'Timing',browserUrl:'',browserContent:''},
+   ]},
+  {id:'control', name:'בקרה ופיקוח', icon:'🛡️', color:'#10b981',
+   desc:'ניהול משימות, הסברים ובקרת איכות',
+   agents:[
+     {id:'ctrl1',name:'מנתב משימות',emoji:'🔀',status:'idle',task:'ממתין',taskProg:0,spec:'Task Router - שיוך משימות לסוכן המתאים',browserUrl:'',browserContent:''},
+     {id:'ctrl2',name:'מסביר מערכת',emoji:'📖',status:'idle',task:'ממתין',taskProg:0,spec:'System Explainer - הסבר פעילות כל סוכן וצוות',browserUrl:'',browserContent:''},
+     {id:'ctrl3',name:'מבקר איכות',emoji:'🔍',status:'idle',task:'ממתין',taskProg:0,spec:'Quality Auditor - בקרת ביצועים ודיווח חריגות',browserUrl:'',browserContent:''},
    ]},
 ];
 
@@ -408,6 +403,22 @@ let anyAgentsRunning=false;
 let agentHistoryData={}; // agentId -> [{action,result,time,success}]
 let agentErrors=[]; // [{agentId, agentName, teamId, action, error, suggestion, time}]
 let agentTimelineCards=[]; // [{agentId,agentName,emoji,teamId,teamName,teamColor,startTime,endTime,status:'working'|'done',task}]
+
+// Fix double-encoded UTF-8 text (server sends garbled Hebrew)
+function fixEnc(str){
+  if(!str||typeof str!=='string') return str||'';
+  // Detect garbled UTF-8: look for Ã (0xC3) followed by common Hebrew UTF-8 second bytes
+  if(!/[\xC3\xC2]/.test(str)) return str;
+  try{
+    // Try to decode as if the string was UTF-8 bytes interpreted as Latin-1
+    const bytes=new Uint8Array(str.length);
+    for(let i=0;i<str.length;i++) bytes[i]=str.charCodeAt(i);
+    const decoded=new TextDecoder('utf-8').decode(bytes);
+    // If decoded text contains Hebrew characters (0x0590-0x05FF), use it
+    if(/[\u0590-\u05FF]/.test(decoded)) return decoded;
+  }catch(e){}
+  return str;
+}
 
 // ============ THREE.JS ============
 let scene, cam, renderer, clock;
@@ -437,6 +448,7 @@ const ROOM_LAYOUT = [
   {id:'improvement', x:-4,  z:-15, w:12, h:10},
   {id:'visual',      x:11,  z:-15, w:10, h:10},
   {id:'alerts',      x:24,  z:-15, w:12, h:10},
+  {id:'control',     x:38,  z:-15, w:12, h:10},
 ];
 
 function generateDeskPositions(teamId){
@@ -898,15 +910,18 @@ function handleServerEvent(event){
         if(vaultUnlocked) renderVault();
       }
       if(event.data.history){
-        agentHistoryData=event.data.history;
+        agentHistoryData={};
+        Object.entries(event.data.history).forEach(([aid,hist])=>{
+          agentHistoryData[aid]=hist.map(h=>({...h,action:fixEnc(h.action),result:fixEnc(h.result)}));
+        });
       }
       if(event.data.errors){
-        agentErrors=event.data.errors;
+        agentErrors=event.data.errors.map(e=>({...e,action:fixEnc(e.action),error:fixEnc(e.error),suggestion:fixEnc(e.suggestion)}));
         renderErrors();
       }
       if(event.data.activities && event.data.activities.length){
         event.data.activities.forEach(a=>{
-          realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:a.title,desc:a.desc,teamId:a.teamId,time:a.time});
+          realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:fixEnc(a.title),desc:fixEnc(a.desc),teamId:a.teamId,time:a.time});
         });
         renderLog();
       }
@@ -937,11 +952,11 @@ function handleServerEvent(event){
       break;
     case 'agent_history':
       if(event.data.agentId && event.data.history){
-        agentHistoryData[event.data.agentId]=event.data.history;
+        agentHistoryData[event.data.agentId]=event.data.history.map(h=>({...h,action:fixEnc(h.action),result:fixEnc(h.result)}));
       }
       break;
     case 'agent_error':
-      agentErrors.push(event.data);
+      agentErrors.push({...event.data,action:fixEnc(event.data.action),error:fixEnc(event.data.error),suggestion:fixEnc(event.data.suggestion)});
       renderErrors();
       break;
   }
@@ -951,6 +966,10 @@ function applyAgentState(agentId,state){
   TEAMS.forEach(team=>{
     const ag=team.agents.find(a=>a.id===agentId);
     if(ag){
+      // Fix encoding for all string fields
+      if(state.task) state.task=fixEnc(state.task);
+      if(state.browserContent) state.browserContent=fixEnc(state.browserContent);
+
       // Check old status BEFORE overwriting
       const oldStatus=ag.status;
 
@@ -1051,6 +1070,11 @@ function onMM(e){
   const dx=e.clientX-prevMouse.x, dy=e.clientY-prevMouse.y;
   if(isDragging){
     targetTheta-=dx*0.005;
+    // Move camera forward/backward based on vertical mouse movement
+    const fwd=new THREE.Vector3();
+    cam.getWorldDirection(fwd);
+    fwd.y=0;fwd.normalize();
+    targetCenter.add(fwd.multiplyScalar(-dy*targetDist*0.002));
   }
   if(isPanning){
     const s=targetDist*0.002;
@@ -1516,7 +1540,7 @@ function openAtPopup(idx){
   `;
   const hist=agentHistoryData[c.agentId]||[];
   if(!hist.length){
-    document.getElementById('atpHistory').innerHTML='<p style="text-align:center;color:var(--dim);padding:16px">אין היסטוריה עדיים</p>';
+    document.getElementById('atpHistory').innerHTML='<p style="text-align:center;color:var(--dim);padding:16px">אין היסטוריה עדיין</p>';
   }else{
     document.getElementById('atpHistory').innerHTML='<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--dim)">📜 היסטוריית פעולות ('+hist.length+')</div>'+
       hist.slice().reverse().map(h=>`<div class="atp-entry ${h.success?'success':'fail'}">
@@ -1647,16 +1671,48 @@ function renderTimelineFlow(el){
   el.scrollLeft=el.scrollWidth;
 }
 
-function togglePanel(panel){
-  const app=document.getElementById('appGrid');
-  const cls=panel+'-collapsed';
-  app.classList.toggle(cls);
-  const btn=document.getElementById('collapse'+panel.charAt(0).toUpperCase()+panel.slice(1));
-  if(panel==='left')btn.textContent=app.classList.contains(cls)?'▶':'◀';
-  if(panel==='right')btn.textContent=app.classList.contains(cls)?'◀':'▶';
-  if(panel==='bottom')btn.textContent=app.classList.contains(cls)?'▲':'▼';
-  // Resize 3D canvas
-  setTimeout(()=>{const w=document.getElementById('cWrap');if(w&&renderer){renderer.setSize(w.clientWidth,w.clientHeight);cam.aspect=w.clientWidth/w.clientHeight;cam.updateProjectionMatrix();}},300);
+// Resize handles
+let resizing=null, resizeStart=0, resizeStartSize=0;
+const MIN_PANEL=80, MAX_LEFT=600, MAX_RIGHT=600, MIN_BOTTOM=40, MAX_BOTTOM=500;
+
+function initResize(){
+  const handles=['resizeLeft','resizeRight','resizeBottom'];
+  handles.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      resizing=id;
+      if(id==='resizeLeft'){resizeStart=e.clientX;resizeStartSize=parseInt(getComputedStyle(document.getElementById('appGrid')).gridTemplateColumns.split(' ')[0])}
+      else if(id==='resizeRight'){resizeStart=e.clientX;resizeStartSize=parseInt(getComputedStyle(document.getElementById('appGrid')).gridTemplateColumns.split(' ')[2])}
+      else{resizeStart=e.clientY;resizeStartSize=parseInt(getComputedStyle(document.getElementById('appGrid')).gridTemplateRows.split(' ')[2])}
+      document.body.style.cursor=id==='resizeBottom'?'row-resize':'col-resize';
+      document.body.style.userSelect='none';
+    });
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!resizing)return;
+    const app=document.getElementById('appGrid');
+    if(resizing==='resizeLeft'){
+      const newW=Math.max(MIN_PANEL,Math.min(MAX_LEFT,resizeStartSize+(e.clientX-resizeStart)));
+      app.style.gridTemplateColumns=newW+'px 1fr '+getComputedStyle(app).gridTemplateColumns.split(' ')[2];
+      document.getElementById('resizeLeft').style.left=newW+'px';
+    }else if(resizing==='resizeRight'){
+      const newW=Math.max(MIN_PANEL,Math.min(MAX_RIGHT,resizeStartSize-(e.clientX-resizeStart)));
+      app.style.gridTemplateColumns=getComputedStyle(app).gridTemplateColumns.split(' ')[0]+' 1fr '+newW+'px';
+      document.getElementById('resizeRight').style.right=newW+'px';
+    }else if(resizing==='resizeBottom'){
+      const newH=Math.max(MIN_BOTTOM,Math.min(MAX_BOTTOM,resizeStartSize-(e.clientY-resizeStart)));
+      app.style.gridTemplateRows='56px 1fr '+newH+'px';
+      document.getElementById('resizeBottom').style.bottom=newH+'px';
+    }
+    // Resize 3D canvas
+    const w=document.getElementById('cWrap');
+    if(w&&renderer){renderer.setSize(w.clientWidth,w.clientHeight);cam.aspect=w.clientWidth/w.clientHeight;cam.updateProjectionMatrix();}
+  });
+  document.addEventListener('mouseup',()=>{
+    if(resizing){resizing=null;document.body.style.cursor='';document.body.style.userSelect=''}
+  });
 }
 
 function notify(icon,text){
@@ -1670,12 +1726,15 @@ function notify(icon,text){
 // ============ VAULT ============
 const VAULT_PASSWORD='1234';
 let vaultUnlocked=false;
+let vaultUnlockTime=0;
 let vaultStrategies=[];
 
 function unlockVault(){
   const pass=document.getElementById('vaultPass').value;
   if(pass===VAULT_PASSWORD){
     vaultUnlocked=true;
+    vaultUnlockTime=Date.now();
+    try{localStorage.setItem('vaultUnlockTime',vaultUnlockTime.toString())}catch(e){}
     document.getElementById('vaultLocked').style.display='none';
     document.getElementById('vaultContent').style.display='block';
     document.getElementById('vaultErr').style.display='none';
@@ -1701,6 +1760,14 @@ function addToVault(agentName, task, teamName){
   vaultStrategies.unshift(strategy);
   if(vaultUnlocked) renderVault();
   notify('🏆','אסטרטגיה חדשה נוספה לכספת: '+strategy.name);
+}
+
+function clearAllStrategies(){
+  if(!confirm('האם אתה בטוח שברצונך למחוק את כל האסטרטגיות?')) return;
+  vaultStrategies=[];
+  renderVault();
+  fetch('/api/vault/clear',{method:'POST'}).catch(()=>{});
+  notify('🗑️','כל האסטרטגיות נמחקו');
 }
 
 function generateSampleCode(task){
@@ -1988,7 +2055,20 @@ window.AgentOffice={
 };
 
 // ============ INIT ============
+// Auto-unlock vault if within 30 minutes
+try{
+  const saved=localStorage.getItem('vaultUnlockTime');
+  if(saved && Date.now()-parseInt(saved)<30*60*1000){
+    vaultUnlocked=true;
+    vaultUnlockTime=parseInt(saved);
+    document.getElementById('vaultLocked').style.display='none';
+    document.getElementById('vaultContent').style.display='block';
+    renderVault();
+  }
+}catch(e){}
+
 init3D();
+initResize();
 renderTeams();
 renderLog();
 renderTimeline();
@@ -2009,15 +2089,18 @@ fetch('/api/state').then(r=>r.json()).then(data=>{
     if(vaultUnlocked) renderVault();
   }
   if(data.history){
-    agentHistoryData=data.history;
+    agentHistoryData={};
+    Object.entries(data.history).forEach(([aid,hist])=>{
+      agentHistoryData[aid]=hist.map(h=>({...h,action:fixEnc(h.action),result:fixEnc(h.result)}));
+    });
   }
   if(data.errors){
-    agentErrors=data.errors;
+    agentErrors=data.errors.map(e=>({...e,action:fixEnc(e.action),error:fixEnc(e.error),suggestion:fixEnc(e.suggestion)}));
     renderErrors();
   }
   if(data.activities && data.activities.length){
     data.activities.forEach(a=>{
-      realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:a.title,desc:a.desc,teamId:a.teamId,time:a.time});
+      realLog.push({icon:a.icon,bg:'rgba(59,130,246,.15)',title:fixEnc(a.title),desc:fixEnc(a.desc),teamId:a.teamId,time:a.time});
     });
     renderLog();
   }
